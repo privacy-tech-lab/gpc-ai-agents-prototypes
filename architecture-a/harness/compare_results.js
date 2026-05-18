@@ -89,11 +89,12 @@ function main() {
     ...Object.keys(sdStatuses),
   ])];
 
-  const mode = USE_AI ? 'AI (multi-agent LLM)' : 'Scripted';
   console.log('\n╔══════════════════════════════════════════════════════════════╗');
-  console.log(`║     GPC Propagation Report — Architecture A [${mode.padEnd(19)}]║`);
+  console.log('║          GPC Propagation Report — Architecture A             ║');
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
-  if (USE_AI && baseline?.model) console.log('Model:', baseline.model, '\n');
+  console.log(`Mode : ${USE_AI ? 'AI (multi-agent LLM)' : 'Scripted'}`);
+  if (USE_AI && baseline?.model) console.log(`Model: ${baseline.model}`);
+  console.log();
 
   // ── Tool execution table ──
   const COL = 28;

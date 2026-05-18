@@ -13,6 +13,8 @@ const { verifyToken } = require('../mcp-server/identity_provider.js');
 
 const VECTOR_STORE_FILE = path.join(__dirname, '..', 'output', 'vector_store.json');
 
+fs.mkdirSync(path.dirname(VECTOR_STORE_FILE), { recursive: true });
+
 function loadStore() {
   if (!fs.existsSync(VECTOR_STORE_FILE)) return [];
   return JSON.parse(fs.readFileSync(VECTOR_STORE_FILE, 'utf8'));

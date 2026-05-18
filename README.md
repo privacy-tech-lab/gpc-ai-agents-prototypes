@@ -92,9 +92,9 @@ This provides empirical motivation for a spec-level requirement to propagate the
 
 ### Prerequisites
 
-- **Node.js 18+** (native `fetch` required) — `brew install node`
-- **npm** (bundled with Node.js)
-- **[Ollama](https://ollama.com)** for the LLM demo runs
+- **Node.js 18+** — native `fetch` is used throughout; no polyfill needed. Install via `brew install node` or [nodejs.org](https://nodejs.org).
+- **npm** — bundled with Node.js
+- **[Ollama](https://ollama.com)** — only needed for the LLM demo runs; the scripted pipeline and test suite work without it
 
 ---
 
@@ -106,7 +106,8 @@ cd gpc-ai-agents-prototypes/architecture-a
 
 npm install
 
-# Generate the RSA keypair used for JWT signing (run once)
+# Required: generate the RSA keypair for JWT signing.
+# keys/private.pem is gitignored — the app won't start without it.
 node -e "
 const { generateKeyPairSync } = require('crypto');
 const fs = require('fs');
@@ -146,19 +147,21 @@ npm run compare       # Print comparison report from existing output files
 Requires Ollama with a capable model. The default is `qwen2.5:14b`; `llama3.1:70b` also works. Models below 14B are too unreliable for multi-step tool chains.
 
 ```bash
-# Pull the model (once)
+# 1. Install Ollama: https://ollama.com — then start it
+ollama serve   # or open the Ollama desktop app; skip if it's already running
+
+# 2. Pull the model (once)
 ollama pull qwen2.5:14b
 
-# Seed realistic user-42 history so the personalisation contrast is visible
-npm run seed
-
-# Run baseline (GPC off) and GPC run, then print the comparison report
+# 3. Run the full demo
+#    (seeds user-42 history, runs baseline + GPC, prints comparison report)
 npm run ai-demo
 ```
 
-Individual LLM runs:
+Individual LLM runs (run `npm run seed` first so user-42 has existing profile data):
 
 ```bash
+npm run seed           # seed realistic user-42 travel history
 npm run ai-baseline    # GPC off  — LLM agents call all tools, data written
 npm run ai-gpc         # GPC on   — LLM agents receive blocked responses
 npm run ai-compare     # Print comparison report for AI output files
@@ -188,7 +191,7 @@ All operations complete; data is written to `output/`:
 
 | Tool | Result |
 |---|---|
-| `search_web` | `status: ok` — returns 5 GPC research snippets |
+| `search_web` | `status: ok` — returns 5 Japan travel snippets (itinerary, JR Pass, food, timing, practicalities) |
 | `user_profile_lookup` | `status: ok` — returns existing user-42 profile |
 | `save_to_profile` | `status: ok` — updates `output/profiles.json` |
 | `log_interaction` | `status: ok` — appends to `output/interaction_log.jsonl` |

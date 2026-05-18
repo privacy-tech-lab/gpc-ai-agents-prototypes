@@ -1,8 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
-const LOG_FILE = path.join(__dirname, '..', 'output', 'interaction_log.jsonl');
-const PROFILE_FILE = path.join(__dirname, '..', 'output', 'profiles.json');
+const OUTPUT_DIR   = path.join(__dirname, '..', 'output');
+const LOG_FILE     = path.join(OUTPUT_DIR, 'interaction_log.jsonl');
+const PROFILE_FILE = path.join(OUTPUT_DIR, 'profiles.json');
+
+fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
 function loadProfiles() {
   if (!fs.existsSync(PROFILE_FILE)) return {};
