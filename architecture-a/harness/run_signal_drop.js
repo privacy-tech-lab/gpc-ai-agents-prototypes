@@ -22,7 +22,7 @@ async function main() {
 
   const timing = [];
   const result = await handleRequest({
-    query: 'What is Global Privacy Control?',
+    query: 'Help me plan a 5-day trip to Japan — what should I see, eat, and know before I go?',
     user_id: 'user-42',
     baggageHeader: encodeBaggage({ gpc: '1' }),   // user has opted out
     dropSignal: true,                              // but one agent strips the meta

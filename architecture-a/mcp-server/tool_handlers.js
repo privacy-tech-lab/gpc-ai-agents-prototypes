@@ -57,32 +57,32 @@ async function search_web({ query }) {
     }
   }
 
-  // Rich static fallback — substantive enough for the model to produce a real synthesis
+  // Rich static fallback for the Japan trip planning demo scenario
   const results = [
     {
-      title:   'Global Privacy Control (GPC): Technical Overview',
-      snippet: 'Global Privacy Control (GPC) is a browser-level privacy signal transmitted as the HTTP header Sec-GPC: 1 or exposed via the navigator.globalPrivacyControl JavaScript property. It communicates a user\'s preference to opt out of the sale or sharing of personal data. GPC is legally recognized as a valid opt-out mechanism under the California Consumer Privacy Act (CCPA), the California Privacy Rights Act (CPRA), Colorado\'s Consumer Privacy Act, and Connecticut\'s Data Privacy Act.',
-      url:     'https://globalprivacycontrol.org/',
+      title:   'Classic Japan 5-Day Itinerary: Tokyo, Kyoto, and Osaka',
+      snippet: 'The most popular first-trip route covers three cities. Days 1–2: Tokyo — Shinjuku, Shibuya crossing, Senso-ji temple in Asakusa, teamLab digital art. Day 3: Kyoto by Shinkansen (2h 15min) — Fushimi Inari shrine, Arashiyama bamboo grove, Nishiki Market. Day 4: Kyoto — Kinkaku-ji (Golden Pavilion), Gion district for geisha spotting at dusk. Day 5: Osaka for street food — Dotonbori, Kuromon Ichiba market, takoyaki and okonomiyaki, then fly home from KIX or return to Tokyo via Shinkansen.',
+      url:     'https://www.japan-guide.com/e/e2400.html',
     },
     {
-      title:   'How GPC Works in Browsers and Agentic AI Systems',
-      snippet: 'When a user enables GPC in a participating browser (Firefox, Brave, DuckDuckGo Privacy Browser) or privacy extension, Sec-GPC: 1 is attached to every outbound HTTP request automatically. Recipients must treat it as equivalent to a manual "Do Not Sell or Share" opt-out — no additional consent banner interaction required. In multi-agent AI systems the signal must propagate through orchestrator and sub-agent layers; current standards do not yet explicitly require this propagation.',
-      url:     'https://privacycg.github.io/gpc-spec/',
+      title:   'Japan Rail Pass: What It Covers and Whether It\'s Worth It',
+      snippet: 'A 7-day JR Pass (≈¥50,000 / ~$330 USD) covers all JR Shinkansen lines including Tokyo–Kyoto–Osaka, JR local trains, and some ferries. Buy before leaving your home country — it cannot be purchased in Japan. If you\'re only doing Tokyo → Kyoto → Osaka → Tokyo, a single round-trip Shinkansen costs roughly ¥27,000 each way, so the pass pays off only if you add a side trip (Hiroshima + Miyajima is a popular one-day detour from Kyoto). IC cards (Suica or ICOCA) handle subway and local buses not covered by JR.',
+      url:     'https://www.japanrailpass.net/',
     },
     {
-      title:   'GPC Legal Recognition: CCPA, CPRA, and State Laws',
-      snippet: 'The California Privacy Protection Agency (CPPA) confirmed that GPC is a valid universal opt-out signal under CCPA/CPRA. Colorado\'s CPA explicitly mandates that businesses honor universal opt-out signals by July 2024. Connecticut\'s CTDPA includes equivalent provisions. The FTC has signaled interest in treating GPC non-compliance as an unfair or deceptive trade practice under Section 5 of the FTC Act.',
-      url:     'https://cppa.ca.gov/regulations/gpc.html',
+      title:   'What to Eat in Japan: A First-Timer\'s Food Guide',
+      snippet: 'Must-eat dishes by city: Tokyo — tsukiji outer market sushi, ramen at a local shop (Ichiran for solo dining), conveyor-belt sushi, tonkatsu. Kyoto — kaiseki multi-course meal (budget ¥5,000–¥15,000), matcha everything, tofu-based shojin ryori. Osaka — takoyaki (octopus balls), okonomiyaki (savory pancake), kushikatsu (fried skewers), yakitori. Across Japan — convenience store onigiri (7-Eleven level is surprisingly good), vending machine hot coffee, and seasonal wagashi sweets at any temple gate.',
+      url:     'https://www.japan-guide.com/e/e2036.html',
     },
     {
-      title:   'GPC in Multi-Agent AI Pipelines: Propagation and Enforcement Challenges',
-      snippet: 'A central open problem in AI governance is ensuring that privacy signals like GPC survive delegation across multi-agent systems. An orchestrator that receives a GPC signal must pass it to sub-agents and downstream tool servers — even across trust boundaries such as third-party vendor APIs. Without a specification-level propagation requirement, an intermediate agent can silently strip the signal, causing data writes to proceed despite the user\'s opt-out. Cryptographic approaches (JWTs carrying a signed gpc claim) provide a trust-boundary backstop independent of metadata forwarding.',
-      url:     'https://arxiv.org/abs/gpc-agents',
+      title:   'Best Time to Visit Japan + Booking Tips',
+      snippet: 'Cherry blossom season (late March–early April) and autumn foliage (mid-November) are peak periods — book accommodation 3–6 months ahead and expect 20–30% price premiums. Shoulder seasons (May–June, September–October) offer mild weather, fewer crowds, and lower prices. Golden Week (late April–early May) is a Japanese national holiday week — domestic travel surges, many locals vacation, accommodation sells out. Winter (December–February) is underrated: fewer tourists, stable prices, and some Shinkansen routes have snow scenery.',
+      url:     'https://www.japan-guide.com/e/e2273.html',
     },
     {
-      title:   'Implementing GPC: Developer Reference',
-      snippet: 'To honor GPC: check the Sec-GPC HTTP request header or navigator.globalPrivacyControl. If 1 or true, do not sell or share personal data to third parties, do not use cross-context behavioral advertising, and document GPC handling in your privacy policy. For AI systems, extend enforcement to MCP _meta fields and agent task envelopes. The GPC spec (.well-known/gpc.json) lets sites declare their support status.',
-      url:     'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Sec-GPC',
+      title:   'Japan Travel Practicalities: Money, SIM, and Getting Around',
+      snippet: 'Cash: Japan is still heavily cash-based. 7-Eleven ATMs reliably accept foreign cards; withdraw yen on arrival. Cards are becoming more accepted in cities but many ryokan, small restaurants, and shrines are cash-only. SIM/Wi-Fi: buy a pocket Wi-Fi or data SIM at the airport (IIJmio, HIS Mobile offer good rates). IC card: load a Suica or ICOCA card at any station — works on subways, buses, and even at convenience stores. Etiquette: no eating while walking, keep phones on silent on trains, remove shoes before entering traditional accommodations.',
+      url:     'https://www.japan-guide.com/e/e2201.html',
     },
   ];
   return { query, results, source: 'local' };

@@ -21,18 +21,18 @@ const VECTOR_FILE   = path.join(OUTPUT, 'vector_store.json');
 // ── Existing profile for user-42 ─────────────────────────────────────────────
 const profiles = {
   'user-42': {
-    interests:       ['privacy', 'data protection', 'AI ethics', 'browser security'],
-    region:          'California',
-    expertise_level: 'intermediate',
+    interests:       ['travel', 'food', 'Asia', 'culture', 'photography'],
+    region:          'San Francisco, CA',
+    travel_style:    'mid-range, culture-focused, solo or couple',
     previousQueries: [
-      'What is GDPR and how does it differ from CCPA?',
-      'How does browser fingerprinting work?',
-      'Best privacy-focused browsers 2025',
-      'What are the best privacy browser extensions?',
+      'Best street food markets in Bangkok',
+      'What\'s the best time of year to visit Southeast Asia?',
+      'How to get around Tokyo on public transit',
+      'Affordable ryokan stays in Kyoto',
     ],
-    last_query:   'What are the best privacy browser extensions?',
-    last_summary: 'Top privacy browser extensions: uBlock Origin (ad/tracker blocking), Privacy Badger (adaptive tracking protection), HTTPS Everywhere (enforces TLS). Together these tools significantly reduce third-party data collection and cross-site tracking.',
-    updatedAt:    '2026-05-10T14:23:00.000Z',
+    last_query:   'Affordable ryokan stays in Kyoto',
+    last_summary: 'Budget-friendly ryokan options in Kyoto include Piece Hostel Kyoto (dorms and private rooms from ¥3,500), Guesthouse Soi (near Fushimi Inari, ¥4,500/night private), and Kyoto Utano Youth Hostel (scenic, ¥4,200/night). Book 2–3 months ahead for peak cherry blossom and fall foliage seasons.',
+    updatedAt:    '2026-05-01T09:45:00.000Z',
   },
 };
 
@@ -40,27 +40,27 @@ const profiles = {
 const interactions = [
   {
     user_id:           'user-42',
-    query:             'What is GDPR and how does it differ from CCPA?',
-    response_summary:  'GDPR (EU) requires opt-in consent and applies globally for EU residents. CCPA (California) offers opt-out rights rather than opt-in consent. Key differences: GDPR has broader scope, stricter consent requirements, and higher fines (up to 4% of global annual revenue). CCPA applies to for-profit businesses meeting revenue/data thresholds.',
-    timestamp:         '2026-04-08T10:15:00.000Z',
+    query:             'Best street food markets in Bangkok',
+    response_summary:  'Top Bangkok street food markets: Or Tor Kor Market (upscale, near Chatuchak) for fresh fruit and prepared dishes; Yaowarat Road (Chinatown) for roast duck, dim sum, and mango sticky rice after dark; Chatuchak Weekend Market for pad thai and boat noodles; Or Kor Market near Victory Monument for local worker lunch spots. Best visited in the evening when it\'s cooler.',
+    timestamp:         '2026-03-12T14:20:00.000Z',
   },
   {
     user_id:           'user-42',
-    query:             'How does browser fingerprinting work?',
-    response_summary:  'Browser fingerprinting identifies users by collecting device/browser characteristics: screen resolution, installed fonts, WebGL renderer, canvas rendering, timezone, language, and plugin list. This combination is often unique enough to identify individuals without cookies. Unlike cookies, fingerprints cannot be cleared and persist across private browsing sessions.',
-    timestamp:         '2026-04-22T11:30:00.000Z',
+    query:             'What\'s the best time of year to visit Southeast Asia?',
+    response_summary:  'Best time varies by country. Thailand: November–February (cool, dry). Vietnam: varies by region — north is best October–April, south is November–April. Indonesia/Bali: April–October (dry season). Avoid Southeast Asia broadly during monsoon season (May–October) unless you\'re targeting specific microclimates. November–February is the safest window for a multi-country trip.',
+    timestamp:         '2026-03-28T11:00:00.000Z',
   },
   {
     user_id:           'user-42',
-    query:             'Best privacy-focused browsers 2025',
-    response_summary:  'Leading privacy browsers: Firefox (enhanced tracking protection, large ecosystem), Brave (built-in ad/tracker blocking, fingerprint randomization), Tor Browser (onion routing, maximum anonymity). For daily use, Brave or Firefox with uBlock Origin offer the best privacy-usability balance.',
-    timestamp:         '2026-05-02T16:45:00.000Z',
+    query:             'How to get around Tokyo on public transit',
+    response_summary:  'Tokyo transit: get a Suica or Pasmo IC card at any major station — works on subways, JR lines, buses, and even convenience stores. The Tokyo Metro Day Pass (¥600) covers all metro lines but not JR. Google Maps is reliable for routing. Avoid rush hour (7:30–9:30am, 5:30–8pm) on the Yamanote line. Taxis are expensive (¥700–¥1,000 base fare) — use for late nights when trains stop around midnight.',
+    timestamp:         '2026-04-10T16:30:00.000Z',
   },
   {
     user_id:           'user-42',
-    query:             'What are the best privacy browser extensions?',
-    response_summary:  'Top privacy extensions: uBlock Origin (blocks ads and trackers), Privacy Badger (adaptive tracker blocking), HTTPS Everywhere (enforces TLS). Advanced options: NoScript (JavaScript origin control), Decentraleyes (local CDN resources to prevent tracking).',
-    timestamp:         '2026-05-10T14:23:00.000Z',
+    query:             'Affordable ryokan stays in Kyoto',
+    response_summary:  'Budget-friendly ryokan options in Kyoto include Piece Hostel Kyoto (dorms and private rooms from ¥3,500), Guesthouse Soi (near Fushimi Inari, ¥4,500/night private), and Kyoto Utano Youth Hostel (scenic, ¥4,200/night). Book 2–3 months ahead for peak cherry blossom and fall foliage seasons.',
+    timestamp:         '2026-05-01T09:45:00.000Z',
   },
 ];
 
@@ -68,23 +68,23 @@ const interactions = [
 const vectorStore = [
   {
     user_id:  'user-42',
-    content:  'User researched GDPR vs CCPA. Located in California — CCPA applies directly. Interested in understanding legal bases for data processing across jurisdictions.',
-    storedAt: '2026-04-08T10:15:00.000Z',
+    content:  'User is interested in Southeast Asian street food and travel. Based in San Francisco. Prefers evening markets, local food over tourist restaurants.',
+    storedAt: '2026-03-12T14:20:00.000Z',
   },
   {
     user_id:  'user-42',
-    content:  'User researched browser fingerprinting techniques. Intermediate expertise. Concerned about persistent tracking that bypasses cookie deletion.',
-    storedAt: '2026-04-22T11:30:00.000Z',
+    content:  'User planning a multi-country Southeast Asia trip. Prefers dry season travel (Nov–Feb). Likely visiting Thailand and Vietnam on same trip.',
+    storedAt: '2026-03-28T11:00:00.000Z',
   },
   {
     user_id:  'user-42',
-    content:  'User interested in privacy browser comparison. Prefers balance of privacy and usability; not using Tor for daily browsing. Likely migrating from Chrome.',
-    storedAt: '2026-05-02T16:45:00.000Z',
+    content:  'User has been researching Japan trip logistics — specifically Tokyo transit. Familiar with IC cards and JR system basics. Likely planning Japan visit.',
+    storedAt: '2026-04-10T16:30:00.000Z',
   },
   {
     user_id:  'user-42',
-    content:  'User actively uses privacy browser extensions. Likely runs Firefox or Brave with uBlock Origin. Interested in tracking-protection mechanisms at the extension layer.',
-    storedAt: '2026-05-10T14:23:00.000Z',
+    content:  'User specifically researching Kyoto ryokan — budget-conscious, interested in traditional accommodation. Japan trip appears imminent (Kyoto is a key stop).',
+    storedAt: '2026-05-01T09:45:00.000Z',
   },
 ];
 
@@ -92,7 +92,7 @@ fs.writeFileSync(PROFILES_FILE, JSON.stringify(profiles, null, 2));
 fs.writeFileSync(VECTOR_FILE,   JSON.stringify(vectorStore, null, 2));
 fs.writeFileSync(LOG_FILE,      interactions.map((e) => JSON.stringify(e)).join('\n') + '\n');
 
-console.log('Demo data seeded for user-42:');
-console.log('  profiles.json          — profile with 4 past queries and interests');
-console.log('  interaction_log.jsonl  — 4 past interactions');
-console.log('  vector_store.json      — 4 past vendor-side entries');
+console.log('Demo data seeded for user-42 (travel enthusiast, SF-based):');
+console.log('  profiles.json          — profile with Asia travel history and preferences');
+console.log('  interaction_log.jsonl  — 4 past travel research interactions');
+console.log('  vector_store.json      — 4 past vendor-side personalization entries');

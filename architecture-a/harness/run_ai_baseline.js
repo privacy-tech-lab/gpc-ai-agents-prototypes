@@ -19,7 +19,7 @@ async function main() {
   console.log('Running AI baseline (GPC off, multi-agent)...\n');
 
   const result = await handleRequest({
-    query:         'Research Global Privacy Control and save a summary to my profile.',
+    query:         'Help me plan a 5-day trip to Japan — what should I see, eat, and know before I go?',
     user_id:       'user-42',
     baggageHeader: encodeBaggage({ gpc: '0' }),
     timing,

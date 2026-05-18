@@ -8,7 +8,7 @@ Experimental prototypes exploring how the **Global Privacy Control (GPC)** signa
 
 ### Scenario
 
-A user asks an AI assistant to *research a topic and save a summary to their profile*. This single request naturally exercises all four enforcement layers:
+A user with GPC enabled asks an AI assistant: *"Help me plan a 5-day trip to Japan — what should I see, eat, and know before I go?"* The assistant searches the web, synthesises an itinerary, and saves the results to the user's profile for future personalised recommendations. This ordinary request naturally exercises all four enforcement layers:
 
 | Layer | Mechanism | What it does |
 |---|---|---|
@@ -17,9 +17,9 @@ A user asks an AI assistant to *research a topic and save a summary to their pro
 | **3 — Trust boundary** | Signed RS256 JWT | The orchestrator obtains a token from a local IdP before any call crosses to the third-party vendor; the vendor verifies it independently and rejects writes when `gpc=true` |
 | **4 — Data layer** | `withGpc()` policy interceptor | Wraps every sensitive tool handler; returns a blocked response without executing if `gpc=1` appears in the incoming `_meta` |
 
-**Without GPC:** the search runs, the user's profile is updated, the interaction is logged, and the result is stored in the third-party vector store for future personalisation.
+**Without GPC:** the search runs and a full itinerary is returned. The user's travel preferences are updated in their profile, the interaction is logged, and the result is pushed to the third-party personalisation vendor so future recommendations can be tailored.
 
-**With GPC:** the search still runs and a response is returned, but nothing is stored anywhere and no personal data is accessed.
+**With GPC:** the same itinerary is returned. But nothing is stored: the profile lookup is blocked, the interaction log is not updated, and the vendor write is rejected — even though the user gets an equally good answer.
 
 ---
 
