@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 
 const OUTPUT_DIR = path.join(__dirname, '..', 'output');
+const USE_AI     = process.argv.includes('--ai');
 
 function loadJson(file) {
   const p = path.join(OUTPUT_DIR, file);
@@ -19,6 +20,7 @@ function loadJson(file) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
+// Scripted orchestrator output shape: result.search.search, result.data.*
 function collectToolStatuses(result) {
   const statuses = {};
   if (!result) return statuses;
@@ -28,10 +30,25 @@ function collectToolStatuses(result) {
   if (search?.search) statuses['search_web'] = search.search.status;
 
   const d = data ?? {};
-  if (d.profile_lookup)   statuses['user_profile_lookup'] = d.profile_lookup.status;
-  if (d.log_interaction)  statuses['log_interaction']     = d.log_interaction.status;
-  if (d.save_to_profile)  statuses['save_to_profile']     = d.save_to_profile.status;
-  if (d.third_party_store) statuses['third_party_store']  = d.third_party_store.status;
+  if (d.profile_lookup)    statuses['user_profile_lookup'] = d.profile_lookup.status;
+  if (d.log_interaction)   statuses['log_interaction']     = d.log_interaction.status;
+  if (d.save_to_profile)   statuses['save_to_profile']     = d.save_to_profile.status;
+  if (d.third_party_store) statuses['third_party_store']   = d.third_party_store.status;
+
+  return statuses;
+}
+
+// LLM orchestrator output shape: result.search_agent.toolCalls[], result.data_agent.toolCalls[]
+function collectAiToolStatuses(result) {
+  const statuses = {};
+  if (!result) return statuses;
+
+  for (const tc of (result.search_agent?.toolCalls ?? [])) {
+    statuses[tc.tool] = tc.result?.status ?? 'unknown';
+  }
+  for (const tc of (result.data_agent?.toolCalls ?? [])) {
+    statuses[tc.tool] = tc.result?.status ?? 'unknown';
+  }
 
   return statuses;
 }
@@ -48,13 +65,23 @@ function countEntries(file) {
 }
 
 function main() {
-  const baseline   = loadJson('baseline_result.json');
-  const gpc        = loadJson('gpc_result.json');
-  const signalDrop = loadJson('signal_drop_result.json');
+  let baseline, gpc, signalDrop, bStatuses, gStatuses, sdStatuses;
 
-  const bStatuses  = collectToolStatuses(baseline);
-  const gStatuses  = collectToolStatuses(gpc);
-  const sdStatuses = collectToolStatuses(signalDrop);
+  if (USE_AI) {
+    baseline   = loadJson('ai_baseline_result.json');
+    gpc        = loadJson('ai_gpc_result.json');
+    signalDrop = loadJson('ai_signal_drop_result.json');   // may not exist yet
+    bStatuses  = collectAiToolStatuses(baseline);
+    gStatuses  = collectAiToolStatuses(gpc);
+    sdStatuses = collectAiToolStatuses(signalDrop);
+  } else {
+    baseline   = loadJson('baseline_result.json');
+    gpc        = loadJson('gpc_result.json');
+    signalDrop = loadJson('signal_drop_result.json');
+    bStatuses  = collectToolStatuses(baseline);
+    gStatuses  = collectToolStatuses(gpc);
+    sdStatuses = collectToolStatuses(signalDrop);
+  }
 
   const allTools = [...new Set([
     ...Object.keys(bStatuses),
@@ -62,9 +89,11 @@ function main() {
     ...Object.keys(sdStatuses),
   ])];
 
+  const mode = USE_AI ? 'AI (multi-agent LLM)' : 'Scripted';
   console.log('\n╔══════════════════════════════════════════════════════════════╗');
-  console.log('║          GPC Propagation Report — Architecture A             ║');
+  console.log(`║     GPC Propagation Report — Architecture A [${mode.padEnd(19)}]║`);
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
+  if (USE_AI && baseline?.model) console.log('Model:', baseline.model, '\n');
 
   // ── Tool execution table ──
   const COL = 28;
