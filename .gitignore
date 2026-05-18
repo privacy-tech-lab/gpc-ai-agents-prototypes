@@ -218,3 +218,6 @@ yarn-error.log*
 
 # crawl results
 crawl_results/
+
+# Claude Code
+.claude/
