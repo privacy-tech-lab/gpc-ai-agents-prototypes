@@ -66,8 +66,19 @@ async function runAgentLoop({
     if (!msg.tool_calls?.length) {
       if (toolChoice === 'auto') {
         finalResponse = msg.content ?? '';
+        // Model gave empty response — ask once for a summary
+        if (!finalResponse && turn < maxTurns - 1) {
+          messages.push({ role: 'user', content: 'Please provide a brief summary of what you found and what was stored.' });
+          continue;
+        }
         break;
       }
+      // tool_choice="required" but model produced no tool calls — nudge it
+      const stillPending = requiredTools.filter((t) => !calledTools.has(t));
+      messages.push({
+        role:    'user',
+        content: `You still need to call: ${stillPending.join(', ')}. Please call the next required tool now.`,
+      });
       continue;
     }
 
@@ -89,6 +100,11 @@ async function runAgentLoop({
         content:      JSON.stringify(result),
       });
     }
+  }
+
+  const missed = requiredTools.filter((t) => !calledTools.has(t));
+  if (missed.length > 0) {
+    process.stderr.write(`[agent_loop] warning: required tools not called: ${missed.join(', ')}\n`);
   }
 
   return { finalResponse, toolCalls: toolCallLog };
