@@ -36,6 +36,7 @@ The prototype includes a **signal-drop experiment** in which one agent strips th
 
 - Node.js 18 or later (native `fetch` required). Install via Homebrew: `brew install node`
 - npm (bundled with Node.js)
+- [Ollama](https://ollama.com) for the AI agent runs
 
 ### Running locally
 
@@ -60,17 +61,43 @@ fs.writeFileSync('keys/private.pem', privateKey);
 fs.writeFileSync('keys/public.pem',  publicKey);
 "
 
-# 4. Run the full demo (baseline, GPC, signal-drop, then comparison report)
+# 4. Run the scripted demo (no model required)
+#    Baseline, GPC, signal-drop runs followed by a comparison report
 npm run demo
 ```
 
-Individual runs are also available:
+Individual scripted runs:
 
 ```bash
 npm run baseline      # GPC off  — all tools execute
 npm run gpc           # GPC on   — sensitive tools blocked
 npm run signal-drop   # GPC on, but one agent strips _meta
 npm run compare       # Print the comparison report from existing output files
+```
+
+#### AI agent runs (Ollama)
+
+The AI runs use a local LLM via Ollama. The model autonomously decides which tools to call; the same GPC enforcement layer applies.
+
+Recommended models (tool use support required):
+
+```bash
+ollama pull llama3.1   # 8 B — best balance of speed and reliability
+ollama pull qwen2.5    # 7 B — strong at following tool schemas
+```
+
+Start Ollama, then run:
+
+```bash
+npm run ai-baseline    # GPC off  — model calls all tools, data is written
+npm run ai-gpc         # GPC on   — model receives blocked responses, data is not written
+npm run ai-demo        # Both runs back to back
+```
+
+To use a different model:
+
+```bash
+OLLAMA_MODEL=qwen2.5 npm run ai-gpc
 ```
 
 Run the test suite:
