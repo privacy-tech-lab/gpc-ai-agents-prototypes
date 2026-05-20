@@ -4,7 +4,7 @@ Experimental prototypes exploring how the **Global Privacy Control (GPC)** signa
 
 ---
 
-## Architecture A
+## Architecture A — Signal Propagation Enforcement
 
 ### Scenario
 
@@ -38,38 +38,20 @@ Orchestrator (orchestrator.js)
                                                 ──► Third-party HTTP ──► store (JWT-gated)
 ```
 
-The scripted pipeline uses fixed tool call sequences. It is deterministic and is the basis for the integration test suite.
-
 #### LLM pipeline (multi-agent, used for the demo)
 
 ```
 LLM Orchestrator (orchestrator/llm_orchestrator.js)
-  │   runs its own LLM loop; dispatches via tool calls
   │
   ├─► LLM Search Agent (agents/llm_search_agent.js)
-  │     runs its own LLM loop
   │     tool: search_web  ──► MCP server
   │
   └─► LLM Data Agent (agents/llm_data_agent.js)
-        runs its own LLM loop
         tools: user_profile_lookup  ──► MCP server  (blocked by withGpc when GPC on)
                save_to_profile      ──► MCP server  (blocked)
                log_interaction      ──► MCP server  (blocked)
                store_to_third_party ──► Third-party HTTP (blocked by JWT when GPC on)
 ```
-
-Each agent runs an independent LLM loop via the shared `orchestrator/agent_loop.js` helper. The orchestrator never calls MCP tools directly — it delegates to agents and synthesises their responses. The GPC enforcement layers are identical in both modes; only the decision-making changes.
-
-**Shared helpers**
-
-| File | Role |
-|---|---|
-| `orchestrator/agent_loop.js` | Shared LLM turn loop used by all three LLM agents |
-| `orchestrator/baggage.js` | W3C Baggage encode/decode (Layer 1) |
-| `orchestrator/mcp_client.js` | In-process MCP client with `withGpc()` applied at each call |
-| `mcp-server/gpc_policy.js` | `withGpc()` interceptor and sensitive-tool registry (Layer 4) |
-| `mcp-server/tool_handlers.js` | Raw tool implementations (search, profile, log) |
-| `agents/third_party_storage.js` | Express server simulating the JWT-gated vendor (Layer 3) |
 
 **Tools exposed by the MCP server**
 
@@ -84,30 +66,24 @@ Each agent runs an independent LLM loop via the shared `orchestrator/agent_loop.
 
 ### Signal-drop experiment
 
-`harness/run_signal_drop.js` runs the scripted pipeline with `dropSignal=true`: one agent strips the `_meta` field before forwarding. This causes Layer 4 (MCP policy) to fail silently — the three sensitive MCP tools execute despite `gpc=1`. Layer 3 (JWT) still holds because the token was signed by the orchestrator *before* the drop. The comparison report surfaces this finding and identifies which tools ran.
-
-This provides empirical motivation for a spec-level requirement to propagate the `_meta` field.
+`harness/run_signal_drop.js` strips the `_meta` field before forwarding: Layer 4 (MCP policy) fails silently — the three sensitive MCP tools execute despite `gpc=1`. Layer 3 (JWT) still holds because the token was signed before the drop. This provides empirical motivation for a spec-level requirement to propagate the `_meta` field.
 
 ---
 
 ### Prerequisites
 
-- **Node.js 18+** — native `fetch` is used throughout; no polyfill needed. Install via `brew install node` or [nodejs.org](https://nodejs.org).
+- **Node.js 18+** — native `fetch` is used throughout. Install via `brew install node` or [nodejs.org](https://nodejs.org).
 - **npm** — bundled with Node.js
-- **[Ollama](https://ollama.com)** — only needed for the LLM demo runs; the scripted pipeline and test suite work without it
+- **[Ollama](https://ollama.com)** — only needed for the LLM demo runs
 
 ---
 
 ### Setup
 
 ```bash
-git clone <repo-url>
-cd gpc-ai-agents-prototypes/architecture-a
+cd architecture-a && npm install
 
-npm install
-
-# Required: generate the RSA keypair for JWT signing.
-# keys/private.pem is gitignored — the app won't start without it.
+# Generate the RSA keypair for JWT signing (keys/private.pem is gitignored)
 node -e "
 const { generateKeyPairSync } = require('crypto');
 const fs = require('fs');
@@ -121,101 +97,21 @@ fs.writeFileSync('keys/public.pem',  publicKey);
 "
 ```
 
----
-
 ### Running
 
-#### Scripted demo
-
-Deterministic — no model required. Runs baseline, GPC, and signal-drop experiments, then prints the comparison report.
-
 ```bash
-npm run demo
-```
+npm run demo          # baseline + GPC + signal-drop + comparison report
 
-Individual scripted runs:
-
-```bash
-npm run baseline      # GPC off  — all tools execute, data written
+npm run baseline      # GPC off  — all tools execute
 npm run gpc           # GPC on   — sensitive tools blocked
-npm run signal-drop   # GPC on, _meta stripped by data agent
+npm run signal-drop   # GPC on, _meta stripped mid-chain
 npm run compare       # Print comparison report from existing output files
-```
 
-#### LLM demo
-
-Requires Ollama with a capable model. The default is `qwen2.5:14b`; `llama3.1:70b` also works. Models below 14B are too unreliable for multi-step tool chains.
-
-```bash
-# 1. Install Ollama: https://ollama.com — then start it
-ollama serve   # or open the Ollama desktop app; skip if it's already running
-
-# 2. Pull the model (once)
-ollama pull qwen2.5:14b
-
-# 3. Run the full demo
-#    (seeds user-42 history, runs baseline + GPC, prints comparison report)
+# LLM demo (requires Ollama + qwen2.5:14b or llama3.1:70b)
 npm run ai-demo
 ```
 
-Individual LLM runs (run `npm run seed` first so user-42 has existing profile data):
-
-```bash
-npm run seed           # seed realistic user-42 travel history
-npm run ai-baseline    # GPC off  — LLM agents call all tools, data written
-npm run ai-gpc         # GPC on   — LLM agents receive blocked responses
-npm run ai-compare     # Print comparison report for AI output files
-```
-
-Override the model:
-
-```bash
-OLLAMA_MODEL=llama3.1:70b npm run ai-demo
-```
-
-#### Optional: real web search (Tavily)
-
-`search_web` uses five rich static results by default. To use the [Tavily](https://tavily.com) API instead (free tier: 1000 calls/month):
-
-```bash
-TAVILY_API_KEY=tvly-... npm run ai-demo
-```
-
----
-
-### Expected results
-
-#### Baseline run
-
-All operations complete; data is written to `output/`:
-
-| Tool | Result |
-|---|---|
-| `search_web` | `status: ok` — returns 5 Japan travel snippets (itinerary, JR Pass, food, timing, practicalities) |
-| `user_profile_lookup` | `status: ok` — returns existing user-42 profile |
-| `save_to_profile` | `status: ok` — updates `output/profiles.json` |
-| `log_interaction` | `status: ok` — appends to `output/interaction_log.jsonl` |
-| `store_to_third_party` | `status: ok` — writes to `output/vector_store.json` |
-
-#### GPC run
-
-Search executes; all personal-data operations are blocked before touching storage:
-
-| Tool | Result |
-|---|---|
-| `search_web` | `status: ok` — unaffected by GPC |
-| `user_profile_lookup` | `status: blocked, reason: gpc_opt_out` (Layer 4) |
-| `save_to_profile` | `status: blocked, reason: gpc_opt_out` (Layer 4) |
-| `log_interaction` | `status: blocked, reason: gpc_opt_out` (Layer 4) |
-| `store_to_third_party` | `status: blocked, layer: trust_boundary_jwt` (Layer 3) |
-
-The interaction log and vector store do not grow between GPC runs.
-
-#### Signal-drop experiment (scripted only)
-
-`gpc=1` is in the Baggage header, but the data agent strips `_meta`. Layer 4 fails: `user_profile_lookup`, `save_to_profile`, and `log_interaction` all execute. Layer 3 holds: `store_to_third_party` is still blocked by the JWT.
-
-#### Comparison report
+### Expected comparison report
 
 ```
 Tool                         │ Baseline     │ GPC          │ Signal-drop
@@ -227,23 +123,145 @@ save_to_profile              │ ✓ ok         │ ✗ BLOCKED    │ ✓ ok
 store_to_third_party         │ ✓ ok         │ ✗ BLOCKED    │ ✗ BLOCKED
 ```
 
+### Tests
+
+```bash
+npm test   # 60 tests across gpc_policy, baggage, identity_provider, orchestrator, agent_loop
+```
+
 ---
+
+---
+
+## Architecture B — Purpose-Based Enforcement
+
+### Scenario
+
+A patient consults a medical assistant that retrieves their health records and answers their query. The same session data could simultaneously feed an analytics log, a model-training dataset, and a pharmaceutical ad-targeting pipeline running in the background.
+
+**This is the key distinction from Architecture A:** the tools are not inherently GPC-sensitive. `get_medical_records` is *required* for the primary task. The opt-out is not about blocking the tool — it is about blocking the *purpose* for which the tool's output is used downstream.
+
+**Without GPC:** the query runs, records are retrieved, the interaction is logged for analytics, the query is added to a training dataset, and a derived interest profile is updated for ad targeting.
+
+**With GPC:** the query still runs and records are still retrieved for the immediate response, but every secondary-purpose operation is blocked. The patient gets a full answer; nothing travels beyond the primary task.
+
+---
+
+### The Purpose Registry
+
+`mcp-server/purpose_registry.js` is the single source of truth for the relationship between tools and purposes. Each entry declares which purposes the tool can serve and which are GPC-restricted:
+
+| Tool | Declared Purposes | GPC-Restricted Purposes |
+|---|---|---|
+| `get_medical_records` | `primary_task`, `personalization` | `personalization` |
+| `answer_question` | `primary_task` | *(none)* |
+| `log_interaction` | `analytics`, `model_training` | `analytics`, `model_training` |
+| `update_interest_profile` | `personalization` | `personalization` |
+| `add_to_training_set` | `model_training` | `model_training` |
+
+`get_medical_records` is never fully blocked — only its `personalization` purpose is restricted. This is the architectural distinction from Architecture A's binary block.
+
+---
+
+### The `withPurposeCheck()` interceptor
+
+Unlike `withGpc()` which checks whether a tool is GPC-sensitive, `withPurposeCheck()` reads two fields from the incoming tool call metadata: `gpc` and `purpose`. It looks up the tool in the purpose registry and checks whether the declared purpose is in `gpc_restricted_purposes`:
+
+```
+meta.gpc = 1, meta.purpose = "analytics"
+  → log_interaction.gpc_restricted_purposes.includes("analytics")  → BLOCKED
+
+meta.gpc = 1, meta.purpose = "primary_task"
+  → get_medical_records.gpc_restricted_purposes.includes("primary_task")  → ALLOWED
+
+meta.gpc = 1, meta.purpose = (absent)
+  → maximally restricted  → BLOCKED
+```
+
+The absence of a `purpose` field is treated as maximally restricted — this motivates purpose declaration as a required field in any agent protocol spec.
+
+---
+
+### Pipeline
+
+```
+Orchestrator
+  │
+  ├─► Primary (always runs, regardless of GPC)
+  │     get_medical_records  purpose: primary_task  ──► MCP server
+  │     answer_question       purpose: primary_task  ──► MCP server
+  │
+  └─► Secondary (parallel, purpose-gated)
+        log_interaction          purpose: analytics       ──► MCP server   [B2 Collection]
+        add_to_training_set      purpose: model_training  ──► MCP server   [B2 Processing]
+        update_interest_profile  purpose: personalization ──► MCP server   [B2 Inference]
+        ad_platform HTTP write   purpose: ad_targeting    ──► Express stub [B2 Storage]
+```
+
+---
+
+### B2 Operation Layers
+
+Each secondary pipeline maps to one of B2's four operation types:
+
+| Layer | Tool | What is blocked |
+|---|---|---|
+| **Collection** | `log_interaction` | Raw query never recorded in the analytics log |
+| **Processing** | `add_to_training_set` | Collected data cannot be repurposed for model training |
+| **Inference** | `update_interest_profile` | No behavioral profile derived from the session |
+| **Storage** | `ad_platform` (vector DB write) | Derived interest data never reaches the ad store |
+
+---
+
+### Partial opt-out
+
+The W3C Baggage header carries an optional `gpc_scope` field — a pipe-delimited list of purposes the user has opted out of:
+
+```
+baggage: gpc=1,gpc_scope=ad_targeting|model_training
+```
+
+The interceptor uses this list instead of the registry defaults. This produces the partial run's critical result: `log_interaction` (analytics) executes while `add_to_training_set` (model_training) is blocked — the same tool category, different declared purpose, different outcome.
+
+---
+
+### Setup
+
+```bash
+cd architecture-b && npm install
+```
+
+### Running
+
+```bash
+npm run demo          # baseline + gpc-full + gpc-partial + purpose matrix report
+
+npm run baseline      # gpc=0 — all pipelines execute
+npm run gpc-full      # gpc=1 — all secondary purposes blocked
+npm run gpc-partial   # gpc=1, scope=ad_targeting|model_training — partial block
+npm run compare       # Print purpose matrix from existing output files
+```
+
+### Purpose Matrix (the key paper output)
+
+```
+Tool                       │ Purpose          │ B2 Layer    │ Baseline  │ GPC Full  │ GPC Partial
+───────────────────────────────────────────────────────────────────────────────────────────────────
+get_medical_records        │ primary_task     │ Primary     │ ✓ ok      │ ✓ ok      │ ✓ ok
+answer_question            │ primary_task     │ Primary     │ ✓ ok      │ ✓ ok      │ ✓ ok
+log_interaction            │ analytics        │ Collection  │ ✓ ok      │ ✗ BLOCKED │ ✓ ok
+add_to_training_set        │ model_training   │ Processing  │ ✓ ok      │ ✗ BLOCKED │ ✗ BLOCKED
+update_interest_profile    │ personalization  │ Inference   │ ✓ ok      │ ✗ BLOCKED │ ✓ ok
+ad_platform                │ ad_targeting     │ Storage     │ ✓ ok      │ ✗ BLOCKED │ ✗ BLOCKED
+```
+
+The GPC Partial column makes the argument: `log_interaction` executes while `add_to_training_set` is blocked. Same secondary pipeline category, different declared purpose, different outcome. Opt-out is purpose-scoped, not tool-scoped.
 
 ### Tests
 
 ```bash
-npm test
+npm test   # 32 tests across purpose_registry, interceptor, orchestrator
 ```
-
-60 tests across five files:
-
-| File | What it tests |
-|---|---|
-| `tests/gpc_policy.test.js` | `withGpc()` interceptor — blocking, passthrough, all GPC signal formats |
-| `tests/baggage.test.js` | W3C Baggage encode/decode helpers |
-| `tests/identity_provider.test.js` | JWT sign, verify, tamper detection |
-| `tests/orchestrator.test.js` | Full scripted pipeline integration — all four layers, signal-drop experiment, timing |
-| `tests/agent_loop.test.js` | Shared LLM loop — tool_choice switching, nudge behaviour, argument parsing, blocked response passthrough, API error handling |
 
 ---
 
