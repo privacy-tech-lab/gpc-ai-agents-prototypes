@@ -1,0 +1,139 @@
+{
+  "gpc_active": true,
+  "gpc_scope": [
+    "ad_targeting",
+    "model_training"
+  ],
+  "baggage_header": "gpc=1,gpc_scope=ad_targeting%7Cmodel_training",
+  "primary": {
+    "medical_records": {
+      "status": "ok",
+      "tool": "get_medical_records",
+      "purpose": "primary_task",
+      "result": {
+        "patient_id": "patient-001",
+        "found": true,
+        "record": {
+          "patient_id": "patient-001",
+          "name": "Alex Johnson",
+          "dob": "1985-03-12",
+          "conditions": [
+            "hypertension",
+            "type 2 diabetes"
+          ],
+          "medications": [
+            "metformin 500mg",
+            "lisinopril 10mg"
+          ],
+          "last_visit": "2025-11-15",
+          "allergies": [
+            "penicillin"
+          ],
+          "lab_results": {
+            "hba1c": "7.2%",
+            "blood_pressure": "138/88 mmHg",
+            "cholesterol": "195 mg/dL"
+          }
+        }
+      },
+      "durationMs": 0
+    },
+    "answer": {
+      "status": "ok",
+      "tool": "answer_question",
+      "purpose": "primary_task",
+      "result": {
+        "question": "What does my blood pressure reading mean, and should I adjust my medication?",
+        "answer": "Your most recent reading of 138/88 mmHg is Stage 1 hypertension. Your lisinopril prescription is appropriate. Continue monitoring and follow lifestyle recommendations from your care team.",
+        "disclaimer": "Informational only. Always consult a licensed healthcare provider."
+      },
+      "durationMs": 0
+    }
+  },
+  "secondary": {
+    "log_interaction": {
+      "status": "ok",
+      "tool": "log_interaction",
+      "purpose": "analytics",
+      "result": {
+        "logged": true,
+        "entry": {
+          "patient_id": "patient-001",
+          "query": "What does my blood pressure reading mean, and should I adjust my medication?",
+          "response_summary": "Your most recent reading of 138/88 mmHg is Stage 1 hypertension. Your lisinopril prescription is appropriate. Continue monitoring and follow lifestyle recommendations from your care team.",
+          "timestamp": "2026-05-20T17:03:01.785Z"
+        }
+      },
+      "durationMs": 24
+    },
+    "add_to_training_set": {
+      "status": "blocked",
+      "reason": "purpose_restricted",
+      "tool": "add_to_training_set",
+      "purpose": "model_training",
+      "timestamp": "2026-05-20T17:03:01.786Z"
+    },
+    "update_interest_profile": {
+      "status": "ok",
+      "tool": "update_interest_profile",
+      "purpose": "personalization",
+      "result": {
+        "patient_id": "patient-001",
+        "updated": true,
+        "profile": {
+          "interests": [
+            "blood pressure",
+            "medication"
+          ],
+          "updatedAt": "2026-05-20T17:03:01.786Z"
+        }
+      },
+      "durationMs": 23
+    },
+    "ad_platform": {
+      "status": "blocked",
+      "reason": "purpose_restricted",
+      "purpose": "ad_targeting",
+      "layer": "ad_platform_storage",
+      "durationMs": 45
+    }
+  },
+  "timing": [
+    {
+      "tool": "get_medical_records",
+      "purpose": "primary_task",
+      "durationMs": 0,
+      "status": "ok"
+    },
+    {
+      "tool": "answer_question",
+      "purpose": "primary_task",
+      "durationMs": 0,
+      "status": "ok"
+    },
+    {
+      "tool": "add_to_training_set",
+      "purpose": "model_training",
+      "durationMs": 23,
+      "status": "blocked"
+    },
+    {
+      "tool": "log_interaction",
+      "purpose": "analytics",
+      "durationMs": 30,
+      "status": "ok"
+    },
+    {
+      "tool": "update_interest_profile",
+      "purpose": "personalization",
+      "durationMs": 29,
+      "status": "ok"
+    },
+    {
+      "tool": "ad_platform",
+      "purpose": "ad_targeting",
+      "durationMs": 45,
+      "status": "blocked"
+    }
+  ]
+}
