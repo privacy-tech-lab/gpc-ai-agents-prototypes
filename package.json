@@ -1,0 +1,16 @@
+{
+  "name": "gpc-ai-agents-prototypes",
+  "version": "1.0.0",
+  "description": "GPC enforcement in AI agent pipelines — Architecture A (tool-level) and Architecture B (purpose-level)",
+  "scripts": {
+    "compare":        "node compare_architectures.js",
+    "compare-run":    "node compare_architectures.js --run",
+    "demo-a":         "npm run demo --prefix architecture-a",
+    "demo-b":         "npm run demo --prefix architecture-b",
+    "signal-drop-a":  "npm run signal-drop --prefix architecture-a",
+    "signal-drop-b":  "npm run signal-drop --prefix architecture-b",
+    "test-a":         "npm test --prefix architecture-a",
+    "test-b":         "npm test --prefix architecture-b"
+  },
+  "license": "ISC"
+}

@@ -35,6 +35,8 @@ Architecture B demonstrates **B2 (operation-level opt-out)** directly. B2 distin
 
 **How it is demoed:** The purpose matrix from `compare_results.js` shows that `log_interaction` (Collection) executes in the partial-GPC run while `add_to_training_set` (Processing) is blocked — same tool category (secondary pipeline), different declared purpose, different outcome. This is the concrete evidence that opt-out is purpose-scoped, not tool-scoped.
 
+**What it does not cover:** Each B2 operation type is blocked as a unit. Architecture B does not implement sub-operation granularity within a layer — for example, blocking identified collection while permitting anonymised collection, or permitting short-term processing while blocking long-term storage. The block is per-purpose, not per-sub-operation.
+
 ### Category C: Cross-Context Data Flows
 
 Architecture B demonstrates **Category C (cross-context sale and sharing)** through two dedicated tools: `sell_to_data_broker` (commercial transfer to a pharma data broker) and `share_with_research_partner` (non-commercial transfer to an academic partner). Both carry C-category purposes (`cross_context_sale`, `cross_context_sharing`) in the registry and are blocked under any GPC scope that includes those purposes.
@@ -45,11 +47,15 @@ Architecture B also surfaces a propagation finding distinct from Architecture A'
 
 This produces a two-failure-mode argument: a GPC-compliant system with no required `purpose` field must either block everything (breaking the primary task) or allow everything (ignoring the opt-out). The only sound resolution is to make `purpose` declaration a required field in MCP or any successor agent protocol.
 
+**What it does not cover:** Cross-context enforcement here is at the tool-call boundary. If records are already resident in a downstream cache, purpose enforcement cannot retroactively constrain their use. A complete C-category implementation would require data labelling and downstream policy propagation beyond the scope of this prototype.
+
 ### Category D: Memory and Temporal Inference
 
 Architecture B demonstrates **Category D (sensitive data inference)** through `infer_sensitive_attributes`, which derives health risk scores (medication adherence risk, insurance risk classification, mental health flags) from accumulated patient records. This is distinct from B2 inference (`update_interest_profile`) in that it synthesises sensitive attributes that were never directly provided — a form of temporal inference that GPC explicitly covers.
 
 **How it is demoed:** `infer_sensitive_attributes` carries purpose `sensitive_data_inference` and is blocked under full GPC and under any scope that includes `sensitive_data_inference`. In Scenario C of the C/D experiment, it is blocked while B2 personalization (`update_interest_profile`) is allowed, since the two inference purposes are independently registered.
+
+**What it does not cover:** The sensitive inference block is binary — inference either runs or it does not. Architecture B does not implement D2's granular temporal alternatives: duration-based rules ("retain derived attributes for 24 hours only"), scope-based rules ("within-session inference only"), or decay policies. A full D2 implementation would track when attributes were inferred and enforce expiry at the storage layer.
 
 ---
 
@@ -138,6 +144,46 @@ must therefore be a required field in the protocol.
 Output: output/missing_purpose_result.json
 ```
 
+### Signal-drop experiment — Phase 4
+
+```
+GPC=1 in Baggage header. Three scenarios showing both failure modes
+when a rogue intermediate agent drops one of the two required fields:
+
+  Scenario A — Correct propagation (meta.gpc + meta.purpose both forwarded):
+                get_medical_records  (primary_task)   [ok]
+                answer_question      (primary_task)   [ok]
+                log_interaction      (analytics)      [BLOCKED]
+                add_to_training_set  (model_training) [BLOCKED]
+                update_interest_profile (personalization) [BLOCKED]
+                ad_platform          (ad_targeting)   [BLOCKED]
+
+  Scenario B — meta.gpc stripped (meta.purpose still forwarded):
+                get_medical_records  (primary_task)   [ok]    ← expected
+                answer_question      (primary_task)   [ok]    ← expected
+                log_interaction      (analytics)      [ok]    ← BYPASS — should be blocked
+                add_to_training_set  (model_training) [ok]    ← BYPASS
+                update_interest_profile (personalization) [ok]← BYPASS
+                ad_platform          (ad_targeting)   [ok]    ← BYPASS
+
+  Scenario C — meta.purpose stripped (meta.gpc still forwarded):
+                get_medical_records  (primary_task)   [BLOCKED — missing_purpose_field]
+                answer_question      (primary_task)   [BLOCKED — missing_purpose_field]
+                log_interaction      (analytics)      [BLOCKED — missing_purpose_field]
+                ... all six tools blocked ...
+
+Architecture A comparison:
+  Arch A: strip _meta entirely → silent bypass (Layer 4 fails, JWT/Layer 3 holds)
+  Arch B: strip meta.gpc       → silent bypass (same failure mode, no backstop)
+  Arch B: strip meta.purpose   → over-restriction (detectable, service breaks)
+
+Key finding: Architecture B requires BOTH meta.gpc AND meta.purpose to propagate
+correctly. One failure mode is silent (Scenario B); the other is detectable but
+destructive (Scenario C). Both motivate spec-level enforcement.
+
+Output: output/signal_drop_result.json
+```
+
 ---
 
 ## Purpose matrices
@@ -175,6 +221,8 @@ The C/D harness runs all nine tools under three scenarios. Scenario C uses a CD-
 
 **Scenario C is the key finding for C/D:** all four B2 secondary pipelines execute while both C tools and the D tool are blocked — a level of granularity that is structurally impossible with tool-level blocking.
 
+---
+
 ## B2 operation layers
 
 Each B2 secondary pipeline maps to one of B2's four operation types:
@@ -186,6 +234,8 @@ Each B2 secondary pipeline maps to one of B2's four operation types:
 | Inference | `update_interest_profile` | No behavioral profile derived from the session |
 | Storage | `ad_platform` (vector DB write) | Derived interest data never reaches the ad store |
 
+---
+
 ## C/D category purposes
 
 | Category | Purpose | Tool | What is blocked |
@@ -193,6 +243,8 @@ Each B2 secondary pipeline maps to one of B2's four operation types:
 | C | `cross_context_sale` | `sell_to_data_broker` | Patient record snapshot never exported to pharma data broker |
 | C | `cross_context_sharing` | `share_with_research_partner` | Anonymized data never sent to research partner |
 | D | `sensitive_data_inference` | `infer_sensitive_attributes` | Risk scores (adherence, insurance, mental health) never derived |
+
+---
 
 ## Partial opt-out via `gpc_scope`
 
@@ -238,7 +290,9 @@ architecture-b/
 |   |-- run_llm_gpc.js                     LLM run (Phase 1): baseline + full GPC back to back
 |   |-- run_gpc_missing_purpose_harness.js Missing-purpose experiment (Phase 2): 3-scenario matrix
 |   |-- run_gpc_cd.js                      C/D experiment (Phase 3): 9-tool matrix, 3 scenarios
-|   `-- compare_results.js                 Prints B2 purpose matrix + layer analysis
+|   |-- run_signal_drop.js                 Signal-drop experiment (Phase 4): 3 scenarios (correct,
+|   |                                        drop gpc, drop purpose); shows both failure modes
+|   `-- compare_results.js                 Prints B2 purpose matrix + signal-drop column + findings
 |
 |-- tests/
 |   |-- purpose_registry.test.js  Unit tests: registry structure, withPurposeCheck() logic,
@@ -255,6 +309,7 @@ architecture-b/
     |-- llm_gpc_result.json
     |-- missing_purpose_result.json
     |-- cd_categories_result.json
+    |-- signal_drop_result.json
     |-- interaction_log.jsonl
     |-- interest_profiles.json
     |-- training_set.jsonl
@@ -274,6 +329,14 @@ npm install
 ```
 
 No keypair required — Architecture B does not use JWT signing. All enforcement is through `withPurposeCheck()` and the ad platform's HTTP boundary check.
+
+### Environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `AD_PLATFORM_PORT` | `4002` | Port for the mock pharmaceutical ad platform |
+| `OLLAMA_BASE_URL` | `http://localhost:11434/v1` | Ollama API base URL (LLM harnesses only) |
+| `OLLAMA_MODEL` | `qwen2.5:14b` | Model name passed to Ollama (LLM harnesses only) |
 
 ---
 
@@ -295,7 +358,7 @@ Three test files cover the full scripted pipeline.
 
 ### Scripted demo (deterministic, no model required)
 
-Runs baseline → full GPC → partial GPC → comparison report in one command:
+Runs baseline → full GPC → partial GPC → signal-drop → comparison report in one command:
 
 ```bash
 npm run demo
@@ -307,7 +370,8 @@ Individual runs:
 npm run baseline        # gpc=0 — all tools execute, data written to output/
 npm run gpc-full        # gpc=1 — all secondary purposes blocked
 npm run gpc-partial     # gpc=1, scope=ad_targeting|model_training — partial block
-npm run compare         # Print purpose matrix from existing output files
+npm run signal-drop     # gpc=1 — 3 scenarios: correct, drop gpc, drop purpose
+npm run compare         # Print purpose matrix + signal-drop column from output files
 ```
 
 Expected comparison table from `npm run compare`:
@@ -322,7 +386,46 @@ update_interest_profile    │ personalization     │ Inference      │ ✓ ok
 ad_platform                │ ad_targeting        │ Storage        │ ✓ ok         │ ✗ BLOCKED    │ ✗ BLOCKED
 ```
 
-### Missing-purpose experiment — Phase 2
+### LLM demo — Phase 1 (requires Ollama)
+
+```bash
+# 1. Start Ollama (skip if desktop app is already running)
+ollama serve
+
+# 2. Pull the model once
+ollama pull qwen2.5:14b
+
+# 3. Run baseline + full GPC back to back, print side-by-side report
+npm run llm-gpc
+```
+
+Individual LLM runs (no seeding required — patient records are built in):
+
+```bash
+npm run llm-gpc    # baseline (GPC off) + full GPC (GPC on), both in one run
+```
+
+Override the model:
+
+```bash
+OLLAMA_MODEL=llama3.1:70b npm run llm-gpc
+```
+
+Override the Ollama server:
+
+```bash
+OLLAMA_BASE_URL=http://remote-host:11434/v1 npm run llm-gpc
+```
+
+Override the ad platform port (default 4002):
+
+```bash
+AD_PLATFORM_PORT=5002 npm run llm-gpc
+```
+
+### Experiment harnesses (no model required)
+
+#### Missing-purpose experiment — Phase 2
 
 ```bash
 npm run missing-purpose
@@ -330,7 +433,7 @@ npm run missing-purpose
 
 Runs all six tools under three scenarios and prints the comparison table with findings. All six calls in Scenario C (GPC on, no purpose) return `status: blocked, reason: missing_purpose_field`, including the primary-task tools.
 
-### C/D category experiment — Phase 3
+#### C/D category experiment — Phase 3
 
 ```bash
 npm run cd-categories
@@ -343,42 +446,44 @@ Runs all nine tools (B2 + C + D) under three scenarios:
 
 The key finding printed by Scenario C: `withPurposeCheck()` required zero code changes to enforce C/D categories — only registry entries were added.
 
-### LLM demo — Phase 1 (requires Ollama)
+#### Signal-drop experiment — Phase 4
 
 ```bash
-# 1. Start Ollama (skip if desktop app is already running)
-ollama serve
-
-# 2. Pull the model once
-ollama pull qwen2.5:14b
-
-# 3. Run baseline + full GPC, print side-by-side report
-npm run llm-gpc
+npm run signal-drop
 ```
 
-Override the model:
+Runs three scenarios, all with `gpc=1` in the Baggage header:
+- **Scenario A** (correct): primary task executes, all secondary blocked
+- **Scenario B** (drop gpc): all tools execute — silent bypass of the user's opt-out
+- **Scenario C** (drop purpose): all tools blocked including primary — service breaks
 
-```bash
-OLLAMA_MODEL=llama3.1:70b npm run llm-gpc
-```
+The printed findings section explains both failure modes and contrasts Architecture B's two-field requirement with Architecture A's one-field requirement (`_meta` only).
 
 ---
 
 ## What the output files show
 
-After running the scripted demo, `output/` contains:
+### Storage files (written by tool handlers)
 
-| File | Baseline | GPC Full | GPC Partial |
-|---|---|---|---|
-| `interaction_log.jsonl` | entry appended | unchanged (Collection blocked) | entry appended (analytics allowed) |
-| `training_set.jsonl` | entry appended | unchanged (Processing blocked) | unchanged (model_training in scope) |
-| `interest_profiles.json` | profile updated | unchanged (Inference blocked) | profile updated (personalization allowed) |
-| `ad_vector_store.json` | entry added | unchanged (Storage blocked) | unchanged (ad_targeting in scope) |
-| `baseline_result.json` | all `status: ok` | n/a | n/a |
-| `gpc_full_result.json` | n/a | secondary all `status: blocked` | n/a |
-| `gpc_partial_result.json` | n/a | n/a | mixed: analytics/personalization `ok`, training/ad `blocked` |
-| `missing_purpose_result.json` | Scenario A: all `ok` | Scenario B: B2 `blocked` | Scenario C: all six tools `blocked` |
-| `cd_categories_result.json` | Scenario A: all `ok` | Scenario B: all secondary `blocked` | Scenario C: B2 `ok`, C/D `blocked` |
-| `data_broker_export.jsonl` | entry appended | unchanged (cross_context_sale blocked) | unchanged (in CD scope) |
-| `research_partner_export.jsonl` | entry appended | unchanged (cross_context_sharing blocked) | unchanged (in CD scope) |
-| `inferred_attributes.json` | attributes written | unchanged (sensitive_data_inference blocked) | unchanged (in CD scope) |
+| File | Written by | GPC behaviour |
+|---|---|---|
+| `interaction_log.jsonl` | `log_interaction` | no entry in GPC full; entry present in GPC partial (analytics not scoped) |
+| `training_set.jsonl` | `add_to_training_set` | no entry in GPC full or partial (model_training always in scope) |
+| `interest_profiles.json` | `update_interest_profile` | no entry in GPC full; entry present in GPC partial (personalization not scoped) |
+| `ad_vector_store.json` | ad platform HTTP | no entry in GPC full or partial (ad_targeting always in scope) |
+| `data_broker_export.jsonl` | `sell_to_data_broker` | no entry whenever cross_context_sale is in scope |
+| `research_partner_export.jsonl` | `share_with_research_partner` | no entry whenever cross_context_sharing is in scope |
+| `inferred_attributes.json` | `infer_sensitive_attributes` | no entry whenever sensitive_data_inference is in scope |
+
+### Result files (written by harness scripts)
+
+| File | Written by | What to look for |
+|---|---|---|
+| `baseline_result.json` | `run_baseline.js` | all tools `status: ok` |
+| `gpc_full_result.json` | `run_gpc_full.js` | primary `ok`, all secondary `blocked` |
+| `gpc_partial_result.json` | `run_gpc_partial.js` | analytics/personalization `ok`, model_training/ad_targeting `blocked` |
+| `llm_baseline_result.json` | `run_llm_gpc.js` | LLM primary pipeline, all secondary `ok` |
+| `llm_gpc_result.json` | `run_llm_gpc.js` | LLM primary `ok`, secondary `blocked`; same outcome as scripted |
+| `missing_purpose_result.json` | `run_gpc_missing_purpose_harness.js` | Scenario C: every tool `blocked`, reason `missing_purpose_field` |
+| `cd_categories_result.json` | `run_gpc_cd.js` | Scenario C: B2 tools `ok`, C/D tools `blocked` |
+| `signal_drop_result.json` | `run_signal_drop.js` | Scenario B: secondary tools `ok` (silent bypass); Scenario C: all `blocked` |

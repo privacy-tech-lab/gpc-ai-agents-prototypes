@@ -59,10 +59,18 @@ function fmt(s) {
   return (s + '          ').slice(0, 10);
 }
 
+function collectSignalDropRow(sdResult, tool) {
+  // signal_drop_result.json has { scenarioA, scenarioB, scenarioC: { rows[] } }
+  if (!sdResult) return { correct: '—', dropGpc: '—', dropPurpose: '—' };
+  const find = (scenario) => sdResult[scenario]?.rows?.find((r) => r.tool === tool)?.status ?? '—';
+  return { correct: find('scenarioA'), dropGpc: find('scenarioB'), dropPurpose: find('scenarioC') };
+}
+
 function main() {
-  const baseline = loadJson('baseline_result.json');
-  const gpcFull  = loadJson('gpc_full_result.json');
-  const gpcPart  = loadJson('gpc_partial_result.json');
+  const baseline   = loadJson('baseline_result.json');
+  const gpcFull    = loadJson('gpc_full_result.json');
+  const gpcPart    = loadJson('gpc_partial_result.json');
+  const signalDrop = loadJson('signal_drop_result.json');
 
   const bRows  = collectMatrix(baseline);
   const gfRows = collectMatrix(gpcFull);
@@ -73,9 +81,9 @@ function main() {
   const gfMap = Object.fromEntries(gfRows.map((r) => [key(r), r.status]));
   const gpMap = Object.fromEntries(gpRows.map((r) => [key(r), r.status]));
 
-  console.log('\n╔══════════════════════════════════════════════════════════════════════════════╗');
-  console.log('║          GPC Purpose Matrix Report — Architecture B                          ║');
-  console.log('╚══════════════════════════════════════════════════════════════════════════════╝\n');
+  console.log('\n╔══════════════════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║          GPC Purpose Matrix Report — Architecture B                                      ║');
+  console.log('╚══════════════════════════════════════════════════════════════════════════════════════════╝\n');
 
   const TOOL_COL    = 26;
   const PURPOSE_COL = 18;
@@ -86,17 +94,18 @@ function main() {
     'B2 Layer'.padEnd(14),
     'Baseline'.padEnd(12),
     'GPC Full'.padEnd(12),
-    'GPC Partial'.padEnd(12),
+    'GPC Partial'.padEnd(14),
+    ...(signalDrop ? ['Drop gpc'.padEnd(12), 'Drop purp.'.padEnd(12)] : []),
   ].join(' │ ');
   const sep = '─'.repeat(header.length);
 
   const B2_LAYER = {
-    'get_medical_records::primary_task':     'Primary',
-    'answer_question::primary_task':         'Primary',
-    'log_interaction::analytics':            'Collection',
-    'add_to_training_set::model_training':   'Processing',
+    'get_medical_records::primary_task':        'Primary',
+    'answer_question::primary_task':            'Primary',
+    'log_interaction::analytics':               'Collection',
+    'add_to_training_set::model_training':      'Processing',
     'update_interest_profile::personalization': 'Inference',
-    'ad_platform::ad_targeting':             'Storage',
+    'ad_platform::ad_targeting':               'Storage',
   };
 
   console.log(header);
@@ -107,13 +116,15 @@ function main() {
     const layer = B2_LAYER[k] ?? '—';
     const gf    = gfMap[k]  ?? '—';
     const gp    = gpMap[k]  ?? '—';
+    const sd    = collectSignalDropRow(signalDrop, row.tool);
     console.log([
       row.tool.padEnd(TOOL_COL),
       row.purpose.padEnd(PURPOSE_COL),
       layer.padEnd(14),
       fmt(row.status).padEnd(12),
       fmt(gf).padEnd(12),
-      fmt(gp).padEnd(12),
+      fmt(gp).padEnd(14),
+      ...(signalDrop ? [fmt(sd.dropGpc).padEnd(12), fmt(sd.dropPurpose).padEnd(12)] : []),
     ].join(' │ '));
   }
 
@@ -156,9 +167,32 @@ function main() {
       console.log('    This motivates purpose declaration as a required protocol field.\n');
     });
 
+  // ── Signal-drop finding ────────────────────────────────────────────────────
+  if (signalDrop) {
+    const sdRows = signalDrop.scenarioB?.rows ?? [];
+    const secondaryRan = sdRows
+      .filter((r) => r.purpose !== 'primary_task')
+      .filter((r) => r.status === 'ok')
+      .map((r) => r.tool);
+    const sdCRows = signalDrop.scenarioC?.rows ?? [];
+    const primaryBlocked = sdCRows.find((r) => r.tool === 'get_medical_records')?.status === 'blocked';
+
+    console.log('\n── Signal-drop experiment ──');
+    if (secondaryRan.length > 0) {
+      console.log('  ⚠  Scenario B (drop gpc): SILENT BYPASS');
+      console.log(`     Secondary tools that ran despite gpc=1: ${secondaryRan.join(', ')}`);
+    }
+    if (primaryBlocked) {
+      console.log('  ⚠  Scenario C (drop purpose): OVER-RESTRICTION');
+      console.log('     Primary task blocked — missing_purpose_field treated as maximal restriction.');
+    }
+    console.log('  → Architecture B requires both meta.gpc AND meta.purpose to propagate.');
+    console.log('    Run `npm run signal-drop` for the full 3-scenario comparison.');
+  }
+
   // ── Per-tool timing (baseline) ─────────────────────────────────────────────
   if (baseline?.timing?.length) {
-    console.log('── Per-tool timing (baseline) ──');
+    console.log('\n── Per-tool timing (baseline) ──');
     const COL = 28;
     for (const t of baseline.timing) {
       const label = `${t.tool}(${t.purpose ?? '?'})`;
