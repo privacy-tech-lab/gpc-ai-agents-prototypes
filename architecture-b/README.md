@@ -35,13 +35,21 @@ Architecture B demonstrates **B2 (operation-level opt-out)** directly. B2 distin
 
 **How it is demoed:** The purpose matrix from `compare_results.js` shows that `log_interaction` (Collection) executes in the partial-GPC run while `add_to_training_set` (Processing) is blocked — same tool category (secondary pipeline), different declared purpose, different outcome. This is the concrete evidence that opt-out is purpose-scoped, not tool-scoped.
 
-**What it does not cover:** Phases 3+ (not yet implemented) will add C and D category purposes (`cross_context_sale`, `sensitive_data_inference`) to the registry.
+### Category C: Cross-Context Data Flows
 
-### Category C: Propagation and Protocol
+Architecture B demonstrates **Category C (cross-context sale and sharing)** through two dedicated tools: `sell_to_data_broker` (commercial transfer to a pharma data broker) and `share_with_research_partner` (non-commercial transfer to an academic partner). Both carry C-category purposes (`cross_context_sale`, `cross_context_sharing`) in the registry and are blocked under any GPC scope that includes those purposes.
 
-Architecture B surfaces a propagation finding distinct from Architecture A's signal-drop experiment. When `meta.purpose` is absent from a tool call, `withPurposeCheck()` treats it as maximally restricted. The **missing-purpose experiment** (Phase 2) runs every tool in the matrix with `gpc=1` but no `purpose` field, and shows that all calls — including the primary-task call to `get_medical_records` — are blocked with `reason: missing_purpose_field`.
+**How it is demoed:** The C/D experiment (`npm run cd-categories`, Scenario C) runs a CD-only partial scope (`gpc_scope=cross_context_sale|cross_context_sharing|sensitive_data_inference`). All four B2 secondary pipelines execute while both C tools are blocked. A patient can opt out of having their data sold or shared externally without disrupting operational analytics.
+
+Architecture B also surfaces a propagation finding distinct from Architecture A's signal-drop experiment. When `meta.purpose` is absent from a tool call, `withPurposeCheck()` treats it as maximally restricted. The **missing-purpose experiment** (Phase 2, `npm run missing-purpose`) runs every tool in the matrix with `gpc=1` but no `purpose` field, and shows that all calls — including the primary-task call to `get_medical_records` — are blocked with `reason: missing_purpose_field`.
 
 This produces a two-failure-mode argument: a GPC-compliant system with no required `purpose` field must either block everything (breaking the primary task) or allow everything (ignoring the opt-out). The only sound resolution is to make `purpose` declaration a required field in MCP or any successor agent protocol.
+
+### Category D: Memory and Temporal Inference
+
+Architecture B demonstrates **Category D (sensitive data inference)** through `infer_sensitive_attributes`, which derives health risk scores (medication adherence risk, insurance risk classification, mental health flags) from accumulated patient records. This is distinct from B2 inference (`update_interest_profile`) in that it synthesises sensitive attributes that were never directly provided — a form of temporal inference that GPC explicitly covers.
+
+**How it is demoed:** `infer_sensitive_attributes` carries purpose `sensitive_data_inference` and is blocked under full GPC and under any scope that includes `sensitive_data_inference`. In Scenario C of the C/D experiment, it is blocked while B2 personalization (`update_interest_profile`) is allowed, since the two inference purposes are independently registered.
 
 ---
 
@@ -132,9 +140,11 @@ Output: output/missing_purpose_result.json
 
 ---
 
-## The purpose matrix
+## Purpose matrices
 
-The `compare_results.js` report produces a table of `tool × purpose × result` across all three scripted run modes:
+### B2 purpose matrix (`npm run compare`)
+
+The `compare_results.js` report produces a table of `tool × purpose × result` across the three scripted B2 run modes:
 
 | Tool | Purpose | B2 Layer | Baseline | GPC Full | GPC Partial |
 |---|---|---|---|---|---|
@@ -147,9 +157,27 @@ The `compare_results.js` report produces a table of `tool × purpose × result` 
 
 **The critical column is GPC Partial:** `log_interaction` executes while `add_to_training_set` is blocked. Same tool category, different declared purpose, different outcome. This is the empirical case for purpose-scoped opt-out.
 
+### C/D purpose matrix (`npm run cd-categories`)
+
+The C/D harness runs all nine tools under three scenarios. Scenario C uses a CD-only partial scope:
+
+| Tool | Purpose | Category | A: GPC off | B: Full GPC | C: CD-only scope |
+|---|---|---|---|---|---|
+| `get_medical_records` | `primary_task` | Primary | ✓ ok | ✓ ok | ✓ ok |
+| `answer_question` | `primary_task` | Primary | ✓ ok | ✓ ok | ✓ ok |
+| `log_interaction` | `analytics` | B2 Collection | ✓ ok | ✗ BLOCKED | ✓ ok |
+| `add_to_training_set` | `model_training` | B2 Processing | ✓ ok | ✗ BLOCKED | ✓ ok |
+| `update_interest_profile` | `personalization` | B2 Inference | ✓ ok | ✗ BLOCKED | ✓ ok |
+| `ad_platform` | `ad_targeting` | B2 Storage | ✓ ok | ✗ BLOCKED | ✓ ok |
+| `sell_to_data_broker` | `cross_context_sale` | C Sale | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
+| `share_with_research_partner` | `cross_context_sharing` | C Sharing | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
+| `infer_sensitive_attributes` | `sensitive_data_inference` | D Inference | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
+
+**Scenario C is the key finding for C/D:** all four B2 secondary pipelines execute while both C tools and the D tool are blocked — a level of granularity that is structurally impossible with tool-level blocking.
+
 ## B2 operation layers
 
-Each secondary pipeline maps to one of B2's four operation types:
+Each B2 secondary pipeline maps to one of B2's four operation types:
 
 | B2 Layer | Tool | What is blocked |
 |---|---|---|
@@ -157,6 +185,14 @@ Each secondary pipeline maps to one of B2's four operation types:
 | Processing | `add_to_training_set` | Collected data cannot be repurposed for model training |
 | Inference | `update_interest_profile` | No behavioral profile derived from the session |
 | Storage | `ad_platform` (vector DB write) | Derived interest data never reaches the ad store |
+
+## C/D category purposes
+
+| Category | Purpose | Tool | What is blocked |
+|---|---|---|---|
+| C | `cross_context_sale` | `sell_to_data_broker` | Patient record snapshot never exported to pharma data broker |
+| C | `cross_context_sharing` | `share_with_research_partner` | Anonymized data never sent to research partner |
+| D | `sensitive_data_inference` | `infer_sensitive_attributes` | Risk scores (adherence, insurance, mental health) never derived |
 
 ## Partial opt-out via `gpc_scope`
 
@@ -189,6 +225,10 @@ architecture-b/
 |-- mcp-server/
 |   |-- server.js              MCP server entry point
 |   |-- purpose_registry.js    withPurposeCheck() interceptor + tool → purpose registry (Layer 4)
+|   |                            B2 entries: get_medical_records, answer_question, log_interaction,
+|   |                            update_interest_profile, add_to_training_set
+|   |                            C entries:  sell_to_data_broker, share_with_research_partner
+|   |                            D entries:  infer_sensitive_attributes
 |   `-- tool_handlers.js       Raw tool implementations; no GPC logic
 |
 |-- harness/
@@ -197,11 +237,14 @@ architecture-b/
 |   |-- run_gpc_partial.js                 Scripted run: gpc=1, scope=ad_targeting|model_training
 |   |-- run_llm_gpc.js                     LLM run (Phase 1): baseline + full GPC back to back
 |   |-- run_gpc_missing_purpose_harness.js Missing-purpose experiment (Phase 2): 3-scenario matrix
-|   `-- compare_results.js                 Prints purpose matrix + B2 layer analysis
+|   |-- run_gpc_cd.js                      C/D experiment (Phase 3): 9-tool matrix, 3 scenarios
+|   `-- compare_results.js                 Prints B2 purpose matrix + layer analysis
 |
 |-- tests/
-|   |-- purpose_registry.test.js  Unit tests: registry structure, withPurposeCheck() logic
-|   |-- interceptor.test.js       Integration tests through callTool()
+|   |-- purpose_registry.test.js  Unit tests: registry structure, withPurposeCheck() logic,
+|   |                               C/D registry entries and subset invariant
+|   |-- interceptor.test.js       Integration tests through callTool(): B2, C, D tools,
+|   |                               partial opt-out combinations, missing purpose field
 |   `-- orchestrator.test.js      End-to-end scripted pipeline: baseline, full GPC, partial GPC
 |
 `-- output/           Gitignored; created at runtime
@@ -211,10 +254,14 @@ architecture-b/
     |-- llm_baseline_result.json
     |-- llm_gpc_result.json
     |-- missing_purpose_result.json
+    |-- cd_categories_result.json
     |-- interaction_log.jsonl
     |-- interest_profiles.json
     |-- training_set.jsonl
-    `-- ad_vector_store.json
+    |-- ad_vector_store.json
+    |-- data_broker_export.jsonl
+    |-- research_partner_export.jsonl
+    `-- inferred_attributes.json
 ```
 
 ---
@@ -283,6 +330,19 @@ npm run missing-purpose
 
 Runs all six tools under three scenarios and prints the comparison table with findings. All six calls in Scenario C (GPC on, no purpose) return `status: blocked, reason: missing_purpose_field`, including the primary-task tools.
 
+### C/D category experiment — Phase 3
+
+```bash
+npm run cd-categories
+```
+
+Runs all nine tools (B2 + C + D) under three scenarios:
+- **Scenario A** (GPC off): all nine tools execute
+- **Scenario B** (Full GPC): all eight secondary tools blocked
+- **Scenario C** (CD-only scope: `cross_context_sale|cross_context_sharing|sensitive_data_inference`): all four B2 secondary pipelines execute; both C tools and the D tool are blocked
+
+The key finding printed by Scenario C: `withPurposeCheck()` required zero code changes to enforce C/D categories — only registry entries were added.
+
 ### LLM demo — Phase 1 (requires Ollama)
 
 ```bash
@@ -317,4 +377,8 @@ After running the scripted demo, `output/` contains:
 | `baseline_result.json` | all `status: ok` | n/a | n/a |
 | `gpc_full_result.json` | n/a | secondary all `status: blocked` | n/a |
 | `gpc_partial_result.json` | n/a | n/a | mixed: analytics/personalization `ok`, training/ad `blocked` |
-| `missing_purpose_result.json` | n/a | n/a | Scenario C: all six tools `blocked` |
+| `missing_purpose_result.json` | Scenario A: all `ok` | Scenario B: B2 `blocked` | Scenario C: all six tools `blocked` |
+| `cd_categories_result.json` | Scenario A: all `ok` | Scenario B: all secondary `blocked` | Scenario C: B2 `ok`, C/D `blocked` |
+| `data_broker_export.jsonl` | entry appended | unchanged (cross_context_sale blocked) | unchanged (in CD scope) |
+| `research_partner_export.jsonl` | entry appended | unchanged (cross_context_sharing blocked) | unchanged (in CD scope) |
+| `inferred_attributes.json` | attributes written | unchanged (sensitive_data_inference blocked) | unchanged (in CD scope) |

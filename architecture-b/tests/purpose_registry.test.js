@@ -35,6 +35,32 @@ describe('PURPOSE_REGISTRY', () => {
     expect(entry.gpc_restricted_purposes).toContain('analytics');
     expect(entry.gpc_restricted_purposes).toContain('model_training');
   });
+
+  test('sell_to_data_broker restricts cross_context_sale (Category C)', () => {
+    const entry = REGISTRY_MAP['sell_to_data_broker'];
+    expect(entry.gpc_restricted_purposes).toContain('cross_context_sale');
+    expect(entry.declared_purposes).toContain('cross_context_sale');
+  });
+
+  test('share_with_research_partner restricts cross_context_sharing (Category C)', () => {
+    const entry = REGISTRY_MAP['share_with_research_partner'];
+    expect(entry.gpc_restricted_purposes).toContain('cross_context_sharing');
+  });
+
+  test('infer_sensitive_attributes restricts sensitive_data_inference (Category D)', () => {
+    const entry = REGISTRY_MAP['infer_sensitive_attributes'];
+    expect(entry.gpc_restricted_purposes).toContain('sensitive_data_inference');
+  });
+
+  test('all C/D entries satisfy the subset invariant', () => {
+    const cdTools = ['sell_to_data_broker', 'share_with_research_partner', 'infer_sensitive_attributes'];
+    for (const toolName of cdTools) {
+      const entry = REGISTRY_MAP[toolName];
+      for (const p of entry.gpc_restricted_purposes) {
+        expect(entry.declared_purposes).toContain(p);
+      }
+    }
+  });
 });
 
 describe('withPurposeCheck', () => {

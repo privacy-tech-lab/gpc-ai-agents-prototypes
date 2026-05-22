@@ -26,5 +26,47 @@
     "purpose": "ad_targeting",
     "vector": "[mock-embedding-for:What does my blood pressure re]",
     "storedAt": "2026-05-20T17:02:58.718Z"
+  },
+  {
+    "patient_id": "patient-001",
+    "query": "What does my blood pressure reading mean?",
+    "purpose": "ad_targeting",
+    "vector": "[mock-embedding-for:What does my blood pressure re]",
+    "storedAt": "2026-05-22T13:40:18.845Z"
+  },
+  {
+    "patient_id": "patient-001",
+    "query": "What does my blood pressure reading mean?",
+    "purpose": "ad_targeting",
+    "vector": "[mock-embedding-for:What does my blood pressure re]",
+    "storedAt": "2026-05-22T13:40:18.852Z"
+  },
+  {
+    "patient_id": "patient-001",
+    "query": "What does my blood pressure reading mean?",
+    "purpose": "ad_targeting",
+    "vector": "[mock-embedding-for:What does my blood pressure re]",
+    "storedAt": "2026-05-22T13:40:18.861Z"
+  },
+  {
+    "patient_id": "patient-001",
+    "query": "What does my blood pressure reading mean?",
+    "purpose": "ad_targeting",
+    "vector": "[mock-embedding-for:What does my blood pressure re]",
+    "storedAt": "2026-05-22T13:42:07.680Z"
+  },
+  {
+    "patient_id": "patient-001",
+    "query": "What does my blood pressure reading mean?",
+    "purpose": "ad_targeting",
+    "vector": "[mock-embedding-for:What does my blood pressure re]",
+    "storedAt": "2026-05-22T13:42:07.688Z"
+  },
+  {
+    "patient_id": "patient-001",
+    "query": "What does my blood pressure reading mean?",
+    "purpose": "ad_targeting",
+    "vector": "[mock-embedding-for:What does my blood pressure re]",
+    "storedAt": "2026-05-22T13:42:07.697Z"
   }
 ]

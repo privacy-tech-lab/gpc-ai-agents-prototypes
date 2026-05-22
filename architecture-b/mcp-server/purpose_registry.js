@@ -7,7 +7,10 @@
  * used is blocked.  get_medical_records must run for primary_task; only its
  * personalization purpose is restricted.
  *
- * Purpose taxonomy: primary_task | analytics | model_training | ad_targeting | personalization
+ * Purpose taxonomy:
+ *   B2 (operation-level):  primary_task | analytics | model_training | ad_targeting | personalization
+ *   C  (cross-context):    cross_context_sale | cross_context_sharing
+ *   D  (temporal/memory):  sensitive_data_inference
  */
 
 const PURPOSE_REGISTRY = [
@@ -35,6 +38,30 @@ const PURPOSE_REGISTRY = [
     tool_name: 'add_to_training_set',
     declared_purposes: ['model_training'],
     gpc_restricted_purposes: ['model_training'],
+  },
+
+  // ── Category C: Cross-context purposes ──────────────────────────────────────
+  // Data leaves the medical assistant's organizational boundary.
+  // cross_context_sale     = commercial transfer to a data broker or pharma buyer
+  // cross_context_sharing  = non-commercial transfer to a research partner or affiliate
+  {
+    tool_name: 'sell_to_data_broker',
+    declared_purposes: ['cross_context_sale'],
+    gpc_restricted_purposes: ['cross_context_sale'],
+  },
+  {
+    tool_name: 'share_with_research_partner',
+    declared_purposes: ['cross_context_sharing'],
+    gpc_restricted_purposes: ['cross_context_sharing'],
+  },
+
+  // ── Category D: Memory and temporal-inference purposes ───────────────────────
+  // sensitive_data_inference = deriving sensitive attributes (risk scores, mental
+  // health flags, insurance-risk classifications) from accumulated health data
+  {
+    tool_name: 'infer_sensitive_attributes',
+    declared_purposes: ['sensitive_data_inference'],
+    gpc_restricted_purposes: ['sensitive_data_inference'],
   },
 ];
 

@@ -1,0 +1,11 @@
+{
+  "p1": {
+    "attributes": {
+      "adherence_risk": "low",
+      "chronic_condition_count": 1,
+      "insurance_risk_score": "standard",
+      "mental_health_flag": false
+    },
+    "inferredAt": "2026-05-22T13:42:07.717Z"
+  }
+}

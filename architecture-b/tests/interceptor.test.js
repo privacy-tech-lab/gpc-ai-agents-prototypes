@@ -120,3 +120,109 @@ describe('callTool — missing purpose field', () => {
     expect(result.reason).toBe('missing_purpose_field');
   });
 });
+
+describe('callTool — Category C: cross-context purposes', () => {
+  test('sell_to_data_broker executes when gpc=0', async () => {
+    const result = await callTool(
+      'sell_to_data_broker',
+      { patient_id: 'p1', record_snapshot: 'hypertension' },
+      { gpc: 0, purpose: 'cross_context_sale' }
+    );
+    expect(result.status).toBe('ok');
+    expect(result.result.exported).toBe(true);
+  });
+
+  test('sell_to_data_broker blocked for cross_context_sale under full GPC', async () => {
+    const result = await callTool(
+      'sell_to_data_broker',
+      { patient_id: 'p1', record_snapshot: 'hypertension' },
+      { gpc: 1, purpose: 'cross_context_sale' }
+    );
+    expect(result.status).toBe('blocked');
+    expect(result.reason).toBe('purpose_restricted');
+    expect(result.purpose).toBe('cross_context_sale');
+  });
+
+  test('share_with_research_partner executes when gpc=0', async () => {
+    const result = await callTool(
+      'share_with_research_partner',
+      { patient_id: 'p1', study_id: 'HTN-2025', data_subset: 'conditions' },
+      { gpc: 0, purpose: 'cross_context_sharing' }
+    );
+    expect(result.status).toBe('ok');
+    expect(result.result.shared).toBe(true);
+  });
+
+  test('share_with_research_partner blocked for cross_context_sharing under full GPC', async () => {
+    const result = await callTool(
+      'share_with_research_partner',
+      { patient_id: 'p1', study_id: 'HTN-2025', data_subset: 'conditions' },
+      { gpc: 1, purpose: 'cross_context_sharing' }
+    );
+    expect(result.status).toBe('blocked');
+    expect(result.reason).toBe('purpose_restricted');
+  });
+
+  test('C tools blocked when in gpc_scope, B2 tools allowed', async () => {
+    const cdScope = ['cross_context_sale', 'cross_context_sharing', 'sensitive_data_inference'];
+
+    const saleResult = await callTool(
+      'sell_to_data_broker',
+      { patient_id: 'p1', record_snapshot: 'test' },
+      { gpc: 1, purpose: 'cross_context_sale', gpc_scope: cdScope }
+    );
+    expect(saleResult.status).toBe('blocked');
+
+    const logResult = await callTool(
+      'log_interaction',
+      { patient_id: 'p1', query: 'test', response_summary: 'test' },
+      { gpc: 1, purpose: 'analytics', gpc_scope: cdScope }
+    );
+    expect(logResult.status).toBe('ok');
+  });
+});
+
+describe('callTool — Category D: sensitive inference purposes', () => {
+  test('infer_sensitive_attributes executes when gpc=0', async () => {
+    const records = JSON.stringify({ conditions: ['hypertension'], medications: ['lisinopril'] });
+    const result  = await callTool(
+      'infer_sensitive_attributes',
+      { patient_id: 'p1', records },
+      { gpc: 0, purpose: 'sensitive_data_inference' }
+    );
+    expect(result.status).toBe('ok');
+    expect(result.result.inferred).toBe(true);
+    expect(result.result.attributes).toHaveProperty('adherence_risk');
+    expect(result.result.attributes).toHaveProperty('insurance_risk_score');
+  });
+
+  test('infer_sensitive_attributes blocked for sensitive_data_inference under full GPC', async () => {
+    const records = JSON.stringify({ conditions: ['hypertension'] });
+    const result  = await callTool(
+      'infer_sensitive_attributes',
+      { patient_id: 'p1', records },
+      { gpc: 1, purpose: 'sensitive_data_inference' }
+    );
+    expect(result.status).toBe('blocked');
+    expect(result.reason).toBe('purpose_restricted');
+    expect(result.purpose).toBe('sensitive_data_inference');
+  });
+
+  test('D tool blocked when in gpc_scope, B2 tools allowed', async () => {
+    const cdScope = ['cross_context_sale', 'cross_context_sharing', 'sensitive_data_inference'];
+
+    const inferResult = await callTool(
+      'infer_sensitive_attributes',
+      { patient_id: 'p1', records: '{}' },
+      { gpc: 1, purpose: 'sensitive_data_inference', gpc_scope: cdScope }
+    );
+    expect(inferResult.status).toBe('blocked');
+
+    const profileResult = await callTool(
+      'update_interest_profile',
+      { patient_id: 'p1', interests: ['diabetes'] },
+      { gpc: 1, purpose: 'personalization', gpc_scope: cdScope }
+    );
+    expect(profileResult.status).toBe('ok');
+  });
+});
