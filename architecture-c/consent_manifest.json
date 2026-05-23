@@ -1,0 +1,12 @@
+{
+  "manifest_version": "v1.0",
+  "approved_categories": [
+    "file_access",
+    "external_api"
+  ],
+  "declined_categories": [],
+  "consented_at": {
+    "file_access": "2026-01-15T00:00:00.000Z",
+    "external_api": "2026-01-15T00:00:00.000Z"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "architecture-c",
+  "version": "1.0.0",
+  "description": "Consent-Scoped Tool Registry — GPC capability expansion control",
+  "type": "commonjs",
+  "license": "ISC",
+  "scripts": {
+    "v1": "node run_v1.js",
+    "v2:silent": "node run_v2.js --mode=silent",
+    "v2:approve": "node run_v2.js --mode=approve",
+    "v2:decline": "node run_v2.js --mode=decline",
+    "demo": "node run_v1.js && node run_v2.js --mode=silent && node run_v2.js --mode=approve && node run_v2.js --mode=decline"
+  }
+}
