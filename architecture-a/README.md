@@ -161,7 +161,8 @@ architecture-a/
 |   |-- tool_handlers.js      Raw tool implementations (search, profile, log)
 |   `-- identity_provider.js  RS256 JWT sign / verify (Layer 3)
 |
-|-- orchestrator.js           Scripted orchestrator (used by integration tests)
+|-- orchestrator/
+|   `-- orchestrator.js       Scripted orchestrator (used by integration tests)
 |
 |-- harness/
 |   |-- run_baseline.js       Scripted run: GPC off
@@ -180,7 +181,7 @@ architecture-a/
 |   `-- agent_loop.test.js        Shared LLM loop: tool_choice, nudge, arg parsing, errors
 |
 |-- keys/
-|   |-- public.pem   Tracked in git
+|   |-- public.pem   Tracked in git; must be regenerated after cloning (see Setup)
 |   `-- private.pem  Gitignored; must generate before running
 |
 `-- output/           Gitignored; created at runtime
@@ -197,7 +198,10 @@ architecture-a/
 cd architecture-a
 npm install
 
-# Generate RSA keypair for JWT signing (required; private.pem is gitignored)
+# Generate RSA keypair for JWT signing.
+# private.pem is gitignored so every contributor must run this once after cloning.
+# public.pem is tracked but must match the local private.pem — re-run this command
+# whenever you re-clone or if you see "invalid signature" errors from the JWT tests.
 node -e "
 const { generateKeyPairSync } = require('crypto');
 const fs = require('fs');
@@ -257,7 +261,7 @@ search_web                   | ok           | ok           | ok
 user_profile_lookup          | ok           | BLOCKED      | ok
 log_interaction              | ok           | BLOCKED      | ok
 save_to_profile              | ok           | BLOCKED      | ok
-store_to_third_party         | ok           | BLOCKED      | BLOCKED
+third_party_store            | ok           | BLOCKED      | BLOCKED
 ```
 
 ### LLM demo (requires Ollama)
