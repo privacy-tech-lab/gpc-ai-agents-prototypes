@@ -9,6 +9,10 @@
     "v2:silent": "node run_v2.js --mode=silent",
     "v2:approve": "node run_v2.js --mode=approve",
     "v2:decline": "node run_v2.js --mode=decline",
-    "demo": "node run_v1.js && node run_v2.js --mode=silent && node run_v2.js --mode=approve && node run_v2.js --mode=decline"
+    "demo": "node run_v1.js && node run_v2.js --mode=silent && node run_v2.js --mode=approve && node run_v2.js --mode=decline",
+    "test": "jest tests/ --runInBand"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
   }
 }
