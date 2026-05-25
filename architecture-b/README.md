@@ -65,11 +65,11 @@ Architecture B demonstrates **D3 (long-term profile scope)** through `update_int
 
 ### Category E: Behavioral Influence
 
-Architecture B demonstrates E1 and E3, partly as direct enforcement and partly as downstream consequences of C and D blocking.
+Architecture B demonstrates E1 as a downstream consequence of D3 enforcement. E3 is also implicitly addressed as a consequence of C2 blocking, not as an independently enforced control.
 
-**E1 (personalization opt-out):** Blocking `update_interest_profile` means no new behavioral model is built from this session. Future sessions cannot be personalized based on today's interaction.
+**E1 (personalization opt-out):** Blocking `update_interest_profile` (D3) means no new behavioral model is built from this session. Future sessions cannot be personalized based on today's interaction.
 
-**E3 (targeting opt-out):** `ad_platform` (purpose: `ad_targeting`) is blocked directly. The pharmaceutical ad platform cannot use this session's data to determine which advertisements to show the patient.
+**E3 (targeting opt-out):** Because `ad_platform` is blocked under C2, the pharmaceutical ad platform cannot use this session's data to determine which advertisements to show the patient. This is a consequence of C2 enforcement rather than a separately registered E3 control — the taxonomy distinguishes C2 (what third parties may do with data) from E3 (what the system itself does with its user model in real time). Architecture B enforces this at the third-party boundary, which is C2.
 
 **What it does not cover:** E2 (persuasion opt-out) is not demonstrated. Architecture B controls what data secondary pipelines may use; it does not control whether the primary-task model applies rapport-building or preference-calibrated tone in its responses.
 
@@ -215,9 +215,9 @@ The `compare_results.js` report produces a table of `tool × purpose × result` 
 | `log_interaction` | `analytics` | C2 | ✓ ok | ✗ BLOCKED | ✓ ok |
 | `add_to_training_set` | `model_training` | C3 | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
 | `update_interest_profile` | `personalization` | D3 | ✓ ok | ✗ BLOCKED | ✓ ok |
-| `ad_platform` | `ad_targeting` | E3 | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
+| `ad_platform` | `ad_targeting` | C2 | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
 
-**The critical column is GPC Partial:** `log_interaction` (C2) executes while `add_to_training_set` (C3) is blocked. Same secondary pipeline category, different declared purpose, different outcome. This is the empirical case for purpose-scoped opt-out.
+**The critical column is GPC Partial:** `log_interaction` (C2 / analytics) executes while `add_to_training_set` (C3) is blocked. Same secondary pipeline, different declared purpose, different outcome. This is the empirical case for purpose-scoped opt-out.
 
 ### Sharing and derivation purpose matrix (`npm run cd-categories`)
 
@@ -230,12 +230,12 @@ The C/D harness runs all nine tools under three scenarios. Scenario C uses a CD-
 | `log_interaction` | `analytics` | C2 | ✓ ok | ✗ BLOCKED | ✓ ok |
 | `add_to_training_set` | `model_training` | C3 | ✓ ok | ✗ BLOCKED | ✓ ok |
 | `update_interest_profile` | `personalization` | D3 | ✓ ok | ✗ BLOCKED | ✓ ok |
-| `ad_platform` | `ad_targeting` | E3 | ✓ ok | ✗ BLOCKED | ✓ ok |
+| `ad_platform` | `ad_targeting` | C2 | ✓ ok | ✗ BLOCKED | ✓ ok |
 | `sell_to_data_broker` | `cross_context_sale` | C4 | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
 | `share_with_research_partner` | `cross_context_sharing` | C4 | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
 | `infer_sensitive_attributes` | `sensitive_data_inference` | B3 | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
 
-**Scenario C is the key finding:** all C2/C3/D3/E3 secondary pipelines execute while C4 and B3 tools are blocked — a level of granularity that is structurally impossible with tool-level blocking.
+**Scenario C is the key finding:** all C2/C3/D3 secondary pipelines execute while C4 and B3 tools are blocked — a level of granularity that is structurally impossible with tool-level blocking.
 
 ---
 
@@ -246,9 +246,9 @@ Each secondary pipeline maps to a distinct category and purpose:
 | Category | Tool | Purpose | What is blocked |
 |---|---|---|---|
 | C2 | `log_interaction` | `analytics` | Query and response not recorded for analytics |
+| C2 | `ad_platform` (vector DB write) | `ad_targeting` | Session data never reaches the third-party ad platform |
 | C3 | `add_to_training_set` | `model_training` | Interaction not used to train or evaluate models |
 | D3 | `update_interest_profile` | `personalization` | No behavioral profile built or updated from this session |
-| E3 | `ad_platform` (vector DB write) | `ad_targeting` | Derived interest data never reaches the ad platform |
 
 ---
 
@@ -399,7 +399,7 @@ answer_question            │ primary_task        │ C1       │ ✓ ok      
 log_interaction            │ analytics           │ C2       │ ✓ ok         │ ✗ BLOCKED    │ ✓ ok
 add_to_training_set        │ model_training      │ C3       │ ✓ ok         │ ✗ BLOCKED    │ ✗ BLOCKED
 update_interest_profile    │ personalization     │ D3       │ ✓ ok         │ ✗ BLOCKED    │ ✓ ok
-ad_platform                │ ad_targeting        │ E3       │ ✓ ok         │ ✗ BLOCKED    │ ✗ BLOCKED
+ad_platform                │ ad_targeting        │ C2       │ ✓ ok         │ ✗ BLOCKED    │ ✗ BLOCKED
 ```
 
 ### LLM demo — Phase 1 (requires Ollama)

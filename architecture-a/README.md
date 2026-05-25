@@ -19,7 +19,17 @@ The assistant searches the web, synthesises an itinerary, and (in a non-GPC worl
 
 ## Opt-out categories depicted
 
-Architecture A demonstrates categories C (use restrictions), D (persistence), and E (behavioral influence) from the opt-out taxonomy. Enforcement is tool-level and binary: each sensitive tool is either fully blocked or fully permitted when GPC is on. This makes Architecture A a coarse-grained implementation — it cannot distinguish between, say, analytics use and training use, or between session-scoped and profile-scoped retention.
+Architecture A demonstrates categories A (presence), C (use restrictions), D (persistence), and E (behavioral influence) from the opt-out taxonomy. Enforcement is tool-level and binary: each sensitive tool is either fully blocked or fully permitted when GPC is on. This makes Architecture A a coarse-grained implementation — it cannot distinguish between, say, analytics use and training use, or between session-scoped and profile-scoped retention.
+
+### Category A: Presence
+
+Architecture A demonstrates **A2 (activation opt-out)** through the secondary pipeline itself. The user explicitly invoked the AI assistant for one purpose: planning a trip to Japan. In the baseline run, the pipeline also silently activates a set of additional AI operations the user never chose: it logs the interaction, updates a behavioral profile, and syncs data to a third-party personalisation vendor. These are AI-driven operations running in the background of the user's explicit request, not operations the user affirmatively activated.
+
+With GPC on, only the explicitly-invoked operation runs (`search_web` returns the itinerary). The background operations are blocked before they execute.
+
+**How it is demoed:** `baseline_result.json` shows all five tools succeed. `gpc_result.json` shows only `search_web` succeeds — the four background operations the user never chose are blocked.
+
+**What it does not cover:** A1 (integration opt-out) governs how AI capabilities are delivered via software update. Architecture A does not address that question — the AI assistant is already present and the user chose to use it.
 
 ### Category C: Use
 
