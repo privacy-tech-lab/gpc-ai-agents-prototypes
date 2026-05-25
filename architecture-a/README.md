@@ -19,19 +19,49 @@ The assistant searches the web, synthesises an itinerary, and (in a non-GPC worl
 
 ## Opt-out categories depicted
 
-Architecture A is a concrete implementation of three categories from the grouped opt-out taxonomy: B (purpose and secondary use), C (propagation and protocol), and D (memory and temporal scope).
+Architecture A demonstrates categories C (use restrictions), D (persistence), and E (behavioral influence) from the opt-out taxonomy. Enforcement is tool-level and binary: each sensitive tool is either fully blocked or fully permitted when GPC is on. This makes Architecture A a coarse-grained implementation — it cannot distinguish between, say, analytics use and training use, or between session-scoped and profile-scoped retention.
 
-### Category B: Purpose and Secondary Use
+### Category C: Use
 
-Architecture A demonstrates **B1 (secondary-use opt-out)** directly. The Japan trip query is the primary task. Without GPC, its results are fed into a personalisation profile and sent to a third-party vendor for future ad targeting and recommendation tuning — secondary uses the user did not request. With GPC, only the primary task executes (`search_web` runs and returns an itinerary). All secondary-use operations are blocked before touching any storage.
+Architecture A demonstrates C1, C2, and C4.
 
-**How it is demoed:** Compare `baseline_result.json` (all five tools `status: ok`) with `gpc_result.json` (search succeeds, four data-writing tools `status: blocked`). The interaction log and vector store do not grow between GPC runs.
+**C1 (primary use restriction):** demonstrated by contrast. `search_web` always executes — the tool that completes the user's task runs regardless of GPC. Only uses beyond the immediate task are restricted.
 
-**What it does not cover:** The block is tool-level, not operation-level. The three sensitive MCP tools (`user_profile_lookup`, `save_to_profile`, `log_interaction`) are each blocked entirely rather than at specific sub-operations. This demonstrates the blunt end of B but does not get into **B2's** finer collection/processing/inference/storage distinctions, where a user might permit collection but forbid inference, or permit short-term processing but forbid storage.
+**C2 (secondary use restriction):** `log_interaction` is blocked. The Japan trip query and response summary may not be recorded for analytics or behavioral profiling unrelated to the primary task.
 
-### Category C: Propagation and Protocol
+**C4 (sharing restriction):** `store_to_third_party` is blocked. Session data may not be passed to the third-party personalisation vendor. The JWT enforcement makes this independent of the MCP layer: even if all MCP-layer enforcement were bypassed, the signed token carries `gpc: true` and the vendor rejects the write independently.
 
-This is the architectural core of the prototype and the category Architecture A demonstrates most directly. The GPC signal must survive four hops without any single agent being trusted to enforce it alone:
+**How it is demoed:** Compare `baseline_result.json` (all five tools `status: ok`) with `gpc_result.json` (`search_web` ok, four data tools blocked). The interaction log and vector store do not grow between GPC runs.
+
+**What it does not cover:** C3 (training restriction) is not separately enforced — there is no distinct training pipeline. Because blocking is tool-level rather than purpose-level, C2 and C3 cannot be independently scoped: a user cannot opt out of training use while permitting analytics. Architecture B addresses this.
+
+### Category D: Persistence
+
+Architecture A demonstrates D2 and D3 in binary form.
+
+**D2 (cross-session scope):** `user_profile_lookup` is blocked. Prior session data — the user's stored travel preferences — may not be retrieved to inform the current session. The current interaction is not personalized using cross-session history.
+
+**D3 (long-term profile scope):** `save_to_profile` is blocked. No data from this session is written to the user's persistent profile. The behavioral model of the user does not grow as a result of this interaction.
+
+Together these mean: existing cross-session data stays out of the current session, and the current session produces no new cross-session data.
+
+**How it is demoed:** Run `npm run baseline` then `npm run gpc`. In the baseline, `profiles.json` is updated. In the GPC run, neither `profiles.json` nor the interaction log changes.
+
+**What it does not cover:** D1 (session scope) is not demonstrated — within-session use of the query is always permitted. Architecture A does not implement duration-based retention, scope-based partitioning, or granular partial-profile writes.
+
+### Category E: Behavioral Influence
+
+Architecture A demonstrates E1 and E3 as consequences of the D-layer blocks, not as independently enforced controls.
+
+**E1 (personalization opt-out):** Blocking `user_profile_lookup` means the current session cannot be shaped by the user's stored travel history. The assistant gives the same response regardless of what prior trips the user has taken.
+
+**E3 (targeting opt-out):** Blocking `store_to_third_party` means the vendor cannot use this session's data to determine what recommendations or offers to show the user in future sessions.
+
+**What it does not cover:** E2 (persuasion opt-out) is not demonstrated. Architecture A controls data flows only; it has no mechanism to prevent the model from applying rapport-building or preference-calibrated tone in its responses. A full E2 implementation would require stateless model invocation with no user profile access.
+
+### Propagation (cross-cutting)
+
+The GPC signal must survive four hops without any single agent being trusted to enforce it alone:
 
 ```
 User (Sec-GPC: 1 in browser)
@@ -51,15 +81,7 @@ Orchestrator
           `---> HTTP POST  --> Third-party vendor     (Layer 3: blocked by JWT)
 ```
 
-The tamper-resistance property is demonstrated by the **signal-drop experiment** (**C1**): if one intermediate agent strips `_meta` before forwarding, Layer 4 (MCP metadata) fails silently and the three sensitive MCP tools execute. Layer 3 (JWT) still holds because the token was signed by the orchestrator before the drop and the vendor verifies it independently. This surfaces the empirical finding: without a spec-level requirement to forward `_meta`, a rogue or misconfigured intermediate agent can silently nullify consent for all MCP-layer enforcement. Only the signed JWT provides a trust-boundary backstop.
-
-### Category D: Memory and Temporal Scope
-
-Architecture A demonstrates **D1 (cross-session memory opt-out)** in its binary form. In the baseline run, `store_to_third_party` writes the user's itinerary preferences to a vector store used for future personalisation: the next session can retrieve that data and tailor its recommendations accordingly. With GPC on, the JWT blocks that write entirely. The vector store stays flat across GPC runs, meaning no memory of this session persists to influence future ones.
-
-**How it is demoed:** Run `npm run baseline` followed by `npm run gpc`. Check `output/vector_store.json` after each. The baseline adds an entry; the GPC run does not. The comparison report also tracks store size directly.
-
-**What it does not cover:** Architecture A treats opt-out as binary. It does not implement **D2's** granular alternatives: duration-based rules ("retain for 24 hours for operational coherence"), scope-based rules ("within-session context only"), or standard-based notions of reasonableness. The block is all-or-nothing.
+The tamper-resistance property is demonstrated by the **signal-drop experiment**: if one intermediate agent strips `_meta` before forwarding, Layer 4 fails silently and the three sensitive MCP tools execute. Layer 3 (JWT) still holds because the token was signed by the orchestrator before the drop and the vendor verifies it independently. The finding: without a spec-level requirement to propagate `_meta`, a rogue or misconfigured agent can silently nullify consent for all MCP-layer enforcement. Only the signed JWT provides a trust-boundary backstop.
 
 ---
 

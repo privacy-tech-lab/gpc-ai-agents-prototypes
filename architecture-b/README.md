@@ -27,35 +27,51 @@ Architecture B's `withPurposeCheck()` evaluates a **purpose pair**: `gpc` + `pur
 
 ## Opt-out categories depicted
 
-Architecture B is a concrete implementation of **B2 (operation-level opt-out)** from the grouped opt-out taxonomy, and extends the propagation and protocol arguments from Category C.
+Architecture B demonstrates categories B3, C, D3, and E from the opt-out taxonomy, with purpose-level rather than tool-level enforcement. Each secondary pipeline is independently registered with a declared purpose, so a user can scope their opt-out to specific use categories without blocking the primary task or other permitted uses. This is the key structural advance over Architecture A's tool-level blocking.
 
-### Category B: Purpose and Secondary Use
+### Category B: Collection
 
-Architecture B demonstrates **B2 (operation-level opt-out)** directly. B2 distinguishes four operation types within a data pipeline: Collection, Processing, Inference, and Storage. Each secondary pipeline in this prototype maps to exactly one B2 layer, allowing a user to block, for example, inference and storage while permitting collection and processing.
+Architecture B demonstrates **B3 (derived collection opt-out)** through `infer_sensitive_attributes`, which derives risk scores from accumulated patient records: medication adherence risk, insurance risk classification, and mental health flags. The harm addressed is in the act of derivation itself — producing inferences the patient never supplied — not only in subsequent use of those inferences.
 
-**How it is demoed:** The purpose matrix from `compare_results.js` shows that `log_interaction` (Collection) executes in the partial-GPC run while `add_to_training_set` (Processing) is blocked — same tool category (secondary pipeline), different declared purpose, different outcome. This is the concrete evidence that opt-out is purpose-scoped, not tool-scoped.
+**How it is demoed:** `infer_sensitive_attributes` carries purpose `sensitive_data_inference` and is blocked under full GPC and under any scope that includes `sensitive_data_inference`. In the C/D experiment (`npm run cd-categories`), Scenario C uses a CD-only scope: the four C-category secondary pipelines all execute while `infer_sensitive_attributes` remains blocked. This shows B3 enforcement decoupled from C-category enforcement.
 
-**What it does not cover:** Each B2 operation type is blocked as a unit. Architecture B does not implement sub-operation granularity within a layer — for example, blocking identified collection while permitting anonymised collection, or permitting short-term processing while blocking long-term storage. The block is per-purpose, not per-sub-operation.
+**What it does not cover:** B1 (input collection) and B2 (behavioral collection) are not restricted — the patient's query and the medical records retrieved to answer it are collected as necessary for the primary task.
 
-### Category C: Cross-Context Data Flows
+### Category C: Use
 
-Architecture B demonstrates **Category C (cross-context sale and sharing)** through two dedicated tools: `sell_to_data_broker` (commercial transfer to a pharma data broker) and `share_with_research_partner` (non-commercial transfer to an academic partner). Both carry C-category purposes (`cross_context_sale`, `cross_context_sharing`) in the registry and are blocked under any GPC scope that includes those purposes.
+Architecture B demonstrates C1, C2, C3, and C4. This is the category the prototype covers most directly and with the most granularity.
 
-**How it is demoed:** The C/D experiment (`npm run cd-categories`, Scenario C) runs a CD-only partial scope (`gpc_scope=cross_context_sale|cross_context_sharing|sensitive_data_inference`). All four B2 secondary pipelines execute while both C tools are blocked. A patient can opt out of having their data sold or shared externally without disrupting operational analytics.
+**C1 (primary use restriction):** demonstrated positively. `get_medical_records` and `answer_question` always execute because their declared purpose is `primary_task`, which is never restricted. The tool that retrieves the patient's records and the tool that answers their question run regardless of GPC.
 
-Architecture B also surfaces a propagation finding distinct from Architecture A's signal-drop experiment. When `meta.purpose` is absent from a tool call, `withPurposeCheck()` treats it as maximally restricted. The **missing-purpose experiment** (Phase 2, `npm run missing-purpose`) runs every tool in the matrix with `gpc=1` but no `purpose` field, and shows that all calls — including the primary-task call to `get_medical_records` — are blocked with `reason: missing_purpose_field`.
+**C2 (secondary use restriction):** `log_interaction` (purpose: `analytics`) and `ad_platform` (purpose: `ad_targeting`) are blocked under full GPC. Session data may not be used for analytics or advertising unrelated to the patient's question.
 
-This produces a two-failure-mode argument: a GPC-compliant system with no required `purpose` field must either block everything (breaking the primary task) or allow everything (ignoring the opt-out). The only sound resolution is to make `purpose` declaration a required field in MCP or any successor agent protocol.
+**C3 (training restriction):** `add_to_training_set` (purpose: `model_training`) is blocked under full GPC. The interaction may not be used to fine-tune or evaluate AI models. This purpose sits in a gap between secondary use and sharing that many existing frameworks do not address explicitly.
 
-**What it does not cover:** Cross-context enforcement here is at the tool-call boundary. If records are already resident in a downstream cache, purpose enforcement cannot retroactively constrain their use. A complete C-category implementation would require data labelling and downstream policy propagation beyond the scope of this prototype.
+**C4 (sharing restriction):** `sell_to_data_broker` (purpose: `cross_context_sale`) and `share_with_research_partner` (purpose: `cross_context_sharing`) are blocked under full GPC and under any scope that includes those purposes. Patient data may not be transferred to third parties beyond those strictly necessary to answer the question.
 
-### Category D: Memory and Temporal Inference
+**How it is demoed:** The use-category purpose matrix from `npm run compare` shows that `log_interaction` executes in the partial-GPC run while `add_to_training_set` is blocked. Same session data, different declared purpose, different outcome. This is the empirical case for purpose-scoped C-category enforcement: a user can opt out of model training while permitting operational analytics.
 
-Architecture B demonstrates **Category D (sensitive data inference)** through `infer_sensitive_attributes`, which derives health risk scores (medication adherence risk, insurance risk classification, mental health flags) from accumulated patient records. This is distinct from B2 inference (`update_interest_profile`) in that it synthesises sensitive attributes that were never directly provided — a form of temporal inference that GPC explicitly covers.
+**What it does not cover:** Each C-category purpose is enforced as a binary block. Architecture B does not implement sub-purpose granularity — for example, blocking identified analytics while permitting anonymised analytics.
 
-**How it is demoed:** `infer_sensitive_attributes` carries purpose `sensitive_data_inference` and is blocked under full GPC and under any scope that includes `sensitive_data_inference`. In Scenario C of the C/D experiment, it is blocked while B2 personalization (`update_interest_profile`) is allowed, since the two inference purposes are independently registered.
+Architecture B also surfaces a propagation finding distinct from Architecture A's signal-drop experiment. When `meta.purpose` is absent from a tool call, `withPurposeCheck()` treats it as maximally restricted. The **missing-purpose experiment** (Phase 2, `npm run missing-purpose`) runs every tool in the matrix with `gpc=1` but no `purpose` field, and shows that all calls — including the primary-task call to `get_medical_records` — are blocked with `reason: missing_purpose_field`. This produces a two-failure-mode argument: a GPC-compliant system must either block everything (breaking the primary task) or allow everything (ignoring the opt-out) when purpose is absent. The only sound resolution is to make `purpose` declaration a required field in MCP or any successor protocol.
 
-**What it does not cover:** The sensitive inference block is binary — inference either runs or it does not. Architecture B does not implement D2's granular temporal alternatives: duration-based rules ("retain derived attributes for 24 hours only"), scope-based rules ("within-session inference only"), or decay policies. A full D2 implementation would track when attributes were inferred and enforce expiry at the storage layer.
+### Category D: Persistence
+
+Architecture B demonstrates **D3 (long-term profile scope)** through `update_interest_profile` (purpose: `personalization`). This tool constructs a durable behavioral model of the patient from accumulated session data. When blocked, the patient's interest profile does not grow as a result of this interaction; future sessions cannot be personalized based on today's query.
+
+**How it is demoed:** `interest_profiles.json` is unchanged between GPC runs. In the partial-GPC run with a scope that excludes `personalization`, the profile update executes; in the full-GPC run it does not.
+
+**What it does not cover:** D1 (session scope) and D2 (cross-session scope) are not explicitly demonstrated. Architecture B does not implement duration-based retention or decay policies; the block is binary.
+
+### Category E: Behavioral Influence
+
+Architecture B demonstrates E1 and E3, partly as direct enforcement and partly as downstream consequences of C and D blocking.
+
+**E1 (personalization opt-out):** Blocking `update_interest_profile` means no new behavioral model is built from this session. Future sessions cannot be personalized based on today's interaction.
+
+**E3 (targeting opt-out):** `ad_platform` (purpose: `ad_targeting`) is blocked directly. The pharmaceutical ad platform cannot use this session's data to determine which advertisements to show the patient.
+
+**What it does not cover:** E2 (persuasion opt-out) is not demonstrated. Architecture B controls what data secondary pipelines may use; it does not control whether the primary-task model applies rapport-building or preference-calibrated tone in its responses.
 
 ---
 
@@ -188,61 +204,61 @@ Output: output/signal_drop_result.json
 
 ## Purpose matrices
 
-### B2 purpose matrix (`npm run compare`)
+### Use-category purpose matrix (`npm run compare`)
 
-The `compare_results.js` report produces a table of `tool × purpose × result` across the three scripted B2 run modes:
+The `compare_results.js` report produces a table of `tool × purpose × result` across the three scripted run modes:
 
-| Tool | Purpose | B2 Layer | Baseline | GPC Full | GPC Partial |
+| Tool | Purpose | Category | Baseline | GPC Full | GPC Partial |
 |---|---|---|---|---|---|
-| `get_medical_records` | `primary_task` | Primary | ✓ ok | ✓ ok | ✓ ok |
-| `answer_question` | `primary_task` | Primary | ✓ ok | ✓ ok | ✓ ok |
-| `log_interaction` | `analytics` | Collection | ✓ ok | ✗ BLOCKED | ✓ ok |
-| `add_to_training_set` | `model_training` | Processing | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
-| `update_interest_profile` | `personalization` | Inference | ✓ ok | ✗ BLOCKED | ✓ ok |
-| `ad_platform` | `ad_targeting` | Storage | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
+| `get_medical_records` | `primary_task` | C1 | ✓ ok | ✓ ok | ✓ ok |
+| `answer_question` | `primary_task` | C1 | ✓ ok | ✓ ok | ✓ ok |
+| `log_interaction` | `analytics` | C2 | ✓ ok | ✗ BLOCKED | ✓ ok |
+| `add_to_training_set` | `model_training` | C3 | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
+| `update_interest_profile` | `personalization` | D3 | ✓ ok | ✗ BLOCKED | ✓ ok |
+| `ad_platform` | `ad_targeting` | E3 | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
 
-**The critical column is GPC Partial:** `log_interaction` executes while `add_to_training_set` is blocked. Same tool category, different declared purpose, different outcome. This is the empirical case for purpose-scoped opt-out.
+**The critical column is GPC Partial:** `log_interaction` (C2) executes while `add_to_training_set` (C3) is blocked. Same secondary pipeline category, different declared purpose, different outcome. This is the empirical case for purpose-scoped opt-out.
 
-### C/D purpose matrix (`npm run cd-categories`)
+### Sharing and derivation purpose matrix (`npm run cd-categories`)
 
 The C/D harness runs all nine tools under three scenarios. Scenario C uses a CD-only partial scope:
 
 | Tool | Purpose | Category | A: GPC off | B: Full GPC | C: CD-only scope |
 |---|---|---|---|---|---|
-| `get_medical_records` | `primary_task` | Primary | ✓ ok | ✓ ok | ✓ ok |
-| `answer_question` | `primary_task` | Primary | ✓ ok | ✓ ok | ✓ ok |
-| `log_interaction` | `analytics` | B2 Collection | ✓ ok | ✗ BLOCKED | ✓ ok |
-| `add_to_training_set` | `model_training` | B2 Processing | ✓ ok | ✗ BLOCKED | ✓ ok |
-| `update_interest_profile` | `personalization` | B2 Inference | ✓ ok | ✗ BLOCKED | ✓ ok |
-| `ad_platform` | `ad_targeting` | B2 Storage | ✓ ok | ✗ BLOCKED | ✓ ok |
-| `sell_to_data_broker` | `cross_context_sale` | C Sale | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
-| `share_with_research_partner` | `cross_context_sharing` | C Sharing | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
-| `infer_sensitive_attributes` | `sensitive_data_inference` | D Inference | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
+| `get_medical_records` | `primary_task` | C1 | ✓ ok | ✓ ok | ✓ ok |
+| `answer_question` | `primary_task` | C1 | ✓ ok | ✓ ok | ✓ ok |
+| `log_interaction` | `analytics` | C2 | ✓ ok | ✗ BLOCKED | ✓ ok |
+| `add_to_training_set` | `model_training` | C3 | ✓ ok | ✗ BLOCKED | ✓ ok |
+| `update_interest_profile` | `personalization` | D3 | ✓ ok | ✗ BLOCKED | ✓ ok |
+| `ad_platform` | `ad_targeting` | E3 | ✓ ok | ✗ BLOCKED | ✓ ok |
+| `sell_to_data_broker` | `cross_context_sale` | C4 | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
+| `share_with_research_partner` | `cross_context_sharing` | C4 | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
+| `infer_sensitive_attributes` | `sensitive_data_inference` | B3 | ✓ ok | ✗ BLOCKED | ✗ BLOCKED |
 
-**Scenario C is the key finding for C/D:** all four B2 secondary pipelines execute while both C tools and the D tool are blocked — a level of granularity that is structurally impossible with tool-level blocking.
-
----
-
-## B2 operation layers
-
-Each B2 secondary pipeline maps to one of B2's four operation types:
-
-| B2 Layer | Tool | What is blocked |
-|---|---|---|
-| Collection | `log_interaction` | Raw query never recorded in the analytics log |
-| Processing | `add_to_training_set` | Collected data cannot be repurposed for model training |
-| Inference | `update_interest_profile` | No behavioral profile derived from the session |
-| Storage | `ad_platform` (vector DB write) | Derived interest data never reaches the ad store |
+**Scenario C is the key finding:** all C2/C3/D3/E3 secondary pipelines execute while C4 and B3 tools are blocked — a level of granularity that is structurally impossible with tool-level blocking.
 
 ---
 
-## C/D category purposes
+## Secondary pipeline categories
+
+Each secondary pipeline maps to a distinct category and purpose:
+
+| Category | Tool | Purpose | What is blocked |
+|---|---|---|---|
+| C2 | `log_interaction` | `analytics` | Query and response not recorded for analytics |
+| C3 | `add_to_training_set` | `model_training` | Interaction not used to train or evaluate models |
+| D3 | `update_interest_profile` | `personalization` | No behavioral profile built or updated from this session |
+| E3 | `ad_platform` (vector DB write) | `ad_targeting` | Derived interest data never reaches the ad platform |
+
+---
+
+## C4 and B3 tool purposes
 
 | Category | Purpose | Tool | What is blocked |
 |---|---|---|---|
-| C | `cross_context_sale` | `sell_to_data_broker` | Patient record snapshot never exported to pharma data broker |
-| C | `cross_context_sharing` | `share_with_research_partner` | Anonymized data never sent to research partner |
-| D | `sensitive_data_inference` | `infer_sensitive_attributes` | Risk scores (adherence, insurance, mental health) never derived |
+| C4 | `cross_context_sale` | `sell_to_data_broker` | Patient record snapshot never exported to pharma data broker |
+| C4 | `cross_context_sharing` | `share_with_research_partner` | Anonymized data never sent to research partner |
+| B3 | `sensitive_data_inference` | `infer_sensitive_attributes` | Risk scores (adherence, insurance, mental health) never derived |
 
 ---
 
@@ -377,13 +393,13 @@ npm run compare         # Print purpose matrix + signal-drop column from output 
 Expected comparison table from `npm run compare`:
 
 ```
-Tool                       │ Purpose            │ B2 Layer       │ Baseline     │ GPC Full     │ GPC Partial
-get_medical_records        │ primary_task        │ Primary        │ ✓ ok         │ ✓ ok         │ ✓ ok
-answer_question            │ primary_task        │ Primary        │ ✓ ok         │ ✓ ok         │ ✓ ok
-log_interaction            │ analytics           │ Collection     │ ✓ ok         │ ✗ BLOCKED    │ ✓ ok
-add_to_training_set        │ model_training      │ Processing     │ ✓ ok         │ ✗ BLOCKED    │ ✗ BLOCKED
-update_interest_profile    │ personalization     │ Inference      │ ✓ ok         │ ✗ BLOCKED    │ ✓ ok
-ad_platform                │ ad_targeting        │ Storage        │ ✓ ok         │ ✗ BLOCKED    │ ✗ BLOCKED
+Tool                       │ Purpose            │ Category │ Baseline     │ GPC Full     │ GPC Partial
+get_medical_records        │ primary_task        │ C1       │ ✓ ok         │ ✓ ok         │ ✓ ok
+answer_question            │ primary_task        │ C1       │ ✓ ok         │ ✓ ok         │ ✓ ok
+log_interaction            │ analytics           │ C2       │ ✓ ok         │ ✗ BLOCKED    │ ✓ ok
+add_to_training_set        │ model_training      │ C3       │ ✓ ok         │ ✗ BLOCKED    │ ✗ BLOCKED
+update_interest_profile    │ personalization     │ D3       │ ✓ ok         │ ✗ BLOCKED    │ ✓ ok
+ad_platform                │ ad_targeting        │ E3       │ ✓ ok         │ ✗ BLOCKED    │ ✗ BLOCKED
 ```
 
 ### LLM demo — Phase 1 (requires Ollama)
@@ -442,9 +458,9 @@ npm run cd-categories
 Runs all nine tools (B2 + C + D) under three scenarios:
 - **Scenario A** (GPC off): all nine tools execute
 - **Scenario B** (Full GPC): all eight secondary tools blocked
-- **Scenario C** (CD-only scope: `cross_context_sale|cross_context_sharing|sensitive_data_inference`): all four B2 secondary pipelines execute; both C tools and the D tool are blocked
+- **Scenario C** (CD-only scope: `cross_context_sale|cross_context_sharing|sensitive_data_inference`): all four C2/C3/D3/E3 secondary pipelines execute; the C4 and B3 tools are blocked
 
-The key finding printed by Scenario C: `withPurposeCheck()` required zero code changes to enforce C/D categories — only registry entries were added.
+The key finding printed by Scenario C: `withPurposeCheck()` required zero code changes to enforce C4 and B3 categories — only registry entries were added.
 
 #### Signal-drop experiment — Phase 4
 
