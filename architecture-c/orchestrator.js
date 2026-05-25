@@ -10,7 +10,7 @@ const TOOL_SEQUENCE = [
   { name: 'behavior_tracker', args: { event_type: 'session_summary', metadata: { duration_s: 142, tools_used: 4 } } },
 ];
 
-async function run(platformVersion, mode) {
+async function run(platformVersion, mode, gpc = false) {
   const results = [];
   const quarantineEvents = [];
 
@@ -18,7 +18,7 @@ async function run(platformVersion, mode) {
   const sequence = TOOL_SEQUENCE.filter(t => available.has(t.name));
 
   for (const { name, args } of sequence) {
-    const result = await server.invokeTool(name, args, mode);
+    const result = await server.invokeTool(name, args, mode, gpc);
     results.push(result);
 
     if (result.status === 'quarantined' || result.status === 'blocked') {

@@ -8,6 +8,8 @@
  *  - New v2.0 tools fire a consent_request event and pause execution
  *  - Approval resumes the tool call with consent_required=true
  *  - Decline returns a quarantined status with category metadata
+ *  - GPC signal auto-declines non-primary categories without prompting
+ *  - GPC signal does not affect primary categories (file_access, external_api)
  *  - Unknown tool names throw
  */
 
@@ -154,6 +156,58 @@ describe('quarantine — new v2.0 tool, requires fresh consent', () => {
       resolve({ approved: false, promptText: '' });
     });
     const result = await server.invokeTool('email_sender', {}, 'decline');
+    expect(result.category).toBe('communication');
+  });
+});
+
+describe('GPC signal — auto-decline non-primary categories', () => {
+  test('email_sender is blocked with reason=gpc_auto_decline when gpc=true', async () => {
+    const result = await server.invokeTool(
+      'email_sender',
+      { to: 'a@b.com', subject: 'Hi', body: '' },
+      'approve',
+      true
+    );
+    expect(result.status).toBe('blocked');
+    expect(result.reason).toBe('gpc_auto_decline');
+  });
+
+  test('behavior_tracker is blocked with reason=gpc_auto_decline when gpc=true', async () => {
+    const result = await server.invokeTool(
+      'behavior_tracker',
+      { event_type: 'test', metadata: {} },
+      'approve',
+      true
+    );
+    expect(result.status).toBe('blocked');
+    expect(result.reason).toBe('gpc_auto_decline');
+  });
+
+  test('GPC auto-decline does not fire a consent_request event', async () => {
+    const listener = jest.fn();
+    bus.on('consent_request', listener);
+    await server.invokeTool('email_sender', {}, 'approve', true);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  test('GPC auto-decline writes the category to declined_categories in the manifest', async () => {
+    await server.invokeTool('email_sender', {}, 'approve', true);
+    const mf = manifest.load();
+    expect(mf.declined_categories).toContain('communication');
+  });
+
+  test('file_read executes normally when gpc=true — primary category is unaffected', async () => {
+    const result = await server.invokeTool('file_read', { filename: 'test.txt' }, 'approve', true);
+    expect(result.status).toBe('executed');
+  });
+
+  test('web_search executes normally when gpc=true — primary category is unaffected', async () => {
+    const result = await server.invokeTool('web_search', { query: 'test' }, 'approve', true);
+    expect(result.status).toBe('executed');
+  });
+
+  test('GPC result includes the blocked category', async () => {
+    const result = await server.invokeTool('email_sender', {}, 'approve', true);
     expect(result.category).toBe('communication');
   });
 });

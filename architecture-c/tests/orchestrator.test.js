@@ -6,6 +6,7 @@
  *  - v2.0 silent: all 4 tools execute immediately, no quarantine events
  *  - v2.0 approve: new tools execute with consent_required=true, v1.0 tools are unaffected
  *  - v2.0 decline: new tools are quarantined, quarantine events recorded, manifest updated
+ *  - v2.0 GPC: non-primary categories auto-blocked by signal, primary categories unaffected
  *  - A2 persistence: a declined tool is hard-blocked in a subsequent invocation
  */
 
@@ -174,6 +175,51 @@ describe('v2.0 — decline mode', () => {
     const searchResult = results.find(r => r.tool === 'web_search');
     expect(fileResult.status).toBe('executed');
     expect(searchResult.status).toBe('executed');
+  });
+});
+
+describe('v2.0 — GPC mode (signal auto-declines non-primary categories)', () => {
+  test('email_sender is blocked with reason=gpc_auto_decline', async () => {
+    const { results } = await orchestrator.run('v2.0', 'approve', true);
+    const r = results.find(r => r.tool === 'email_sender');
+    expect(r.status).toBe('blocked');
+    expect(r.reason).toBe('gpc_auto_decline');
+  });
+
+  test('behavior_tracker is blocked with reason=gpc_auto_decline', async () => {
+    const { results } = await orchestrator.run('v2.0', 'approve', true);
+    const r = results.find(r => r.tool === 'behavior_tracker');
+    expect(r.status).toBe('blocked');
+    expect(r.reason).toBe('gpc_auto_decline');
+  });
+
+  test('no consent_request events fire — GPC bypasses the prompt', async () => {
+    const listener = jest.fn();
+    bus.on('consent_request', listener);
+    await orchestrator.run('v2.0', 'approve', true);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  test('primary category tools still execute normally with GPC on', async () => {
+    const { results } = await orchestrator.run('v2.0', 'approve', true);
+    const fileResult = results.find(r => r.tool === 'file_read');
+    const searchResult = results.find(r => r.tool === 'web_search');
+    expect(fileResult.status).toBe('executed');
+    expect(searchResult.status).toBe('executed');
+  });
+
+  test('GPC auto-decline writes non-primary categories to declined_categories', async () => {
+    await orchestrator.run('v2.0', 'approve', true);
+    const mf = manifest.load();
+    expect(mf.declined_categories).toContain('communication');
+    expect(mf.declined_categories).toContain('analytics');
+  });
+
+  test('GPC-blocked tools appear in quarantine_events', async () => {
+    const { quarantineEvents } = await orchestrator.run('v2.0', 'approve', true);
+    expect(quarantineEvents).toHaveLength(2);
+    const reasons = quarantineEvents.map(e => e.reason);
+    expect(reasons.every(r => r === 'gpc_auto_decline')).toBe(true);
   });
 });
 

@@ -10,22 +10,28 @@ const VALID_MODES = ['silent', 'approve', 'decline', 'interactive'];
 async function main() {
   const modeArg = process.argv.find(a => a.startsWith('--mode='));
   const mode = modeArg ? modeArg.split('=')[1] : 'interactive';
+  const gpc = process.argv.includes('--gpc');
 
   if (!VALID_MODES.includes(mode)) {
-    console.error(`Usage: node run_v2.js --mode=silent|approve|decline`);
+    console.error(`Usage: node run_v2.js --mode=silent|approve|decline [--gpc]`);
     process.exit(1);
   }
 
   manifest.reset();
 
-  console.log(`=== Architecture C — Platform ${PLATFORM_VERSION} | Mode: ${mode} ===`);
+  const gpcLabel = gpc ? ' | GPC: on' : '';
+  console.log(`=== Architecture C — Platform ${PLATFORM_VERSION} | Mode: ${mode}${gpcLabel} ===`);
   console.log('Manifest reset to v1.0. New tools (email_sender, behavior_tracker) not yet consented.\n');
+
+  if (gpc) {
+    console.log('[GPC] Signal active — non-primary categories will be auto-declined without prompting.\n');
+  }
 
   if (mode !== 'silent') {
     prompt.register(mode === 'interactive' ? null : mode);
   }
 
-  const { results, quarantineEvents } = await orchestrator.run(PLATFORM_VERSION, mode);
+  const { results, quarantineEvents } = await orchestrator.run(PLATFORM_VERSION, mode, gpc);
 
   // Bump manifest version now that all consent decisions for this platform version are recorded
   if (mode !== 'silent') {
@@ -37,6 +43,7 @@ async function main() {
   const output = {
     platform_version: PLATFORM_VERSION,
     mode,
+    gpc,
     tool_invocations: results,
     quarantine_events: quarantineEvents,
     capability_timeline: buildTimeline(results),
@@ -45,7 +52,7 @@ async function main() {
 
   console.log('\n' + JSON.stringify(output, null, 2));
 
-  if (mode === 'decline') {
+  if (mode === 'decline' || gpc) {
     printPersistenceCheck();
   }
 }
@@ -55,6 +62,7 @@ function buildTimeline(results) {
     tool: r.tool,
     callable_at: r.status === 'executed' && r.consent_required ? 'after_consent'
                : r.status === 'executed'                        ? 'immediately'
+               : r.reason  === 'gpc_auto_decline'               ? 'gpc_blocked'
                :                                                  'never',
     final_status: r.status,
     category: r.category ?? null,
