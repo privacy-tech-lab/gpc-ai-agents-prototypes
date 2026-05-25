@@ -9,7 +9,8 @@
     "v2:silent": "node run_v2.js --mode=silent",
     "v2:approve": "node run_v2.js --mode=approve",
     "v2:decline": "node run_v2.js --mode=decline",
-    "demo": "node run_v1.js && node run_v2.js --mode=silent && node run_v2.js --mode=approve && node run_v2.js --mode=decline",
+    "v2:gpc": "node run_v2.js --mode=approve --gpc",
+    "demo": "node run_v1.js && node run_v2.js --mode=silent && node run_v2.js --mode=approve && node run_v2.js --mode=decline && node run_v2.js --mode=approve --gpc",
     "test": "jest tests/ --runInBand"
   },
   "devDependencies": {

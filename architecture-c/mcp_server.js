@@ -5,7 +5,11 @@ const manifest = require('./consent_manifest');
 const bus = require('./event_bus');
 const handlers = require('./tool_handlers');
 
-async function withConsentCheck(toolName, args, mode) {
+// Categories the user explicitly consented to at signup.
+// GPC auto-decline applies only to categories outside this set.
+const PRIMARY_CATEGORIES = new Set(['file_access', 'external_api']);
+
+async function withConsentCheck(toolName, args, mode, gpc = false) {
   const tool = registry.getTool(toolName);
   if (!tool) throw new Error(`Unknown tool: ${toolName}`);
 
@@ -21,6 +25,19 @@ async function withConsentCheck(toolName, args, mode) {
     return {
       status: 'blocked',
       reason: 'previously_declined',
+      tool: toolName,
+      category: tool.capability_category,
+    };
+  }
+
+  // GPC signal: auto-decline non-primary categories without prompting the user.
+  // The global opt-out signal makes the decision that would otherwise require
+  // a per-tool consent prompt.
+  if (gpc && !PRIMARY_CATEGORIES.has(tool.capability_category) && manifest.requiresFreshConsent(tool, mf)) {
+    manifest.decline(tool.capability_category);
+    return {
+      status: 'blocked',
+      reason: 'gpc_auto_decline',
       tool: toolName,
       category: tool.capability_category,
     };
@@ -54,8 +71,8 @@ async function withConsentCheck(toolName, args, mode) {
   return { status: 'executed', tool: toolName, ...handlers[toolName](args) };
 }
 
-async function invokeTool(toolName, args, mode) {
-  return withConsentCheck(toolName, args, mode);
+async function invokeTool(toolName, args, mode, gpc = false) {
+  return withConsentCheck(toolName, args, mode, gpc);
 }
 
-module.exports = { invokeTool };
+module.exports = { invokeTool, PRIMARY_CATEGORIES };
