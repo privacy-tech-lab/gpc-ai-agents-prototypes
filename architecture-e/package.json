@@ -1,0 +1,16 @@
+{
+  "name": "architecture-e",
+  "version": "1.0.0",
+  "description": "Inference Firewall — GPC B3 derived-collection opt-out",
+  "type": "commonjs",
+  "license": "ISC",
+  "scripts": {
+    "baseline": "node run_baseline.js",
+    "b3": "node run_b3.js",
+    "demo": "node run_baseline.js && node run_b3.js",
+    "test": "jest tests/ --runInBand"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
+  }
+}
