@@ -1,26 +1,18 @@
 {
   "name": "architecture-b",
   "version": "1.0.0",
-  "description": "Purpose-Based GPC Enforcement — medical assistant prototype",
-  "main": "index.js",
+  "description": "Purpose-scoped GPC enforcement across a multi-stage AI data pipeline",
+  "main": "demo.js",
   "scripts": {
-    "baseline":        "node harness/run_baseline.js",
-    "gpc-full":        "node harness/run_gpc_full.js",
-    "gpc-partial":     "node harness/run_gpc_partial.js",
-    "compare":         "node harness/compare_results.js",
-    "llm-gpc":         "node harness/run_llm_gpc.js",
-    "missing-purpose": "node harness/run_gpc_missing_purpose_harness.js",
-    "cd-categories":   "node harness/run_gpc_cd.js",
-    "signal-drop":     "node harness/run_signal_drop.js",
-    "demo":            "node harness/run_baseline.js && node harness/run_gpc_full.js && node harness/run_gpc_partial.js && node harness/run_signal_drop.js && node harness/compare_results.js",
-    "test":            "jest tests/"
+    "demo": "node demo.js",
+    "start": "node services/medicalAssistant.js",
+    "test": "jest tests/"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
     "express": "^5.2.1"
   },
   "devDependencies": {
