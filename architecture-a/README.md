@@ -8,7 +8,7 @@ The assistant searches the web, synthesises an itinerary, and (in a non-GPC worl
 
 | Layer | Mechanism | Enforcement point |
 |---|---|---|
-| **1. Transport** | W3C `baggage: gpc=1` HTTP header | Carried on every outbound call; propagated without per-agent code changes |
+| **1. Transport** | W3C `baggage: gpc=1` HTTP header | Carried on every outbound call; read once by the orchestrator |
 | **2. Agent protocol** | MCP `_meta` task envelope | GPC signal embedded inside every tool-call so downstream agents receive it alongside task arguments |
 | **3. Trust boundary** | Signed RS256 JWT | Orchestrator mints a token with `gpc: true` before any call crosses to the third-party vendor; vendor verifies and rejects writes independently |
 | **4. Data layer** | `withGpc()` policy interceptor | Wraps every sensitive tool handler at the MCP server; returns `status: blocked` without executing if `gpc=1` is present in incoming `_meta` |
@@ -17,156 +17,87 @@ The assistant searches the web, synthesises an itinerary, and (in a non-GPC worl
 
 ---
 
-## Opt-out categories depicted
+## Pipeline
 
-Architecture A demonstrates categories A (presence), C (use restrictions), D (persistence), and E (behavioral influence) from the opt-out taxonomy. Enforcement is tool-level and binary: each sensitive tool is either fully blocked or fully permitted when GPC is on. This makes Architecture A a coarse-grained implementation — it cannot distinguish between, say, analytics use and training use, or between session-scoped and profile-scoped retention.
+```
+HTTP Request (baggage: gpc=1)
+  → orchestrator.js             (plain code — reads Baggage, mints JWT, builds _meta)
+      → llm_search_agent.js     (LLM loop — decides how many searches to run)
+      → synthesis_agent.js      (LLM loop — reasons over raw results, calls no tools)
+      → storage.js              (plain code — enforces GPC before writing)
+  → HTTP Response
+```
 
-### Category A: Presence
+### Agent roles
 
-Architecture A demonstrates **A2 (activation opt-out)** through the secondary pipeline itself. The user explicitly invoked the AI assistant for one purpose: planning a trip to Japan. In the baseline run, the pipeline also silently activates a set of additional AI operations the user never chose: it logs the interaction, updates a behavioral profile, and syncs data to a third-party personalisation vendor. These are AI-driven operations running in the background of the user's explicit request, not operations the user affirmatively activated.
+**Search agent** (`agents/llm_search_agent.js`) — the agentic retrieval core. An LLM loop with one tool (`search_web`). The model decides how many searches to make and when it has enough raw material; it may call `search_web` multiple times with refined queries. The GPC `_meta` envelope is forwarded on every call, but `search_web` is not sensitive so it always executes.
 
-With GPC on, only the explicitly-invoked operation runs (`search_web` returns the itinerary). The background operations are blocked before they execute.
+**Synthesis agent** (`agents/synthesis_agent.js`) — pure reasoning, no tools. Receives raw search results from the search agent and synthesises them into a structured itinerary. Calling no tools means there is nothing for GPC to block here — demonstrating that opt-out does not degrade answer quality.
 
-**How it is demoed:** `baseline_result.json` shows all five tools succeed. `gpc_result.json` shows only `search_web` succeeds — the four background operations the user never chose are blocked.
+**Storage** (`agents/storage.js`) — deterministic, no LLM. Calls four storage operations in fixed order. MCP-sensitive writes are double-guarded: explicit code check plus `withGpc()` interceptor at the MCP layer. The third-party write always reaches the vendor so the JWT can demonstrate independent enforcement.
 
-**What it does not cover:** A1 (integration opt-out) governs how AI capabilities are delivered via software update. Architecture A does not address that question — the AI assistant is already present and the user chose to use it.
-
-### Category C: Use
-
-Architecture A demonstrates C1, C2, and C4.
-
-**C1 (primary use restriction):** demonstrated by contrast. `search_web` always executes — the tool that completes the user's task runs regardless of GPC. Only uses beyond the immediate task are restricted.
-
-**C2 (secondary use restriction):** `log_interaction` is blocked. The Japan trip query and response summary may not be recorded for analytics or behavioral profiling unrelated to the primary task.
-
-**C4 (sharing restriction):** `store_to_third_party` is blocked. Session data may not be passed to the third-party personalisation vendor. The JWT enforcement makes this independent of the MCP layer: even if all MCP-layer enforcement were bypassed, the signed token carries `gpc: true` and the vendor rejects the write independently.
-
-**How it is demoed:** Compare `baseline_result.json` (all five tools `status: ok`) with `gpc_result.json` (`search_web` ok, four data tools blocked). The interaction log and vector store do not grow between GPC runs.
-
-**What it does not cover:** C3 (training restriction) is not separately enforced — there is no distinct training pipeline. Because blocking is tool-level rather than purpose-level, C2 and C3 cannot be independently scoped: a user cannot opt out of training use while permitting analytics. Architecture B addresses this.
-
-### Category D: Persistence
-
-Architecture A demonstrates D2 and D3 in binary form.
-
-**D2 (cross-session scope):** `user_profile_lookup` is blocked. Prior session data — the user's stored travel preferences — may not be retrieved to inform the current session. The current interaction is not personalized using cross-session history.
-
-**D3 (long-term profile scope):** `save_to_profile` is blocked. No data from this session is written to the user's persistent profile. The behavioral model of the user does not grow as a result of this interaction.
-
-Together these mean: existing cross-session data stays out of the current session, and the current session produces no new cross-session data.
-
-**How it is demoed:** Run `npm run baseline` then `npm run gpc`. In the baseline, `profiles.json` is updated. In the GPC run, neither `profiles.json` nor the interaction log changes.
-
-**What it does not cover:** D1 (session scope) is not demonstrated — within-session use of the query is always permitted. Architecture A does not implement duration-based retention, scope-based partitioning, or granular partial-profile writes.
-
-### Category E: Behavioral Influence
-
-Architecture A demonstrates E1 and E3 as consequences of the D-layer blocks, not as independently enforced controls.
-
-**E1 (personalization opt-out):** Blocking `user_profile_lookup` means the current session cannot be shaped by the user's stored travel history. The assistant gives the same response regardless of what prior trips the user has taken.
-
-**E3 (targeting opt-out):** Blocking `store_to_third_party` means the vendor cannot use this session's data to determine what recommendations or offers to show the user in future sessions.
-
-**What it does not cover:** E2 (persuasion opt-out) is not demonstrated. Architecture A controls data flows only; it has no mechanism to prevent the model from applying rapport-building or preference-calibrated tone in its responses. A full E2 implementation would require stateless model invocation with no user profile access.
-
-### Propagation (cross-cutting)
-
-The GPC signal must survive four hops without any single agent being trusted to enforce it alone:
+### GPC propagation across the agent boundary
 
 ```
 User (Sec-GPC: 1 in browser)
-  |
-  v  Layer 1: baggage: gpc=1 header
+  │
+  ▼  Layer 1: baggage: gpc=1 header
 Orchestrator
-  |  reads Baggage -> mints JWT(gpc:true) -> builds _meta={gpc,jwt}
-  |
-  |---> Layer 2: _meta forwarded in MCP tool envelope
-  |     Search Agent --> MCP server --> search_web  (not sensitive, runs)
-  |
-  `---> Layer 2: _meta forwarded in MCP tool envelope
-        Data Agent
-          |---> MCP server --> user_profile_lookup   (Layer 4: blocked by withGpc)
-          |---> MCP server --> save_to_profile        (Layer 4: blocked by withGpc)
-          |---> MCP server --> log_interaction        (Layer 4: blocked by withGpc)
-          `---> HTTP POST  --> Third-party vendor     (Layer 3: blocked by JWT)
+  │  reads Baggage → mints JWT(gpc:true) → builds _meta={gpc:1, jwt}
+  │
+  ├──▶ Layer 2: _meta forwarded in MCP _meta envelope
+  │    Search Agent (LLM)
+  │      calls search_web(_meta=meta)  [ok — not sensitive, always runs]
+  │      returns rawResults
+  │
+  ├──▶ same _meta forwarded to Synthesis Agent
+  │    Synthesis Agent (LLM)
+  │      no tool calls — pure reasoning
+  │      returns itinerary
+  │
+  └──▶ same _meta forwarded to storage
+       storage.js
+         ├──▶ MCP: user_profile_lookup(_meta=meta)
+         │      └─▶ withGpc() interceptor            [Layer 4: blocked]
+         ├──▶ MCP: save_to_profile(_meta=meta)
+         │      └─▶ code guard + withGpc()           [Layer 4: blocked]
+         ├──▶ MCP: log_interaction(_meta=meta)
+         │      └─▶ code guard + withGpc()           [Layer 4: blocked]
+         └──▶ HTTP POST /store  Authorization: Bearer <jwt>
+                └─▶ vendor verifyToken() → gpc=true  [Layer 3: blocked]
 ```
-
-The tamper-resistance property is demonstrated by the **signal-drop experiment**: if one intermediate agent strips `_meta` before forwarding, Layer 4 fails silently and the three sensitive MCP tools execute. Layer 3 (JWT) still holds because the token was signed by the orchestrator before the drop and the vendor verifies it independently. The finding: without a spec-level requirement to propagate `_meta`, a rogue or misconfigured agent can silently nullify consent for all MCP-layer enforcement. Only the signed JWT provides a trust-boundary backstop.
 
 ---
 
-## Pipeline diagram
+## Opt-out categories depicted
 
-### Scripted pipeline (deterministic, used by tests)
+Architecture A demonstrates categories A (presence), C (use restrictions), D (persistence), and E (behavioral influence) from the opt-out taxonomy. Enforcement is tool-level and binary: each sensitive tool is either fully blocked or fully permitted when GPC is on.
 
-```
-User query --> Orchestrator (orchestrator.js)
-                |
-                |  reads baggage header -> gpc=1
-                |  mints JWT(sub=user-42, gpc=true)
-                |  builds meta = { gpc: true, jwt: "..." }
-                |
-                |--> Search Agent (agents/search_agent.js)
-                |      receives: { task, meta }
-                |      calls MCP: search_web(query, _meta=meta)
-                |        `-> tool_handlers.js: search_web()      [ok] always runs
-                |      returns: { search: { status, results } }
-                |
-                `--> Data Agent (agents/data_agent.js)
-                       receives: { task, meta }
-                       calls MCP: user_profile_lookup(_meta=meta)
-                         `-> withGpc() interceptor              [blocked] gpc=1
-                       calls MCP: save_to_profile(_meta=meta)
-                         `-> withGpc() interceptor              [blocked] gpc=1
-                       calls MCP: log_interaction(_meta=meta)
-                         `-> withGpc() interceptor              [blocked] gpc=1
-                       calls HTTP: POST /store  Authorization: Bearer <jwt>
-                         `-> third_party_storage.js: verifyToken() -> gpc=true  [blocked]
+### Category A: Presence
 
-Output: output/baseline_result.json / output/gpc_result.json
-```
+Architecture A demonstrates **A2 (activation opt-out)**. The user invoked the assistant for one purpose: planning a trip. In the baseline run, the pipeline also silently activates operations the user never chose — logging the interaction, updating a behavioral profile, and syncing to a third-party vendor. With GPC on, only the explicitly-invoked operation runs (`search_web`); the background operations are blocked.
 
-### LLM pipeline (multi-agent, used for the demo)
+### Category C: Use
 
-```
-User query --> LLM Orchestrator (orchestrator/llm_orchestrator.js)
-                |
-                |  runAgentLoop() -- model: qwen2.5:14b via Ollama
-                |  required tools: dispatch_to_search_agent, dispatch_to_data_agent
-                |
-                |--> dispatch_to_search_agent
-                |      LLM Search Agent (agents/llm_search_agent.js)
-                |        runAgentLoop() -- required tool: search_web
-                |        calls MCP via mcp_client.js -> search_web()   [ok] always runs
-                |        returns summary + toolCalls[]
-                |
-                `--> dispatch_to_data_agent
-                       LLM Data Agent (agents/llm_data_agent.js)
-                         runAgentLoop() -- required tools:
-                           user_profile_lookup  ->  MCP -> withGpc()    [blocked]
-                           save_to_profile      ->  MCP -> withGpc()    [blocked]
-                           log_interaction      ->  MCP -> withGpc()    [blocked]
-                           store_to_third_party ->  HTTP -> JWT check   [blocked]
-                         (model instructed to accept blocked responses and continue)
-                         returns summary + toolCalls[]
+**C1 (primary use restriction):** `search_web` always executes — the tool that completes the user's task runs regardless of GPC.
 
-Output: output/ai_baseline_result.json / output/ai_gpc_result.json
-```
+**C2 (secondary use restriction):** `log_interaction` is blocked. The query and response may not be recorded for analytics or profiling.
 
-### Signal-drop experiment
+**C4 (sharing restriction):** the third-party write is blocked by the JWT. Even if MCP-layer enforcement were bypassed, the signed token carries `gpc: true` and the vendor rejects the write independently.
 
-```
-Orchestrator --> Search Agent  (normal)
-             `-> Data Agent   (dropSignal=true)
-                    |  strips _meta before calling MCP tools
-                    |
-                    |--> MCP: user_profile_lookup  (no _meta -> withGpc skipped)  [RUNS]
-                    |--> MCP: save_to_profile      (no _meta -> withGpc skipped)  [RUNS]
-                    |--> MCP: log_interaction      (no _meta -> withGpc skipped)  [RUNS]
-                    `--> HTTP: /store  (JWT still valid, signed before drop)       [BLOCKED]
+**What it does not cover:** C3 (training restriction) is not separately enforced. Because blocking is tool-level, C2 and C3 cannot be independently scoped.
 
-Finding: Layer 4 fails; Layer 3 holds. _meta propagation must be mandatory.
-```
+### Category D: Persistence
+
+**D2 (cross-session scope):** `user_profile_lookup` is blocked. Prior session data may not be retrieved to inform the current session.
+
+**D3 (long-term profile scope):** `save_to_profile` is blocked. No data from this session is written to the persistent profile.
+
+### Category E: Behavioral Influence
+
+**E1 (personalization opt-out):** Blocking `user_profile_lookup` means the session cannot be shaped by stored travel history. The assistant gives the same response regardless of prior trips.
+
+**E3 (targeting opt-out):** Blocking the third-party write means the vendor cannot use this session's data for future recommendations.
 
 ---
 
@@ -174,52 +105,45 @@ Finding: Layer 4 fails; Layer 3 holds. _meta propagation must be mandatory.
 
 ```
 architecture-a/
-|-- orchestrator/
-|   |-- llm_orchestrator.js   LLM orchestrator: reads Baggage, mints JWT, dispatches to agents
-|   |-- agent_loop.js         Shared LLM turn loop (tool_choice, nudge, required-tool tracking)
-|   |-- baggage.js            W3C Baggage encode/decode helpers (Layer 1)
-|   `-- mcp_client.js         In-process MCP client; applies withGpc() at each call
-|
-|-- agents/
-|   |-- search_agent.js       Scripted search agent
-|   |-- data_agent.js         Scripted data agent
-|   |-- llm_search_agent.js   LLM search agent (own runAgentLoop, tool: search_web)
-|   |-- llm_data_agent.js     LLM data agent (own runAgentLoop, 4 required tools)
-|   `-- third_party_storage.js  Express server simulating JWT-gated vendor (Layer 3)
-|
-|-- mcp-server/
-|   |-- server.js             MCP server entry point
-|   |-- gpc_policy.js         withGpc() interceptor + sensitive-tool registry (Layer 4)
-|   |-- tool_handlers.js      Raw tool implementations (search, profile, log)
-|   `-- identity_provider.js  RS256 JWT sign / verify (Layer 3)
-|
-|-- orchestrator/
-|   `-- orchestrator.js       Scripted orchestrator (used by integration tests)
-|
-|-- harness/
-|   |-- run_baseline.js       Scripted run: GPC off
-|   |-- run_gpc.js            Scripted run: GPC on
-|   |-- run_signal_drop.js    Scripted run: GPC on + _meta stripped mid-chain
-|   |-- compare_results.js    Diff baseline vs GPC vs signal-drop; print report
-|   |-- seed_demo.js          Seed user-42 profile, log, and vector store
-|   |-- run_ai_baseline.js    LLM run: GPC off
-|   `-- run_ai_gpc.js         LLM run: GPC on
-|
-|-- tests/
-|   |-- gpc_policy.test.js        withGpc() interceptor: blocking, passthrough, signal formats
-|   |-- baggage.test.js           W3C Baggage encode/decode
-|   |-- identity_provider.test.js JWT sign, verify, tamper detection
-|   |-- orchestrator.test.js      Full scripted pipeline integration (all 4 layers, signal-drop)
-|   `-- agent_loop.test.js        Shared LLM loop: tool_choice, nudge, arg parsing, errors
-|
-|-- keys/
-|   |-- public.pem   Tracked in git; must be regenerated after cloning (see Setup)
-|   `-- private.pem  Gitignored; must generate before running
-|
-`-- output/           Gitignored; created at runtime
-    |-- profiles.json
-    |-- interaction_log.jsonl
-    `-- vector_store.json
+├── orchestrator/
+│   ├── orchestrator.js       Entry point: reads Baggage, mints JWT, dispatches agents
+│   ├── agent_loop.js         Shared LLM turn loop (tool_choice, nudge, required-tool tracking)
+│   ├── baggage.js            W3C Baggage encode/decode helpers (Layer 1)
+│   └── mcp_client.js         In-process MCP client; applies withGpc() at each call
+│
+├── agents/
+│   ├── llm_search_agent.js   LLM search agent (own runAgentLoop, tool: search_web)
+│   ├── synthesis_agent.js    LLM synthesis agent (own runAgentLoop, no tools)
+│   ├── storage.js            Deterministic storage: profile, log, vendor write
+│   └── third_party_storage.js  Express server simulating JWT-gated vendor (Layer 3)
+│
+├── mcp-server/
+│   ├── server.js             MCP server entry point
+│   ├── gpc_policy.js         withGpc() interceptor + sensitive-tool registry (Layer 4)
+│   ├── tool_handlers.js      Raw tool implementations (search, profile, log)
+│   └── identity_provider.js  RS256 JWT sign / verify (Layer 3)
+│
+├── harness/
+│   ├── run_baseline.js       Demo run: GPC off — all tools execute, data written
+│   ├── run_gpc.js            Demo run: GPC on — sensitive tools blocked
+│   ├── compare_results.js    Diff baseline vs GPC run; print report
+│   └── seed_demo.js          Seed user-42 profile, log, and vector store
+│
+├── tests/
+│   ├── gpc_policy.test.js        withGpc() interceptor: blocking, passthrough, signal formats
+│   ├── baggage.test.js           W3C Baggage encode / decode round-trips
+│   ├── identity_provider.test.js JWT sign, verify, tamper detection, expiry
+│   ├── orchestrator.test.js      Full pipeline integration (all 4 layers); LLM agents mocked
+│   └── agent_loop.test.js        Shared LLM loop: tool_choice, nudge, arg parsing, errors
+│
+├── keys/
+│   ├── public.pem   Tracked in git; regenerate after cloning (see Setup)
+│   └── private.pem  Gitignored; must generate before running
+│
+└── output/           Gitignored; created at runtime
+    ├── profiles.json
+    ├── interaction_log.jsonl
+    └── vector_store.json
 ```
 
 ---
@@ -231,9 +155,8 @@ cd architecture-a
 npm install
 
 # Generate RSA keypair for JWT signing.
-# private.pem is gitignored so every contributor must run this once after cloning.
-# public.pem is tracked but must match the local private.pem — re-run this command
-# whenever you re-clone or if you see "invalid signature" errors from the JWT tests.
+# private.pem is gitignored — run this once after cloning.
+# Re-run if you see "invalid signature" errors.
 node -e "
 const { generateKeyPairSync } = require('crypto');
 const fs = require('fs');
@@ -257,46 +180,19 @@ fs.writeFileSync('keys/public.pem',  publicKey);
 npm test
 ```
 
-60 tests across five files. The `orchestrator.test.js` suite runs the full four-layer scripted pipeline end-to-end.
+61 tests across five files. LLM agents are mocked in `orchestrator.test.js` so no Ollama instance is needed.
 
 | Test file | What it covers |
 |---|---|
 | `gpc_policy.test.js` | `withGpc()` blocking, passthrough, all GPC signal formats (`1`, `true`, `"1"`) |
 | `baggage.test.js` | W3C Baggage encode / decode round-trips |
 | `identity_provider.test.js` | JWT sign, verify, tamper detection, expiry |
-| `orchestrator.test.js` | Full scripted pipeline: baseline, GPC, signal-drop, all four layers, timing |
-| `agent_loop.test.js` | Shared LLM loop: `tool_choice` switching, nudge on ignored tool, arg parsing, blocked response passthrough, API error handling |
+| `orchestrator.test.js` | Full pipeline: Layer 1–4 assertions, timing, storage tested directly |
+| `agent_loop.test.js` | Shared LLM loop: `tool_choice` switching, nudge, arg parsing, blocked response passthrough |
 
-### Scripted demo (deterministic, no model required)
+### Demo (requires Ollama)
 
-Runs baseline -> GPC -> signal-drop -> comparison report in one command:
-
-```bash
-npm run demo
-```
-
-Individual runs:
-
-```bash
-npm run baseline      # GPC off  -- all tools execute, data written to output/
-npm run gpc           # GPC on   -- sensitive tools blocked
-npm run signal-drop   # GPC on, _meta stripped by data agent
-npm run compare       # Print comparison report from existing output files
-```
-
-Expected comparison report:
-
-```
-Tool                         | Baseline     | GPC          | Signal-drop
-------------------------------------------------------------------------
-search_web                   | ok           | ok           | ok
-user_profile_lookup          | ok           | BLOCKED      | ok
-log_interaction              | ok           | BLOCKED      | ok
-save_to_profile              | ok           | BLOCKED      | ok
-third_party_store            | ok           | BLOCKED      | BLOCKED
-```
-
-### LLM demo (requires Ollama)
+Seeds user-42, runs baseline and GPC runs, prints comparison report:
 
 ```bash
 # 1. Start Ollama (skip if desktop app is already running)
@@ -305,42 +201,53 @@ ollama serve
 # 2. Pull the model once
 ollama pull qwen2.5:14b
 
-# 3. Run the full demo (seeds user-42, runs baseline + GPC, prints report)
-npm run ai-demo
+# 3. Seed demo data and run both modes
+npm run demo
 ```
 
-Individual LLM runs (run `npm run seed` first to populate user-42 profile data):
+Individual runs:
 
 ```bash
-npm run seed           # Seed realistic user-42 travel history
-npm run ai-baseline    # GPC off  -- LLM agents call all tools, data written
-npm run ai-gpc         # GPC on   -- LLM agents receive blocked responses
-npm run ai-compare     # Print comparison report for AI output files
+npm run seed      # Seed user-42 travel history
+npm run baseline  # GPC off  — all tools execute, data written to output/
+npm run gpc       # GPC on   — sensitive tools blocked
+npm run compare   # Print comparison report from existing output files
 ```
 
 Override the model:
 
 ```bash
-OLLAMA_MODEL=llama3.1:70b npm run ai-demo
+OLLAMA_MODEL=llama3.1:70b npm run demo
 ```
 
 Use real web search (Tavily free tier, 1000 calls/month):
 
 ```bash
-TAVILY_API_KEY=tvly-... npm run ai-demo
+TAVILY_API_KEY=tvly-... npm run demo
+```
+
+### Expected comparison report
+
+```
+Tool                     │ Baseline     │ GPC
+─────────────────────────────────────────────
+search_web               │ ✓ ok         │ ✓ ok
+profile_lookup           │ ✓ ok         │ ✗ BLOCKED
+save_to_profile          │ ✓ ok         │ ✗ BLOCKED
+log_interaction          │ ✓ ok         │ ✗ BLOCKED
+third_party              │ ✓ ok         │ ✗ BLOCKED
 ```
 
 ---
 
 ## What the output files show
 
-After running the scripted demo, `output/` contains:
+After running the demo, `output/` contains:
 
 | File | Baseline | GPC run |
 |---|---|---|
 | `profiles.json` | user-42 record updated | unchanged (write blocked) |
 | `interaction_log.jsonl` | new line appended | unchanged (write blocked) |
-| `vector_store.json` | new entry added | unchanged (JWT rejected) |
+| `vector_store.json` | new entry added | unchanged (JWT rejected by vendor) |
 | `baseline_result.json` | all tools `status: ok` | n/a |
-| `gpc_result.json` | n/a | data tools `status: blocked` |
-| `signal_drop_result.json` | n/a | MCP tools `ok`, vendor `blocked` |
+| `gpc_result.json` | n/a | storage tools `status: blocked` |

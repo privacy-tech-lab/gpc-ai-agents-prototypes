@@ -1,63 +1,56 @@
-/**
- * Orchestrator — entry point for a user request.
- *
- * Responsibilities:
- *   Layer 1: Read the GPC signal from the W3C Baggage header.
- *   Layer 2: Embed the signal in MCP _meta task envelopes for sub-agents.
- *   Layer 3: Obtain a signed JWT from the IdP and attach it to calls that
- *             cross the third-party trust boundary.
- *
- * @param {object} options
- * @param {string}  options.query           — user's query
- * @param {string}  options.user_id         — user identifier
- * @param {string}  [options.baggageHeader] — W3C Baggage header value from the incoming HTTP request
- * @param {boolean} [options.dropSignal]    — experiment: strip meta before forwarding
- * @param {object}  [options.timing]        — array to collect per-tool timings
- */
-
 const { readGpcFromBaggage } = require('./baggage.js');
 const { issueToken } = require('../mcp-server/identity_provider.js');
-const dataAgent = require('../agents/data_agent.js');
-const searchAgent = require('../agents/search_agent.js');
+const searchAgent = require('../agents/llm_search_agent.js');
+const synthesisAgent = require('../agents/synthesis_agent.js');
+const storage = require('../agents/storage.js');
+const { MODEL } = require('./agent_loop.js');
 
-async function handleRequest(options) {
-  const {
-    query,
-    user_id,
-    baggageHeader = '',
-    dropSignal = false,
-    timing = [],
-  } = options;
-
-  // --- Layer 1: read GPC from W3C Baggage ---
+/**
+ * @param {object} options
+ * @param {string}  options.query
+ * @param {string}  options.user_id
+ * @param {string}  [options.baggageHeader]
+ * @param {Array}   [options.timing]
+ */
+async function handleRequest({ query, user_id, baggageHeader = '', timing = [] }) {
+  // Layer 1: extract GPC from transport header
   const gpc = readGpcFromBaggage(baggageHeader);
 
-  // --- Layer 3: obtain JWT for third-party boundary ---
-  // The JWT embeds the same GPC flag so the vendor can independently verify it.
+  // Layer 3: mint JWT encoding GPC before any boundary crossing
   const jwt = issueToken('orchestrator', gpc);
 
-  // --- Layer 2: build MCP _meta task envelope ---
+  // Layer 2: meta envelope carried on every downstream call
   const meta = { gpc: gpc ? 1 : 0, jwt };
 
-  // Dispatch to sub-agents in parallel
-  const [searchResult, dataResult] = await Promise.all([
-    searchAgent.run({ query, meta, timing, dropSignal }),
-    dataAgent.run({
-      user_id,
-      query,
-      response_summary: `Summary of search results for: ${query}`,
-      meta,
-      timing,
-      dropSignal,
-    }),
-  ]);
+  // Agent 1: retrieval — LLM decides how many searches to run
+  const searchResult = await searchAgent.run({ query, meta, timing });
+
+  // Agent boundary: same meta envelope forwarded to synthesis agent
+  // Agent 2: synthesis — LLM reasons over raw results, calls no tools
+  const synthesisResult = await synthesisAgent.run({
+    query,
+    rawResults: searchResult.rawResults,
+    meta,
+    timing,
+  });
+
+  // Deterministic storage — no LLM, GPC enforced in code and at MCP layer
+  const storageResult = await storage.store({
+    user_id,
+    query,
+    answer: synthesisResult.answer,
+    meta,
+    timing,
+  });
 
   return {
-    gpc_active: gpc,
-    baggage_header: baggageHeader,
-    meta_envelope: { gpc: meta.gpc },  // jwt excluded from output for readability
-    search: searchResult,
-    data: dataResult,
+    model:         MODEL,
+    gpc_active:    gpc,
+    meta_envelope: { gpc: meta.gpc },
+    answer:        synthesisResult.answer,
+    rawResults:    searchResult.rawResults,
+    searchCalls:   searchResult.toolCalls,
+    storageResult,
     timing,
   };
 }
