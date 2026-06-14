@@ -5,7 +5,7 @@
 
 const fs         = require('fs');
 const path       = require('path');
-const thirdParty = require('../agents/third_party_storage.js');
+const thirdParty = require('../services/third_party_storage.js');
 const { handleRequest } = require('../orchestrator/orchestrator.js');
 const { encodeBaggage } = require('../orchestrator/baggage.js');
 

@@ -16,13 +16,13 @@ jest.mock('../agents/llm_search_agent.js', () => ({
   }),
 }));
 
-jest.mock('../agents/synthesis_agent.js', () => ({
+jest.mock('../agents/llm_synthesis_agent.js', () => ({
   run: jest.fn().mockResolvedValue({ answer: 'mock synthesized answer' }),
 }));
 
-const thirdParty    = require('../agents/third_party_storage.js');
+const thirdParty    = require('../services/third_party_storage.js');
 const { handleRequest } = require('../orchestrator/orchestrator.js');
-const { store }     = require('../agents/storage.js');
+const { store }     = require('../services/storage.js');
 const { encodeBaggage } = require('../orchestrator/baggage.js');
 const { issueToken }    = require('../mcp-server/identity_provider.js');
 const fs   = require('fs');
