@@ -8,7 +8,7 @@
 
 process.env.THIRD_PARTY_PORT = '4099';
 
-jest.mock('../agents/llm_search_agent.js', () => ({
+jest.mock('../agents/search_agent.js', () => ({
   run: jest.fn().mockResolvedValue({
     answer:     'mock search answer',
     rawResults: [{ status: 'ok', results: ['r1'] }],
@@ -16,7 +16,7 @@ jest.mock('../agents/llm_search_agent.js', () => ({
   }),
 }));
 
-jest.mock('../agents/llm_synthesis_agent.js', () => ({
+jest.mock('../agents/synthesis_agent.js', () => ({
   run: jest.fn().mockResolvedValue({ answer: 'mock synthesized answer' }),
 }));
 

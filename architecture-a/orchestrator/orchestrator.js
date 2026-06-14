@@ -1,7 +1,7 @@
 const { readGpcFromBaggage } = require('./baggage.js');
 const { issueToken } = require('../mcp-server/identity_provider.js');
-const searchAgent = require('../agents/llm_search_agent.js');
-const synthesisAgent = require('../agents/llm_synthesis_agent.js');
+const searchAgent = require('../agents/search_agent.js');
+const synthesisAgent = require('../agents/synthesis_agent.js');
 const storage = require('../services/storage.js');
 const { MODEL } = require('./agent_loop.js');
 

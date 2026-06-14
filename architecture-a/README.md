@@ -22,7 +22,7 @@ The assistant searches the web, synthesises an itinerary, and (in a non-GPC worl
 ```
 HTTP Request (baggage: gpc=1)
   → orchestrator.js             (plain code — reads Baggage, mints JWT, builds _meta)
-      → llm_search_agent.js     (LLM loop — decides how many searches to run)
+      → search_agent.js     (LLM loop — decides how many searches to run)
       → synthesis_agent.js      (LLM loop — reasons over raw results, calls no tools)
       → storage.js              (plain code — enforces GPC before writing)
   → HTTP Response
@@ -30,11 +30,15 @@ HTTP Request (baggage: gpc=1)
 
 ### Agent roles
 
-**Search agent** (`agents/llm_search_agent.js`): An LLM loop with one tool (`search_web`). The model decides how many searches to make and when it has enough raw material; it may call `search_web` multiple times with refined queries. The GPC `_meta` envelope is forwarded on every call; however, `search_web` is not in the sensitive-tool registry, so the `withGpc()` interceptor always passes it through regardless of the GPC value. Retrieval is never blocked; only storage is.
+**Search agent** (`agents/search_agent.js`): An LLM loop with one tool (`search_web`). The model decides how many searches to make and when it has enough raw material; it may call `search_web` multiple times with refined queries. The GPC `_meta` envelope is forwarded on every call; however, `search_web` is not in the sensitive-tool registry, so the `withGpc()` interceptor always passes it through regardless of the GPC value. Retrieval is never blocked; only storage is.
 
-**Synthesis agent** (`agents/llm_synthesis_agent.js`) — pure reasoning, no tools. Receives raw search results from the search agent and synthesises them into a structured itinerary. Calling no tools means there is nothing for GPC to block here — demonstrating that opt-out does not degrade answer quality.
+**Synthesis agent** (`agents/synthesis_agent.js`) — pure reasoning, no tools. Receives raw search results from the search agent and synthesises them into a structured itinerary. Calling no tools means there is nothing for GPC to block here — demonstrating that opt-out does not degrade answer quality.
+
+### Supporting services (no LLM)
 
 **Storage** (`services/storage.js`) — deterministic, no LLM. Calls four storage operations in fixed order. MCP-sensitive writes are double-guarded: explicit code check plus `withGpc()` interceptor at the MCP layer. The third-party write always reaches the vendor so the JWT can demonstrate independent enforcement.
+
+**Third-party vendor** (`services/third_party_storage.js`) — simulated external vendor Express server. Verifies the RS256 JWT on every inbound request and rejects writes when `gpc: true` is present in the token claims, independent of any MCP-layer enforcement.
 
 ### GPC propagation across the agent boundary
 
@@ -112,8 +116,8 @@ architecture-a/
 │   └── mcp_client.js         In-process MCP client; applies withGpc() at each call
 │
 ├── agents/                   LLM agents only
-│   ├── llm_search_agent.js   LLM search agent (own runAgentLoop, tool: search_web)
-│   └── llm_synthesis_agent.js  LLM synthesis agent (own runAgentLoop, no tools)
+│   ├── search_agent.js   LLM search agent (own runAgentLoop, tool: search_web)
+│   └── synthesis_agent.js  LLM synthesis agent (own runAgentLoop, no tools)
 │
 ├── services/                 Deterministic supporting infrastructure (no LLM)
 │   ├── storage.js            Storage: profile, log, vendor write — GPC-gated via code + MCP
