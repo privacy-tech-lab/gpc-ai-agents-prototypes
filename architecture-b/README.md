@@ -4,9 +4,7 @@
 
 A patient asks an AI assistant: *"What does my blood pressure reading mean, and should I adjust my medication?"*
 
-The assistant retrieves their records and answers the question. In a non-GPC world, that same interaction also silently feeds an analytics log, a model-training dataset, and a pharma ad-targeting platform — all AI-relevant downstream systems that the patient never directly interacted with. With GPC, each of those secondary data flows is independently gated by its declared purpose.
-
-**The central claim:** GPC can govern a multi-stage AI pipeline, including pipeline stages that train or feed AI systems, without breaking the user-facing AI interaction.
+The assistant retrieves their records and answers the question. This interaction also feeds an analytics log, a dataset that will late be used to train a model, and a pharma ad-targeting platform; in other words, downstream systems that the patient never directly interacted with. With GPC, each of those secondary data flows is independently gated by its declared purpose. GPC will govern the multi-stage pipeline without breaking the user-facing AI interaction.
 
 ### What Architecture B adds over Architecture A
 
