@@ -5,7 +5,7 @@
   "main": "demo.js",
   "scripts": {
     "demo": "node demo.js",
-    "start": "node services/medicalAssistant.js",
+    "start": "node orchestrator/orchestrator.js",
     "test": "jest tests/"
   },
   "keywords": [],

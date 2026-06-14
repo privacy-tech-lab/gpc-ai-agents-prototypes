@@ -13,7 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 const { get_medical_records } = require('./services/medicalRecords');
-const { fanOutSecondaryPurposes } = require('./lib/agentLoop');
+const { fanOutSecondaryPurposes } = require('./orchestrator/orchestrator');
 const { start: startAdPlatform } = require('./services/adPlatform');
 
 const OUTPUT_DIR = path.join(__dirname, 'output');

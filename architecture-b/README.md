@@ -4,50 +4,18 @@
 
 A patient asks an AI assistant: *"What does my blood pressure reading mean, and should I adjust my medication?"*
 
-The assistant retrieves their records and answers the question. This interaction also feeds an analytics log, a dataset that will late be used to train a model, and a pharma ad-targeting platform; in other words, downstream systems that the patient never directly interacted with. With GPC, each of those secondary data flows is independently gated by its declared purpose. GPC will govern the multi-stage pipeline without breaking the user-facing AI interaction.
+The assistant retrieves their records and answers the question. In a non-GPC world, that same interaction also feeds an analytics log, a model-training dataset, and a pharma ad-targeting platform: downstream systems the patient never directly interacted with. With GPC, each of those secondary data flows is independently gated by its declared purpose.
 
-### What Architecture B adds over Architecture A
+Architecture B adds purpose-level enforcement over Architecture A's tool-level blocking. A single interaction fans out to multiple secondary pipelines; the patient can opt out of specific purposes (e.g., ad targeting) while allowing others (e.g., analytics), independently and without affecting the primary response.
 
-Architecture A enforced GPC at the tool level (all-or-nothing per tool). Architecture B enforces at the **purpose level**: a single data-retrieval event fans out to multiple secondary uses, and the patient can opt out of specific downstream purposes (e.g., ad targeting) while allowing others (e.g., analytics), independently and without affecting the primary interaction.
-
----
-
-## What is genuinely agentic vs. supporting infrastructure
-
-This distinction matters for accurately representing the architecture.
-
-**Agentic (LLM decision-making):**
-
-- `lib/agentLoop.js` — an LLM (Ollama / `qwen2.5:14b`) drives the primary patient interaction. The model decides to call `get_medical_records`, with what arguments, and composes the final clinical answer. GPC has no effect on this step — the patient always gets a complete, accurate answer.
-
-**AI/ML-relevant, but not agentic (deterministic supporting infrastructure):**
-
-- `services/trainingDataset.js` — appends `(query, response)` pairs to a JSONL file that feeds a future fine-tuning job. The AI is downstream and offline; the pipeline step itself is a file write.
-- `services/adPlatform.js` — writes to a vector store that in production would feed an embedding model and profiling/recommendation system. The `vector` field is a mock placeholder; in a real deployment this stage would invoke an embedding model. The enforcement point (purpose-based gating) is identical whether the downstream consumer is a mock or a real model.
-- `services/analytics.js` — interaction logging. Not AI; included to show that non-AI secondary pipelines use the same gating mechanism.
-
-**Why this framing matters:** the realistic picture of a multi-stage AI pipeline is one agentic component in the live request path, surrounded by data infrastructure that feeds or was produced by other AI systems (training jobs, embedding models, recommendation engines). GPC governing what AI-relevant systems a single interaction feeds is the more important and realistic privacy question. The patient cannot opt out of the training dataset they never knew existed — that is exactly the gap this demonstrates.
-
----
-
-## Enforcement layers
-
-| Layer | Mechanism | Where enforced |
+| Layer | Mechanism | Enforcement point |
 |---|---|---|
-| **1. Transport** | `Sec-GPC: 1` header or `gpc` in request body | `buildPrivacyContext()` in `services/medicalAssistant.js` |
-| **2. Agent protocol** | `_meta = {gpc, gpc_scope, purpose}` attached to every tool call | `lib/agentLoop.js` — forwarded alongside `get_medical_records` |
-| **3. Trust boundary** | `evaluatePurpose()` at the ad platform's HTTP endpoint | `services/adPlatform.js` — independent enforcement before any write |
-| **4. Data layer** | `withPurposeCheck()` wraps every secondary-purpose side effect | `services/analytics.js`, `services/trainingDataset.js` |
+| **1. Transport** | `Sec-GPC: 1` HTTP header or `gpc` in request body; optional `gpc_scope` array for partial opt-out | `buildPrivacyContext()` in `medicalAssistant.js` reads `gpc` and `gpc_scope` once from the inbound request and builds `privacyContext = { gpc, gpc_scope }`, which is passed as a single object to `runAgentLoop()` and forwarded to every downstream call; nothing below re-reads the header |
+| **2. Agent protocol** | `_meta = {gpc, gpc_scope, purpose}` task envelope | `agentLoop.js` builds a `_meta` envelope before each tool call, setting `purpose: 'patient_response'` to mark the primary task as non-restrictable; the envelope travels alongside `get_medical_records` arguments so the full GPC context is always available at the execution site |
+| **3. Trust boundary** | `evaluatePurpose()` at the ad platform HTTP endpoint | `fanOutSecondaryPurposes()` sends `gpc` and `gpc_scope` in the POST body to the ad platform; the ad platform calls `evaluatePurpose({ gpc, gpc_scope }, 'ad_targeting', registry)` at its HTTP boundary before touching the vector store and returns `status: blocked` without writing if `ad_targeting` is in scope, independent of what the calling code did |
+| **4. Data layer** | `withPurposeCheck()` policy wrapper | Wraps the `logInteraction` and `addTrainingExample` handlers in `analytics.js` and `trainingDataset.js`. A restrictable-purpose registry (`purposeRegistry.js`) defines which pipelines are opt-outable: `analytics`, `model_training`, and `ad_targeting`. If `gpc=1` and no `gpc_scope` is set (all purposes blocked) or the purpose is explicitly listed in `gpc_scope`, the wrapper returns `status: blocked` without executing. `get_medical_records` is not in the registry and always executes. |
 
-### Partial opt-out via gpc_scope
-
-Standard GPC is binary. Architecture B adds an optional `gpc_scope` array that limits the opt-out to specific purposes:
-
-```json
-{ "gpc": 1, "gpc_scope": ["ad_targeting"] }
-```
-
-This blocks only the ad platform while analytics and training proceed. Each pipeline is evaluated independently with the same `privacyContext`.
+**Result:** the patient gets a complete, accurate answer in all scenarios. With full GPC opt-out, nothing is written to any secondary pipeline. With partial opt-out (`gpc_scope: ["ad_targeting"]`), analytics and training proceed while the ad platform is blocked.
 
 ---
 
@@ -55,75 +23,54 @@ This blocks only the ad platform while analytics and training proceed. Each pipe
 
 ```
 POST /ask  { patient_id, query, gpc, gpc_scope }
-  │
-  ▼  Layer 1: privacyContext = { gpc, gpc_scope }
-services/medicalAssistant.js
-  │
-  ▼
-lib/agentLoop.js — runAgentLoop()
-  │
-  │  LLM (Ollama / qwen2.5:14b) ← agentic
-  │    calls get_medical_records({ patient_id })
-  │    _meta = { gpc, gpc_scope, purpose: 'patient_response' }  ← Layer 2
-  │    get_medical_records ALWAYS runs — not GPC-gated
-  │    model composes final clinical answer
-  │
-  ▼  PRIMARY RESPONSE RETURNED (unaffected by GPC)
-  │
-  ▼  fanOutSecondaryPurposes() — deterministic, runs after primary
-  │
-  ├──▶ logInteraction()       withPurposeCheck (purpose: analytics)       ← Layer 4
-  │      ok → analytics_log.json written
-  │      blocked → no write
-  │
-  ├──▶ addTrainingExample()   withPurposeCheck (purpose: model_training)  ← Layer 4
-  │      ok → training_dataset.jsonl appended
-  │      blocked → no write
-  │
-  └──▶ POST /target           evaluatePurpose() at HTTP boundary          ← Layer 3
-         (ad platform)
-         ok → ad_vector_store.json written
-         blocked → no write
+  → orchestrator.js              (plain code: reads Sec-GPC/body gpc, builds privacyContext)
+      → medical_agent.js         (LLM loop: calls get_medical_records, composes answer)
+      → fanOutSecondaryPurposes() (plain code: fans out to secondary pipelines)
+          → analytics.js         (withPurposeCheck: purpose=analytics)
+          → trainingDataset.js   (withPurposeCheck: purpose=model_training)
+          → adPlatform.js        (evaluatePurpose at HTTP boundary: purpose=ad_targeting)
+  → HTTP Response
 ```
 
----
+### Agent roles
 
-## Three scenarios
+**Medical assistant agent** (`agents/medical_agent.js`): An LLM loop with one tool (`get_medical_records`). The model retrieves the patient's records and composes the final clinical answer. `get_medical_records` is not in the restrictable-purpose registry, so it always executes regardless of GPC state. The primary answer is never blocked.
 
-```
-Scenario              │ primary answer │ analytics │ model_training │ ad_targeting
-──────────────────────┼────────────────┼───────────┼────────────────┼─────────────
-No GPC                │ ✓ ok           │ ✓ ok      │ ✓ ok           │ ✓ ok
-Full opt-out (gpc=1)  │ ✓ ok           │ ✗ blocked │ ✗ blocked      │ ✗ blocked
-Partial (ad only)     │ ✓ ok           │ ✓ ok      │ ✓ ok           │ ✗ blocked
-```
+### Supporting services (no LLM)
 
-The primary answer is identical in all three cases.
+**Analytics** (`services/analytics.js`): Logs the interaction to `analytics_log.json`. Wrapped with `withPurposeCheck(purpose: 'analytics')`; blocked when `analytics` is in the active opt-out scope.
 
----
+**Training dataset** (`services/trainingDataset.js`): Appends the query/response pair to `training_dataset.jsonl` for offline fine-tuning. Wrapped with `withPurposeCheck(purpose: 'model_training')`; blocked when `model_training` is in the active opt-out scope.
+
+**Ad platform** (`services/adPlatform.js`): Simulated external vendor Express server. Calls `evaluatePurpose()` at its HTTP boundary before any write, independent of upstream enforcement.
 
 ## File map
 
 ```
 architecture-b/
-├── lib/
-│   ├── withPurposeCheck.js   Layer 4: evaluatePurpose() (pure fn) + withPurposeCheck() wrapper
-│   ├── purposeRegistry.js    PRIMARY_PURPOSE vs RESTRICTABLE_PURPOSES
-│   └── agentLoop.js          LLM turn loop (Ollama) + fanOutSecondaryPurposes()
+├── orchestrator/
+│   ├── orchestrator.js          Entry point: reads Sec-GPC/body gpc, dispatches agent, fans out
+│   └── agent_loop.js            Shared LLM turn loop (tool_choice, nudge, required-tool tracking)
 │
-├── services/
-│   ├── medicalAssistant.js   HTTP entry point — Layer 1 (reads Sec-GPC / body gpc)
-│   ├── medicalRecords.js     get_medical_records — primary tool, never GPC-gated
-│   ├── analytics.js          logInteraction — wrapped with withPurposeCheck
-│   ├── trainingDataset.js    addTrainingExample — wrapped with withPurposeCheck
-│   └── adPlatform.js         Ad platform HTTP server — Layer 3 boundary enforcement
+├── agents/                      LLM agents only
+│   └── medical_agent.js         LLM medical agent (runAgentLoop, tool: get_medical_records)
+│
+├── services/                    Deterministic supporting infrastructure (no LLM)
+│   ├── medicalRecords.js        get_medical_records: primary tool, never GPC-gated
+│   ├── analytics.js             logInteraction: wrapped with withPurposeCheck (Layer 4)
+│   ├── trainingDataset.js       addTrainingExample: wrapped with withPurposeCheck (Layer 4)
+│   └── adPlatform.js            Ad platform HTTP server: Layer 3 boundary enforcement
+│
+├── lib/
+│   ├── withPurposeCheck.js      evaluatePurpose() pure function + withPurposeCheck() wrapper (Layer 4)
+│   └── purposeRegistry.js       PRIMARY_PURPOSE and RESTRICTABLE_PURPOSES
 │
 ├── tests/
-│   ├── withPurposeCheck.test.js  Unit tests: evaluatePurpose + wrapper (pure, no I/O)
-│   └── fanOut.test.js            Integration tests: all three scenarios, real services
+│   ├── withPurposeCheck.test.js Unit tests: evaluatePurpose and wrapper (pure, no I/O)
+│   └── fanOut.test.js           Integration tests: all three scenarios, real services
 │
-├── demo.js                   Runs all three scenarios without Ollama
-└── output/                   Runtime; gitignored
+├── demo.js                      Runs all three scenarios without Ollama
+└── output/                      Runtime; gitignored
     ├── analytics_log.json
     ├── training_dataset.jsonl
     └── ad_vector_store.json
@@ -157,38 +104,28 @@ npm test
 
 ### Demo (no model required)
 
-Runs all three scenarios in sequence and prints outcomes and final on-disk state:
+Runs all three scenarios in sequence and prints outcomes:
 
 ```bash
 npm run demo
 ```
 
-### Full pipeline with LLM (requires Ollama)
+### Expected output
 
-```bash
-# Start Ollama (skip if desktop app is running)
-ollama serve
-ollama pull qwen2.5:14b
-
-# Start the ad platform and the assistant
-node services/adPlatform.js &
-node services/medicalAssistant.js
-
-# No GPC
-curl -s -X POST http://localhost:4001/ask \
-  -H 'Content-Type: application/json' \
-  -d '{"patient_id":"patient-001","query":"What does my blood pressure mean?"}' \
-  | jq '{response, secondaryEffects}'
-
-# Full opt-out
-curl -s -X POST http://localhost:4001/ask \
-  -H 'Content-Type: application/json' \
-  -d '{"patient_id":"patient-001","query":"What does my blood pressure mean?","gpc":1}' \
-  | jq '{response, secondaryEffects}'
-
-# Partial opt-out — block ad targeting only
-curl -s -X POST http://localhost:4001/ask \
-  -H 'Content-Type: application/json' \
-  -d '{"patient_id":"patient-001","query":"What does my blood pressure mean?","gpc":1,"gpc_scope":["ad_targeting"]}' \
-  | jq '{response, secondaryEffects}'
 ```
+Scenario              | primary answer | analytics | model_training | ad_targeting
+----------------------|----------------|-----------|----------------|-------------
+No GPC                | ok             | ok        | ok             | ok
+Full opt-out (gpc=1)  | ok             | BLOCKED   | BLOCKED        | BLOCKED
+Partial (ad only)     | ok             | ok        | ok             | BLOCKED
+```
+
+## What the output files show
+
+After running the demo, `output/` contains:
+
+| File | No GPC | Full opt-out | Partial (ad only) |
+|---|---|---|---|
+| `analytics_log.json` | entry written | unchanged (blocked) | entry written |
+| `training_dataset.jsonl` | entry appended | unchanged (blocked) | entry appended |
+| `ad_vector_store.json` | entry written | unchanged (blocked) | unchanged (blocked) |

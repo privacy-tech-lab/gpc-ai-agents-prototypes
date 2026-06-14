@@ -13,7 +13,7 @@ process.env.AD_PLATFORM_URL = 'http://localhost:4099/target';
 const fs   = require('fs');
 const path = require('path');
 const { start: startAdPlatform } = require('../services/adPlatform');
-const { fanOutSecondaryPurposes } = require('../lib/agentLoop');
+const { fanOutSecondaryPurposes } = require('../orchestrator/orchestrator');
 
 const OUTPUT_DIR     = path.join(__dirname, '..', 'output');
 const ANALYTICS_FILE = path.join(OUTPUT_DIR, 'analytics_log.json');
