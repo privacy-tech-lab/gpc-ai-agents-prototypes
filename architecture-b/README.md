@@ -65,11 +65,16 @@ architecture-b/
 │   ├── withPurposeCheck.js      evaluatePurpose() pure function + withPurposeCheck() wrapper (Layer 4)
 │   └── purposeRegistry.js       PRIMARY_PURPOSE and RESTRICTABLE_PURPOSES
 │
+├── harness/
+│   ├── run_baseline.js          Demo run: no GPC; all pipelines execute, files written
+│   ├── run_gpc.js               Demo run: full opt-out; all pipelines blocked
+│   ├── run_partial.js           Demo run: partial opt-out; only ad_targeting blocked
+│   └── compare_results.js       Diff all three runs; print report
+│
 ├── tests/
 │   ├── withPurposeCheck.test.js Unit tests: evaluatePurpose and wrapper (pure, no I/O)
 │   └── fanOut.test.js           Integration tests: all three scenarios, real services
 │
-├── demo.js                      Runs all three scenarios without Ollama
 └── output/                      Runtime; gitignored
     ├── analytics_log.json
     ├── training_dataset.jsonl
@@ -104,28 +109,40 @@ npm test
 
 ### Demo (no model required)
 
-Runs all three scenarios in sequence and prints outcomes:
+Runs all three scenarios and prints comparison report:
 
 ```bash
 npm run demo
 ```
 
-### Expected output
+Individual runs:
+
+```bash
+npm run baseline  # No GPC: all pipelines execute, files written to output/
+npm run gpc       # Full opt-out: all pipelines blocked
+npm run partial   # Partial opt-out: only ad_targeting blocked
+npm run compare   # Print comparison report from existing output files
+```
+
+### Expected comparison report
 
 ```
-Scenario              | primary answer | analytics | model_training | ad_targeting
-----------------------|----------------|-----------|----------------|-------------
-No GPC                | ok             | ok        | ok             | ok
-Full opt-out (gpc=1)  | ok             | BLOCKED   | BLOCKED        | BLOCKED
-Partial (ad only)     | ok             | ok        | ok             | BLOCKED
+Pipeline           │ No GPC         │ Full opt-out   │ Partial (ad)
+──────────────────────────────────────────────────────────────────
+analytics          │ ✓ ok           │ ✗ BLOCKED      │ ✓ ok
+model_training     │ ✓ ok           │ ✗ BLOCKED      │ ✓ ok
+ad_targeting       │ ✓ ok           │ ✗ BLOCKED      │ ✗ BLOCKED
 ```
 
 ## What the output files show
 
-After running the demo, `output/` contains:
+Each harness script resets the pipeline files before running, so the table below shows each scenario's independent effect:
 
 | File | No GPC | Full opt-out | Partial (ad only) |
 |---|---|---|---|
 | `analytics_log.json` | entry written | unchanged (blocked) | entry written |
 | `training_dataset.jsonl` | entry appended | unchanged (blocked) | entry appended |
 | `ad_vector_store.json` | entry written | unchanged (blocked) | unchanged (blocked) |
+| `baseline_result.json` | all pipelines `status: ok` | n/a | n/a |
+| `gpc_result.json` | n/a | all pipelines `status: blocked` | n/a |
+| `partial_result.json` | n/a | n/a | analytics and model_training `ok`; ad_targeting `blocked` |
