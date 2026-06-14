@@ -32,78 +32,13 @@ HTTP Request (baggage: gpc=1)
 
 **Search agent** (`agents/search_agent.js`): An LLM loop with one tool (`search_web`). The model decides how many searches to make and when it has enough raw material; it may call `search_web` multiple times with refined queries. The GPC `_meta` envelope is forwarded on every call; however, `search_web` is not in the sensitive-tool registry, so the `withGpc()` interceptor always passes it through regardless of the GPC value. Retrieval is never blocked; only storage is.
 
-**Synthesis agent** (`agents/synthesis_agent.js`) — pure reasoning, no tools. Receives raw search results from the search agent and synthesises them into a structured itinerary. Calling no tools means there is nothing for GPC to block here — demonstrating that opt-out does not degrade answer quality.
+**Synthesis agent** (`agents/synthesis_agent.js`): Receives raw search results from the search agent and synthesises them into a structured itinerary. Calling no tools means there is nothing for GPC to block here.
 
-### Supporting services (no LLM)
+### Supporting services
 
-**Storage** (`services/storage.js`) — deterministic, no LLM. Calls four storage operations in fixed order. MCP-sensitive writes are double-guarded: explicit code check plus `withGpc()` interceptor at the MCP layer. The third-party write always reaches the vendor so the JWT can demonstrate independent enforcement.
+**Storage** (`services/storage.js`): Calls four storage operations in fixed order. MCP-sensitive writes are double-guarded: explicit code check plus `withGpc()` interceptor at the MCP layer. The third-party write always reaches the vendor so the JWT can demonstrate independent enforcement.
 
-**Third-party vendor** (`services/third_party_storage.js`) — simulated external vendor Express server. Verifies the RS256 JWT on every inbound request and rejects writes when `gpc: true` is present in the token claims, independent of any MCP-layer enforcement.
-
-### GPC propagation across the agent boundary
-
-```
-User (Sec-GPC: 1 in browser)
-  │
-  ▼  Layer 1: baggage: gpc=1 header
-Orchestrator
-  │  reads Baggage → mints JWT(gpc:true) → builds _meta={gpc:1, jwt}
-  │
-  ├──▶ Layer 2: _meta forwarded in MCP _meta envelope
-  │    Search Agent (LLM)
-  │      calls search_web(_meta=meta)  [ok — not sensitive, always runs]
-  │      returns rawResults
-  │
-  ├──▶ same _meta forwarded to Synthesis Agent
-  │    Synthesis Agent (LLM)
-  │      no tool calls — pure reasoning
-  │      returns itinerary
-  │
-  └──▶ same _meta forwarded to storage
-       storage.js
-         ├──▶ MCP: user_profile_lookup(_meta=meta)
-         │      └─▶ withGpc() interceptor            [Layer 4: blocked]
-         ├──▶ MCP: save_to_profile(_meta=meta)
-         │      └─▶ code guard + withGpc()           [Layer 4: blocked]
-         ├──▶ MCP: log_interaction(_meta=meta)
-         │      └─▶ code guard + withGpc()           [Layer 4: blocked]
-         └──▶ HTTP POST /store  Authorization: Bearer <jwt>
-                └─▶ vendor verifyToken() → gpc=true  [Layer 3: blocked]
-```
-
----
-
-## Opt-out categories depicted
-
-Architecture A demonstrates categories A (presence), C (use restrictions), D (persistence), and E (behavioral influence) from the opt-out taxonomy. Enforcement is tool-level and binary: each sensitive tool is either fully blocked or fully permitted when GPC is on.
-
-### Category A: Presence
-
-Architecture A demonstrates **A2 (activation opt-out)**. The user invoked the assistant for one purpose: planning a trip. In the baseline run, the pipeline also silently activates operations the user never chose — logging the interaction, updating a behavioral profile, and syncing to a third-party vendor. With GPC on, only the explicitly-invoked operation runs (`search_web`); the background operations are blocked.
-
-### Category C: Use
-
-**C1 (primary use restriction):** `search_web` always executes — the tool that completes the user's task runs regardless of GPC.
-
-**C2 (secondary use restriction):** `log_interaction` is blocked. The query and response may not be recorded for analytics or profiling.
-
-**C4 (sharing restriction):** the third-party write is blocked by the JWT. Even if MCP-layer enforcement were bypassed, the signed token carries `gpc: true` and the vendor rejects the write independently.
-
-**What it does not cover:** C3 (training restriction) is not separately enforced. Because blocking is tool-level, C2 and C3 cannot be independently scoped.
-
-### Category D: Persistence
-
-**D2 (cross-session scope):** `user_profile_lookup` is blocked. Prior session data may not be retrieved to inform the current session.
-
-**D3 (long-term profile scope):** `save_to_profile` is blocked. No data from this session is written to the persistent profile.
-
-### Category E: Behavioral Influence
-
-**E1 (personalization opt-out):** Blocking `user_profile_lookup` means the session cannot be shaped by stored travel history. The assistant gives the same response regardless of prior trips.
-
-**E3 (targeting opt-out):** Blocking the third-party write means the vendor cannot use this session's data for future recommendations.
-
----
+**Third-party vendor** (`services/third_party_storage.js`): Simulated external vendor Express server. Verifies the RS256 JWT on every inbound request and rejects writes when `gpc: true` is present in the token claims.
 
 ## File map
 
@@ -112,7 +47,7 @@ architecture-a/
 ├── orchestrator/
 │   ├── orchestrator.js       Entry point: reads Baggage, mints JWT, dispatches agents
 │   ├── agent_loop.js         Shared LLM turn loop (tool_choice, nudge, required-tool tracking)
-│   ├── baggage.js            W3C Baggage encode/decode helpers (Layer 1)
+│   ├── baggage.js            W3C Baggage encode/decode helpers
 │   └── mcp_client.js         In-process MCP client; applies withGpc() at each call
 │
 ├── agents/                   LLM agents only
@@ -121,25 +56,25 @@ architecture-a/
 │
 ├── services/                 Deterministic supporting infrastructure (no LLM)
 │   ├── storage.js            Storage: profile, log, vendor write — GPC-gated via code + MCP
-│   └── third_party_storage.js  Express server simulating JWT-gated vendor (Layer 3)
+│   └── third_party_storage.js  Express server simulating JWT-gated vendor
 │
 ├── mcp-server/
 │   ├── server.js             MCP server entry point
 │   ├── gpc_policy.js         withGpc() interceptor + sensitive-tool registry (Layer 4)
 │   ├── tool_handlers.js      Raw tool implementations (search, profile, log)
-│   └── identity_provider.js  RS256 JWT sign / verify (Layer 3)
+│   └── identity_provider.js  RS256 JWT sign/verify
 │
 ├── harness/
-│   ├── run_baseline.js       Demo run: GPC off — all tools execute, data written
-│   ├── run_gpc.js            Demo run: GPC on — sensitive tools blocked
+│   ├── run_baseline.js       Demo run of GPC off; all tools execute, data written
+│   ├── run_gpc.js            Demo run of GPC on; sensitive tools blocked
 │   ├── compare_results.js    Diff baseline vs GPC run; print report
 │   └── seed_demo.js          Seed user-42 profile, log, and vector store
 │
 ├── tests/
 │   ├── gpc_policy.test.js        withGpc() interceptor: blocking, passthrough, signal formats
-│   ├── baggage.test.js           W3C Baggage encode / decode round-trips
+│   ├── baggage.test.js           W3C Baggage encode/decode round-trips
 │   ├── identity_provider.test.js JWT sign, verify, tamper detection, expiry
-│   ├── orchestrator.test.js      Full pipeline integration (all 4 layers); LLM agents mocked
+│   ├── orchestrator.test.js      Full pipeline integration; LLM agents mocked
 │   └── agent_loop.test.js        Shared LLM loop: tool_choice, nudge, arg parsing, errors
 │
 ├── keys/
@@ -191,9 +126,9 @@ npm test
 | Test file | What it covers |
 |---|---|
 | `gpc_policy.test.js` | `withGpc()` blocking, passthrough, all GPC signal formats (`1`, `true`, `"1"`) |
-| `baggage.test.js` | W3C Baggage encode / decode round-trips |
+| `baggage.test.js` | W3C Baggage encode/decode round-trips |
 | `identity_provider.test.js` | JWT sign, verify, tamper detection, expiry |
-| `orchestrator.test.js` | Full pipeline: Layer 1–4 assertions, timing, storage tested directly |
+| `orchestrator.test.js` | Full pipeline: Layer 1-4 assertions, timing, storage tested directly |
 | `agent_loop.test.js` | Shared LLM loop: `tool_choice` switching, nudge, arg parsing, blocked response passthrough |
 
 ### Demo (requires Ollama)
@@ -215,8 +150,8 @@ Individual runs:
 
 ```bash
 npm run seed      # Seed user-42 travel history
-npm run baseline  # GPC off  — all tools execute, data written to output/
-npm run gpc       # GPC on   — sensitive tools blocked
+npm run baseline  # GPC off  : all tools execute, data written to output/
+npm run gpc       # GPC on   : sensitive tools blocked
 npm run compare   # Print comparison report from existing output files
 ```
 
