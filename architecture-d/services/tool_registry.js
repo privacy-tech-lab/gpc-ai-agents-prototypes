@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Tool registry — the set of third-party publishers the agent can fan out
  * to during a research task. Each entry declares whether the publisher

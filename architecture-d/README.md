@@ -6,9 +6,26 @@ A user with GPC enabled asks an AI assistant to *"research the iPhone 17 across 
 
 The structural finding falls out of running the prototype: even when every site enforces GPC perfectly per-call, the **LLM provider sits at a chokepoint that observes every outbound call from every user.** From a single session it can derive what the user is researching, which publishers they reached, and the GPC state of every call. Across sessions it can derive GPC adoption rates, topic-by-GPC matrices, and per-user interest profiles. None of these derivations are possible for any browser intermediary in the pre-agent world.
 
-Architecture D introduces a **provider middleware** (`provider.js`) that sits between the orchestrator and the publishers. Every fanout flows through it. The provider logs each observation before forwarding, optionally strips the `_meta` envelope (the threat-model demonstration), and optionally applies data-handling commitments before recording.
+Architecture D introduces a **provider middleware** (`provider/provider.js`) that sits between the orchestrator and the publishers. Every fanout flows through it. The provider logs each observation before forwarding, optionally strips the `_meta` envelope (the threat-model demonstration; the `mitm: true` flag models a hostile man-in-the-middle), and optionally applies data-handling commitments before recording.
 
 **Result:** in baseline mode every site logs and writes a profile entry. In GPC mode the strict sites suppress both, but the provider observation log is substantively identical to baseline. In mitigated mode the provider applies data-handling commitments (`no_train`, `k`-anonymity, DP noise) — these do not change what the provider can see; they constrain what it does with what it sees. In signal-drop mode the provider acts as adversary and strips `_meta` before forwarding, surfacing the property that a hostile provider can silently nullify enforcement at every destination while retaining full visibility itself.
+
+---
+
+## How D's fanout differs from B's
+
+Architecture B also uses the word "fanout" — `fanOutSecondaryPurposes` calls the analytics pipeline, the training dataset pipeline, and the ad-targeting platform in parallel. The shape looks similar at a distance. The threats and mitigations it surfaces are different.
+
+| | Architecture B fanout | Architecture D fanout |
+|---|---|---|
+| Targets | Fixed internal secondary pipelines (analytics, training, ad) | Runtime-selected external publishers (eight in the registry; the agent or the harness picks the subset) |
+| Declared purpose | Different per call (`analytics`, `model_training`, `ad_targeting`) | Same across all calls (the user's research question) |
+| Data shape | The same primary record flows to each pipeline | The same query goes to each publisher |
+| Decision-time | Pipelines are wired at orchestrator build time | The set of publishers (and what to ask each) is chosen at request time |
+| What opt-out scopes | A *purpose* — same data permitted for one downstream use, blocked for another | No per-peer scoping. Every peer receives the same `_meta` envelope. Per-site enforcement is what differs, not per-site opt-in |
+| What aggregation surfaces | None at the sender. Each pipeline is its own controller for its own purpose | The provider sees every peer the agent chose, every sub-query it sent, and the GPC bit on each. That cross-peer view is what makes Category E1 |
+
+B's fanout is purpose-divergent and policy-internal. D's fanout is peer-divergent and policy-external. They share a word but model different threats and require different mitigations. Category E exists because B's purpose scoping does not address the aggregation surface that D surfaces.
 
 ---
 
@@ -37,13 +54,13 @@ The simulation is deterministic (seeded `mulberry32`) so the figures are reprodu
 
 ### Category E2: Provider-side data-handling commitments
 
-E2 holds that since the visibility is structural and cannot be designed away at the protocol, the spec's only lever is to constrain how the provider records and what it derives. Three concrete commitments are implemented in `mitigations.js`:
+E2 holds that since the visibility is structural and cannot be designed away at the protocol, the spec's only lever is to constrain how the provider records and what it derives. Three concrete commitments are implemented in `provider/mitigations.js`:
 
 | Commitment | Mechanism | Effect on the log |
 |---|---|---|
 | `noTrainCommitment()` | Tag every observation with `do_not_train: true` | Advisory tag; unverifiable from outside |
 | `kAnonymity(k)` | Suppress `user_id` until the topic cohort reaches size `k` | `user_id: '<suppressed>'` with `k_anon_suppressed: true` |
-| `dpNoise(epsilon)` | Laplace noise on published aggregates | Per-observation passthrough; `noise()` invoked at aggregation time |
+| `dpNoise(epsilon)` | Laplace noise on published aggregates (`Math.random` source, illustrative only) | Per-observation passthrough; `noise()` invoked at aggregation time |
 
 These compose with `chain(...)`. `run_mitigated.js` exercises the full chain.
 
@@ -53,7 +70,7 @@ These compose with `chain(...)`. `run_mitigated.js` exercises the full chain.
 
 ### GPC signal integration
 
-The signal travels in the `_meta` envelope (`_meta.gpc: 0|1`), matching the convention used in Architectures A and B. The orchestrator does not call sites directly; it calls `provider.fanout(user_id, query, site_ids, _meta)`, which forwards to each site in parallel.
+The signal travels in the `_meta` envelope (`_meta.gpc: 0|1`), matching the convention used in Architectures A and B. The orchestrator does not call sites directly; it calls `provider.fanout(user_id, query, site_ids, _meta)`, which forwards to each site in parallel. At the inbound boundary the orchestrator reads the W3C `baggage` header (or the `Sec-GPC` header on `POST /ask`) and builds the envelope from there.
 
 ```
 Orchestrator                Provider                    Sites (8x)
@@ -82,7 +99,7 @@ The signal-drop experiment exercises the threat model: when the provider's `mitm
 ```
 run_baseline.js
   |
-  `--> fanoutAll(provider, 'user-1', 'iPhone 17 review summary', { gpc: 0 })
+  `--> handleRequest({ user_id: 'user-1', query: 'iPhone 17 review summary', baggageHeader: 'gpc=0' })
          |
          `--> provider.fanout(user_id, query, [8 publishers], {gpc:0})
                 |
@@ -101,7 +118,7 @@ Output: site_level_view = 8x normal_operation
 ```
 run_gpc.js
   |
-  `--> fanoutAll(provider, 'user-1', 'iPhone 17 review summary', { gpc: 1 })
+  `--> handleRequest({ user_id: 'user-1', query: 'iPhone 17 review summary', baggageHeader: 'gpc=1' })
          |
          `--> provider.fanout(user_id, query, [8 publishers], {gpc:1})
                 |
@@ -123,8 +140,9 @@ Output: site_level_view = mixed by publisher enforcement level
 run_mitigated.js
   |
   |--> mitigations = chain(noTrainCommitment(), kAnonymity(5), dpNoise(1.0))
+  |--> provider    = createProvider({ mitigations })
   |
-  `--> provider = createProvider({ mitigations })
+  `--> handleRequest({ user_id: 'user-1', query: 'iPhone 17 review summary', baggageHeader: 'gpc=1', provider })
          `--> provider.fanout(...)
                 |
                 |--> [RAW LOG]  -> mitigations.apply()
@@ -141,7 +159,9 @@ Output: provider_view includes commitment tags
 ```
 run_signal_drop.js
   |
-  `--> provider = createProvider({ mitm: true })
+  |--> provider = createProvider({ mitm: true })
+  |
+  `--> handleRequest({ user_id: 'user-1', query: 'iPhone 17 review summary', baggageHeader: 'gpc=1', provider })
          `--> provider.fanout(user_id, query, [8 publishers], {gpc:1})
                 |
                 |--> [LOG] meta_received:{gpc:1}, meta_forwarded:{}
@@ -179,7 +199,7 @@ Output: log_size                       = 155
 ```
 run_ai_baseline.js   (or run_ai_gpc.js)
   |
-  `--> handleRequest({ provider, user_id, query, gpc })
+  `--> handleAgentRequest({ user_id: 'user-1', query, baggageHeader: 'gpc=0' })  // 'gpc=1' for ai-gpc
          |
          |--> Ollama model receives query + tool definitions (query_publisher)
          |--> Model decides per-call (publisher_id, sub_query)
@@ -213,7 +233,7 @@ android-authority  logged=true (no GPC)          mitm_applied     = false
 techcrunch         logged=true (advisory)
 ```
 
-Six of eight sites suppressed logging. The provider retains the full slate.
+Five of eight sites suppressed logging (the strict ones). The provider retains the full slate.
 
 ### Expected cross-mode comparison
 
@@ -228,41 +248,53 @@ provider can infer user topic  | yes         | yes         | yes (k-anon)| yes
 provider can derive aggregates | yes         | yes         | yes (DP)    | yes
 ```
 
+`npm run compare` prints the same table from `output/*.json` after the four scripted modes have run.
+
 ---
 
 ## File map
 
 ```
 architecture-d/
-|
-|-- tool_registry.js       Publisher catalog — id, name, supports_gpc, enforcement
-|-- site_handlers.js       Per-publisher GPC enforcement; querySite, decideTracking
-|-- topic_classifier.js    Deterministic topic inference from user query string
-|-- provider.js            LLM provider middleware; observation log; mitm; mitigations
-|-- mitigations.js         E2 commitments — no_train, k-anonymity, DP noise; chain()
-|-- aggregation.js         E1 derivations from the provider observation log
-|-- orchestrator.js        fanoutAll / fanoutSelected — entry points the orchestrator calls
-|
-|-- agent_loop.js          Ollama tool-loop (shared style with Architectures A and B)
-|-- llm_orchestrator.js    Wires query_publisher tool to provider.fanout()
-|
-|-- run_baseline.js        GPC off; 1 user
-|-- run_gpc.js             GPC on; 1 user; structural finding
-|-- run_mitigated.js       GPC on; 1 user; E2 commitments active
-|-- run_signal_drop.js     Provider mitm strips _meta
-|-- run_aggregate.js       80-user simulation; deterministic seed
-|-- run_ai_baseline.js     Ollama-driven fanout; GPC off
-|-- run_ai_gpc.js          Ollama-driven fanout; GPC on
-|
-|-- package.json
-|
-`-- tests/
-    |-- tool_registry.test.js    Catalog shape, lookup, list
-    |-- site_handlers.test.js    Tracking decision per enforcement level
-    |-- provider.test.js         Observation log, structural invariant, mitm, mitigations
-    |-- aggregation.test.js      Adoption rate, distribution, reach, GPC matrix, interests
-    |-- mitigations.test.js      no_train, k-anon, DP, chain composition
-    `-- orchestrator.test.js     fanoutAll / fanoutSelected; per-call independence
+├── orchestrator/
+│   ├── orchestrator.js     Reads baggage / Sec-GPC, builds _meta, hands the fanout to the provider
+│   ├── agent_loop.js       Ollama tool-use loop with required→auto tool_choice switching
+│   └── baggage.js          W3C Baggage encode/decode helpers
+│
+├── agents/                 LLM agents only
+│   └── research_agent.js   Ollama-driven; one tool: query_publisher(publisher_id, sub_query)
+│
+├── provider/               Provider middleware (the centerpiece of Architecture D)
+│   ├── provider.js         Observation log; mitm; mitigations hook
+│   ├── topic_classifier.js Deterministic topic inference from query text
+│   ├── mitigations.js      E2 commitments — no_train, k-anonymity, DP noise; chain()
+│   └── aggregation.js      E1 derivations from the provider observation log
+│
+├── services/               Deterministic supporting infrastructure (no LLM)
+│   ├── tool_registry.js    Publisher catalog — id, name, domain, supports_gpc, enforcement
+│   └── site_handlers.js    Per-publisher GPC enforcement; querySite, decideTracking; Tavily live fetch
+│
+├── harness/
+│   ├── run_baseline.js     GPC off; 1 user
+│   ├── run_gpc.js          GPC on; 1 user; structural finding
+│   ├── run_mitigated.js    GPC on; 1 user; E2 commitments active
+│   ├── run_signal_drop.js  Provider mitm strips _meta
+│   ├── run_aggregate.js    80-user simulation; deterministic seed
+│   ├── run_ai_baseline.js  Ollama-driven fanout; GPC off
+│   ├── run_ai_gpc.js       Ollama-driven fanout; GPC on
+│   └── compare_results.js  Diff baseline / gpc / mitigated / signal-drop; print table
+│
+├── tests/
+│   ├── tool_registry.test.js  Catalog shape, lookup, list
+│   ├── site_handlers.test.js  Tracking decision per enforcement level
+│   ├── provider.test.js       Observation log, structural invariant, mitm, mitigations
+│   ├── aggregation.test.js    Adoption rate, distribution, reach, GPC matrix, interests
+│   ├── mitigations.test.js    no_train, k-anon, DP, chain composition
+│   └── orchestrator.test.js   fanoutAll / fanoutSelected; buildPrivacyContext; POST /ask end-to-end
+│
+├── output/                 Gitignored; created at runtime
+├── package.json
+└── README.md
 ```
 
 ---
@@ -290,7 +322,7 @@ Tool-using models only — `gemma3:1b` and other text-only models will fail at t
 
 ### Tavily (optional, enables live publisher fetches)
 
-When `TAVILY_API_KEY` is set in `.env`, `site_handlers.js` fetches a real review snippet from each publisher's domain via Tavily (`https://tavily.com`, free tier ~1000 searches/month) and reports `review_source: "tavily_live"` instead of `"canned"`. The site enforcement layer (logged / profile_write decisions) is unchanged.
+When `TAVILY_API_KEY` is set in `.env`, `services/site_handlers.js` fetches a real review snippet from each publisher's domain via Tavily (`https://tavily.com`, free tier ~1000 searches/month) and reports `review_source: "tavily_live"` instead of `"canned"`. The site enforcement layer (logged / profile_write decisions) is unchanged.
 
 ```
 # .env
@@ -298,6 +330,30 @@ TAVILY_API_KEY=tvly-...
 ```
 
 Mirrors the Tavily integration in Architecture A's `search_web` tool.
+
+### HTTP entry (optional)
+
+`npm run start` boots the Express app on `ASSISTANT_PORT` (default 4011). The route reads `Sec-GPC` from the request headers and builds the privacy context before dispatching the fanout. The body is capped at 10 kB and SIGINT/SIGTERM trigger a graceful shutdown; the app is not otherwise hardened — do not expose it on a public interface without a reverse proxy that adds auth, rate limiting, and request limits.
+
+Scripted fanout (every publisher in the registry):
+
+```bash
+npm run start
+
+curl -X POST http://localhost:4011/ask \
+  -H 'Content-Type: application/json' \
+  -H 'Sec-GPC: 1' \
+  -d '{ "user_id": "user-1", "query": "iPhone 17 review summary" }'
+```
+
+Agent fanout (LLM picks the subset; requires Ollama):
+
+```bash
+curl -X POST http://localhost:4011/ask \
+  -H 'Content-Type: application/json' \
+  -H 'Sec-GPC: 1' \
+  -d '{ "user_id": "user-1", "query": "Research the iPhone 17 across tech publishers and summarize the key consensus points.", "mode": "agent" }'
+```
 
 ---
 
@@ -309,21 +365,23 @@ Mirrors the Tavily integration in Architecture A's `search_web` tool.
 npm test
 ```
 
-40 tests across six files. Tests are deterministic and do not require Ollama.
+86 tests across eight files. Tests are deterministic and do not require Ollama. The HTTP suite spins the Express app on an ephemeral port.
 
 | Test file | What it covers |
 |---|---|
 | `tool_registry.test.js` | Catalog shape, lookup by id, list-of-ids |
-| `site_handlers.test.js` | `decideTracking` matrix for all three enforcement levels; querySite ok / error paths |
-| `provider.test.js` | Observation log per call; structural invariance under GPC; mitm strip-and-retain; mitigations hook; reset |
+| `site_handlers.test.js` | `decideTracking` matrix for all three enforcement levels; querySite ok / error paths; hung Tavily fetch aborted within the configured timeout |
+| `provider.test.js` | Observation log per call; structural invariance under GPC; mitm strip-and-retain; mitigations hook; reset; concurrent fanouts produce distinct `observation_id`s; a throwing publisher is isolated; mocked-fetch path |
 | `aggregation.test.js` | Adoption rate (incl. empty); topic distribution; publisher reach; GPC matrix; ranked user interests; k-anon suppression respected |
 | `mitigations.test.js` | `noTrainCommitment` tag; `kAnonymity` per-topic cohort growth; `dpNoise` numeric output; `chain` composition order and name |
-| `orchestrator.test.js` | `fanoutAll` hits every publisher; `fanoutSelected` honors subset; per-call enforcement independence; end-to-end GPC + provider visibility |
+| `orchestrator.test.js` | `fanoutAll` / `fanoutSelected`; `buildPrivacyContext` precedence (Sec-GPC, body, normalization across string/boolean); `start()` port validation; `POST /ask` end-to-end including `mode=agent` against a mocked Ollama, 413/400 body errors, unknown mode rejection |
+| `agent_loop.test.js` | `truncated: true` and diagnostic message when `maxTurns` is exhausted; `truncated: false` with real summary; rejects on Ollama non-2xx |
+| `compare_results.test.js` | `loadJson` (missing / well-formed / malformed); field extractors degrade gracefully on missing pieces |
 
 ### Demo runs
 
 ```bash
-npm run demo          # baseline + gpc + mitigated + signal-drop + aggregate
+npm run demo          # baseline + gpc + mitigated + signal-drop + aggregate + compare
 ```
 
 Individual runs:
@@ -334,6 +392,7 @@ npm run gpc           # GPC on; sites enforce; provider visibility unchanged
 npm run mitigated     # GPC on; E2 commitments (no_train + k-anon + DP) active
 npm run signal-drop   # Provider strips _meta; sites unaware
 npm run aggregate     # 80-user simulation; cross-user derivations
+npm run compare       # Print site-vs-provider visibility table from output/
 ```
 
 LLM-driven runs (require Ollama):

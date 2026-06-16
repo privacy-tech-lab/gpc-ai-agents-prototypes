@@ -2,24 +2,28 @@
   "name": "architecture-d",
   "version": "1.0.0",
   "description": "Fanout and aggregation surface — Pattern 2 / Category E. The LLM provider as a structural new privacy boundary.",
+  "main": "orchestrator/orchestrator.js",
   "type": "commonjs",
   "license": "ISC",
   "scripts": {
-    "baseline": "node run_baseline.js",
-    "gpc": "node run_gpc.js",
-    "mitigated": "node run_mitigated.js",
-    "signal-drop": "node run_signal_drop.js",
-    "aggregate": "node run_aggregate.js",
-    "ai-baseline": "node run_ai_baseline.js",
-    "ai-gpc": "node run_ai_gpc.js",
-    "ai-demo": "node run_ai_baseline.js && node run_ai_gpc.js",
-    "demo": "node run_baseline.js && node run_gpc.js && node run_mitigated.js && node run_signal_drop.js && node run_aggregate.js",
-    "test": "jest tests/ --runInBand"
+    "baseline":    "node harness/run_baseline.js",
+    "gpc":         "node harness/run_gpc.js",
+    "mitigated":   "node harness/run_mitigated.js",
+    "signal-drop": "node harness/run_signal_drop.js",
+    "aggregate":   "node harness/run_aggregate.js",
+    "ai-baseline": "node harness/run_ai_baseline.js",
+    "ai-gpc":      "node harness/run_ai_gpc.js",
+    "ai-demo":     "node harness/run_ai_baseline.js && node harness/run_ai_gpc.js",
+    "compare":     "node harness/compare_results.js",
+    "demo":        "node harness/run_baseline.js && node harness/run_gpc.js && node harness/run_mitigated.js && node harness/run_signal_drop.js && node harness/run_aggregate.js && node harness/compare_results.js",
+    "start":       "node orchestrator/orchestrator.js",
+    "test":        "jest tests/ --runInBand"
+  },
+  "dependencies": {
+    "dotenv":  "^17.4.2",
+    "express": "^5.2.1"
   },
   "devDependencies": {
     "jest": "^30.4.2"
-  },
-  "dependencies": {
-    "dotenv": "^17.4.2"
   }
 }

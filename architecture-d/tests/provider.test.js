@@ -1,6 +1,6 @@
 'use strict';
 
-const { createProvider } = require('../provider');
+const { createProvider } = require('../provider/provider');
 
 describe('provider middleware', () => {
   const original_key = process.env.TAVILY_API_KEY;
@@ -82,5 +82,112 @@ describe('provider middleware', () => {
     const p = createProvider({ mitigations: tag });
     await p.fanout('u1', 'q', ['the-verge'], { gpc: 1 });
     expect(p.getProviderView()[0].tagged).toBe(true);
+  });
+
+  test('getProviderView handles functions on the observation (structuredClone fallback)', async () => {
+    const fnMit = {
+      name:  'fn',
+      apply: (o) => { o.callback = () => 'hi'; return o; },
+    };
+    const p = createProvider({ mitigations: fnMit });
+    await p.fanout('u1', 'iPhone 17', ['the-verge'], { gpc: 1 });
+    // Must not throw; the function is dropped by the JSON fallback path.
+    const view = p.getProviderView();
+    expect(view).toHaveLength(1);
+    expect(view[0].user_id).toBe('u1');
+  });
+
+  test('getProviderView handles circular references introduced by a mitigation', async () => {
+    // Regression: JSON.parse(JSON.stringify(...)) used to throw on a
+    // circular structure. structuredClone handles cycles natively.
+    const cyclic = {
+      name:  'cyclic',
+      apply: (o) => { o.self = o; return o; },
+    };
+    const p = createProvider({ mitigations: cyclic });
+    await p.fanout('u1', 'iPhone 17', ['the-verge'], { gpc: 1 });
+    const view = p.getProviderView();
+    expect(view).toHaveLength(1);
+    expect(view[0].user_id).toBe('u1');
+    // structuredClone preserves the cycle on the returned object.
+    expect(view[0].self).toBe(view[0]);
+  });
+
+  test('a throwing mitigation does not drop the observation; raw record kept', async () => {
+    const evil = {
+      name:  'evil',
+      apply: () => { throw new Error('mitigation boom'); },
+    };
+    const p = createProvider({ mitigations: evil });
+
+    // Silence the stderr write the provider emits.
+    const orig = process.stderr.write.bind(process.stderr);
+    process.stderr.write = () => true;
+    let r;
+    try {
+      r = await p.fanout('u1', 'iPhone 17', ['the-verge'], { gpc: 1 });
+    } finally {
+      process.stderr.write = orig;
+    }
+
+    // The provider still records the request and the fanout completes.
+    expect(p.getProviderView().length).toBe(1);
+    const obs = p.getProviderView()[0];
+    expect(obs.user_id).toBe('u1');
+    expect(obs.query).toBe('iPhone 17');
+    expect(obs.meta_received.gpc).toBe(1);
+    // The failure is surfaced on the observation so it's visible to consumers.
+    expect(obs.mitigation_error).toMatch(/mitigation boom/);
+    // The mitigation tag is absent (not applied).
+    expect(obs.do_not_train).toBeUndefined();
+    expect(obs.k_anon_suppressed).toBeUndefined();
+    // Site results came through.
+    expect(r.site_results.length).toBe(1);
+    expect(r.site_results[0].status).toBe('ok');
+  });
+
+  test('observation_id is correct when fanouts overlap on the same provider', async () => {
+    const p = createProvider();
+    const [a, b, c] = await Promise.all([
+      p.fanout('u1', 'q1', ['the-verge'], { gpc: 0 }),
+      p.fanout('u2', 'q2', ['wired'],     { gpc: 1 }),
+      p.fanout('u3', 'q3', ['cnet'],      { gpc: 0 }),
+    ]);
+    // observation_ids should be unique and form a permutation of 0..2.
+    const ids = [a.observation_id, b.observation_id, c.observation_id].sort();
+    expect(ids).toEqual([0, 1, 2]);
+    expect(p.getProviderView().length).toBe(3);
+    // The id each fanout returned must index its own observation.
+    const view = p.getProviderView();
+    expect(view[a.observation_id].user_id).toBe('u1');
+    expect(view[b.observation_id].user_id).toBe('u2');
+    expect(view[c.observation_id].user_id).toBe('u3');
+  });
+
+  test('a throwing site is isolated as an error result; other sites complete', async () => {
+    let r;
+    await jest.isolateModulesAsync(async () => {
+      jest.doMock('../services/site_handlers', () => ({
+        querySite: async (siteId) => {
+          if (siteId === 'BOOM') throw new Error('site crashed');
+          return { status: 'ok', site: siteId, tracking_decision: { logged: false, profile_write: false, reason: 'mocked' } };
+        },
+        decideTracking: () => ({ logged: false, profile_write: false, reason: 'mocked' }),
+      }));
+      const { createProvider: cp2 } = require('../provider/provider');
+      const p = cp2();
+      r = await p.fanout('u1', 'q', ['the-verge', 'BOOM', 'cnet'], { gpc: 1 });
+    });
+
+    expect(r.site_results.length).toBe(3);
+    const boom = r.site_results.find((s) => s.site === 'BOOM');
+    expect(boom).toEqual({
+      status: 'error',
+      site:   'BOOM',
+      reason: 'site_handler_threw',
+      detail: 'site crashed',
+    });
+    const okSites = r.site_results.filter((s) => s.status === 'ok').map((s) => s.site).sort();
+    expect(okSites).toEqual(['cnet', 'the-verge']);
   });
 });

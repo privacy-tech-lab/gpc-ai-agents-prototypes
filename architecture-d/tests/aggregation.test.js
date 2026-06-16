@@ -3,7 +3,7 @@
 const {
   gpcAdoptionRate, topicDistribution, publisherReach,
   topicByGpcMatrix, inferUserInterests, siteLevelView,
-} = require('../aggregation');
+} = require('../provider/aggregation');
 
 const sample_log = [
   { user_id: 'u1', query: 'iPhone',  query_topic: 'mobile_device', fanout_targets: ['the-verge', 'cnet'], meta_received: { gpc: 1 } },
@@ -23,6 +23,34 @@ describe('aggregation derivations', () => {
 
   test('topicDistribution counts by query_topic', () => {
     expect(topicDistribution(sample_log)).toEqual({ mobile_device: 3, laptop: 1 });
+  });
+
+  test('aggregation functions skip null / undefined / non-object log entries', () => {
+    // Regression: aggregation used to throw "Cannot read properties of
+    // null (reading 'meta_received')" if any entry was non-object.
+    const dirty = [
+      { user_id: 'a', query_topic: 't', fanout_targets: ['x'], meta_received: { gpc: 1 } },
+      null,
+      undefined,
+      'string entry',
+      42,
+      { user_id: 'a', query_topic: 't', fanout_targets: ['y'], meta_received: { gpc: 0 } },
+    ];
+    expect(gpcAdoptionRate(dirty)).toBeCloseTo(0.5);
+    expect(topicDistribution(dirty)).toEqual({ t: 2 });
+    expect(publisherReach(dirty)).toEqual({ x: 1, y: 1 });
+    expect(inferUserInterests(dirty, 'a')).toEqual([{ topic: 't', count: 2 }]);
+  });
+
+  test('publisherReach skips entries with non-array fanout_targets', () => {
+    // Regression: an entry with undefined fanout_targets used to throw
+    // "is not iterable" and crash the whole report.
+    const malformedLog = [
+      { user_id: 'a', query_topic: 't', fanout_targets: ['the-verge', 'cnet'], meta_received: { gpc: 1 } },
+      { user_id: 'b', query_topic: 't', fanout_targets: undefined,             meta_received: { gpc: 0 } },
+      { user_id: 'c', query_topic: 't', fanout_targets: 'not-an-array',        meta_received: { gpc: 1 } },
+    ];
+    expect(publisherReach(malformedLog)).toEqual({ 'the-verge': 1, 'cnet': 1 });
   });
 
   test('publisherReach increments once per (call, target)', () => {
