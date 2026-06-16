@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Trivial deterministic topic classifier — the provider has the agent's
  * full query, so it can infer what the user is researching even when

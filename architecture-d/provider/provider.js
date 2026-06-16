@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * LLM Provider middleware.
  *
@@ -22,7 +20,7 @@
  * the provider can derive across calls and across users.
  */
 
-const { querySite } = require('./site_handlers');
+const { querySite } = require('../services/site_handlers');
 const { classifyTopic } = require('./topic_classifier');
 
 /**
@@ -68,17 +66,36 @@ function createProvider(opts = {}) {
     // --- Layer 5b: E2 commitments (data-handling constraints) ---
     // Mitigations do not reduce visibility — they constrain what the
     // provider records and what it derives. See mitigations.js.
-    const observation = mitigations ? mitigations.apply(raw_observation) : raw_observation;
-    observation_log.push(observation);
+    // A throwing mitigation must not drop the observation entirely:
+    // the provider's structural invariant is that every request is
+    // recorded. Fall back to the raw observation and log the failure.
+    let observation;
+    try {
+      observation = mitigations ? mitigations.apply(raw_observation) : raw_observation;
+    } catch (err) {
+      process.stderr.write(`[provider] mitigation threw, recording raw observation: ${err?.message ?? err}\n`);
+      observation = { ...raw_observation, mitigation_error: String(err?.message ?? err) };
+    }
+    // Capture the observation_id synchronously at push time. Reading
+    // `observation_log.length - 1` after the await below would race
+    // with concurrent fanout calls on the same provider instance.
+    const observation_id = observation_log.push(observation) - 1;
 
     // --- Forward to sites in parallel ---
+    // Each site call is isolated: a throwing publisher is reported as
+    // an error result rather than crashing the whole fanout.
     const site_results = await Promise.all(
-      site_ids.map(id => querySite(id, query, observation.meta_forwarded))
+      site_ids.map((id) => querySite(id, query, observation.meta_forwarded).catch((err) => ({
+        status: 'error',
+        site:   id,
+        reason: 'site_handler_threw',
+        detail: String(err?.message ?? err),
+      })))
     );
 
     return {
       provider_id,
-      observation_id: observation_log.length - 1,
+      observation_id,
       site_results,
       mitm_applied: mitm,
     };
@@ -87,6 +104,12 @@ function createProvider(opts = {}) {
   return {
     fanout,
     getProviderView: () => observation_log.map(o => JSON.parse(JSON.stringify(o))),
+    /**
+     * Clears the observation log. Intended for test setup. Should not
+     * be called while fanouts are in flight — the `observation_id`
+     * values returned by those fanouts reference indices that no
+     * longer point at the original observations after reset.
+     */
     reset: () => { observation_log.length = 0; },
   };
 }

@@ -1,6 +1,6 @@
 'use strict';
 
-const { noTrainCommitment, kAnonymity, dpNoise, chain } = require('../mitigations');
+const { noTrainCommitment, kAnonymity, dpNoise, chain } = require('../provider/mitigations');
 
 describe('noTrainCommitment', () => {
   test('tags every observation with do_not_train', () => {

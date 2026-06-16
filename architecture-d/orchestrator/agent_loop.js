@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Shared Ollama-driven tool loop — same pattern as Architecture A / B.
  *
@@ -95,7 +93,15 @@ async function runAgentLoop({
     }
   }
 
-  return { finalResponse, toolCalls: toolCallLog };
+  // If we exited the loop without ever observing a content response,
+  // surface that as a diagnostic message rather than an empty string
+  // so the harness output makes the truncation visible to the user.
+  const truncated = finalResponse === '';
+  if (truncated) {
+    finalResponse = `(model exhausted maxTurns=${maxTurns} without producing a final summary; ${toolCallLog.length} tool call(s) made)`;
+  }
+
+  return { finalResponse, toolCalls: toolCallLog, truncated };
 }
 
 module.exports = { runAgentLoop, MODEL };

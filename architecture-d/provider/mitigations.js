@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * E2 commitments — provider-side data-handling constraints.
  *
@@ -55,6 +53,12 @@ function kAnonymity(k = 5) {
  * Differential-privacy noise for aggregate publication. Per-observation
  * passes through unchanged; the `noise` method is invoked at aggregate
  * time. Laplace mechanism with scale 1/epsilon.
+ *
+ * NOTE: `Math.random()` is not a cryptographically secure PRNG. This
+ * implementation is illustrative — it demonstrates the shape of the E2
+ * commitment, not a deployable DP mechanism. A real implementation
+ * would use `crypto.randomBytes` (or a vetted DP library) and audit
+ * the floating-point rounding behavior described in Mironov, 2012.
  */
 function dpNoise(epsilon = 1.0) {
   return {

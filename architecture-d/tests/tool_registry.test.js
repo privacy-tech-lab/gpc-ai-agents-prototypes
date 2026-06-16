@@ -1,6 +1,6 @@
 'use strict';
 
-const { PUBLISHERS, getPublisher, listPublisherIds } = require('../tool_registry');
+const { PUBLISHERS, getPublisher, listPublisherIds } = require('../services/tool_registry');
 
 describe('tool_registry', () => {
   test('catalog has exactly 8 publishers', () => {

@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Derivations the provider can compute from its observation log.
  *
