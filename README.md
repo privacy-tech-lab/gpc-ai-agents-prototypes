@@ -68,4 +68,4 @@ See [architecture-e/README.md](architecture-e/README.md) for setup, demo, and te
 
 ## Copyright
 
-Copyright 2024 Privacy Tech Lab at Wesleyan University. Licensed under the MIT License — see [LICENSE](LICENSE).
+Copyright 2026 Privacy Tech Lab at Wesleyan University. Licensed under the MIT License — see [LICENSE](LICENSE).
