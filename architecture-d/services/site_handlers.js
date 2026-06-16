@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Per-site (publisher) MCP-style tool handlers.
  *
@@ -54,23 +52,30 @@ function decideTracking(pub, gpc_on) {
  * Fetch a single review snippet from the publisher's domain via Tavily.
  * Returns null on any failure so callers fall back to the canned fragment.
  *
+ * Aborts after TAVILY_TIMEOUT_MS (default 5000 ms) so a hung Tavily
+ * call cannot stall an entire fanout.
+ *
  * @param {string} domain
  * @param {string} query
  */
 async function fetchFromTavily(domain, query) {
   const api_key = process.env.TAVILY_API_KEY;
   if (!api_key) return null;
+  const timeoutMs = Number(process.env.TAVILY_TIMEOUT_MS) || 5000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body:    JSON.stringify({
         api_key,
         query,
         include_domains: [domain],
-        search_depth: 'basic',
-        max_results: 1,
+        search_depth:    'basic',
+        max_results:     1,
       }),
+      signal: controller.signal,
     });
     if (!res.ok) return null;
     const json = await res.json();
@@ -79,6 +84,8 @@ async function fetchFromTavily(domain, query) {
     return { url: first.url, title: first.title, content: first.content };
   } catch {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

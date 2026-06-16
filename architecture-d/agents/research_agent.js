@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * LLM Orchestrator — Ollama-backed agent drives the fanout.
  *
@@ -15,8 +13,8 @@
  * provider visibility more compelling.
  */
 
-const { runAgentLoop, MODEL } = require('./agent_loop');
-const { listPublisherIds, PUBLISHERS } = require('./tool_registry');
+const { runAgentLoop, MODEL } = require('../orchestrator/agent_loop');
+const { listPublisherIds, PUBLISHERS } = require('../services/tool_registry');
 
 const TOOL_DEFINITIONS = [
   {
@@ -56,12 +54,10 @@ ${PUBLISHERS.map(p => `  - ${p.id} (${p.name})`).join('\n')}`;
  * @param {object} options.provider         — instance from createProvider()
  * @param {string} options.user_id
  * @param {string} options.query
- * @param {0|1}    [options.gpc=0]
+ * @param {{ gpc?: 0|1 }} [options.meta={}]
  */
-async function handleRequest({ provider, user_id, query, gpc = 0 }) {
-  const _meta = { gpc };
-
-  const { finalResponse, toolCalls } = await runAgentLoop({
+async function run({ provider, user_id, query, meta = {} }) {
+  const { finalResponse, toolCalls, truncated } = await runAgentLoop({
     systemPrompt:    SYSTEM_PROMPT,
     userMessage:     query,
     toolDefinitions: TOOL_DEFINITIONS,
@@ -72,7 +68,7 @@ async function handleRequest({ provider, user_id, query, gpc = 0 }) {
       }
       const { publisher_id, sub_query } = toolInput;
       // Each model decision is one site call routed through the provider.
-      const r = await provider.fanout(user_id, sub_query, [publisher_id], _meta);
+      const r = await provider.fanout(user_id, sub_query, [publisher_id], meta);
       return r.site_results[0];
     },
   });
@@ -80,6 +76,7 @@ async function handleRequest({ provider, user_id, query, gpc = 0 }) {
   return {
     model:          MODEL,
     user_facing_summary: finalResponse,
+    truncated,
     model_tool_calls: toolCalls.map(tc => ({
       publisher_id: tc.input.publisher_id,
       sub_query:    tc.input.sub_query,
@@ -90,4 +87,4 @@ async function handleRequest({ provider, user_id, query, gpc = 0 }) {
   };
 }
 
-module.exports = { handleRequest, MODEL, TOOL_DEFINITIONS };
+module.exports = { run, MODEL, TOOL_DEFINITIONS };

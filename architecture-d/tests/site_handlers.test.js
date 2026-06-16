@@ -1,7 +1,7 @@
 'use strict';
 
-const { querySite, decideTracking } = require('../site_handlers');
-const { getPublisher } = require('../tool_registry');
+const { querySite, decideTracking } = require('../services/site_handlers');
+const { getPublisher } = require('../services/tool_registry');
 
 describe('decideTracking', () => {
   test('non-supporting site ignores GPC', () => {
@@ -50,5 +50,29 @@ describe('querySite', () => {
     const r = await querySite('the-verge', 'iPhone 17', { gpc: 1 });
     expect(r.status).toBe('ok');
     expect(r.review_snippet).toBeTruthy();
+  });
+
+  test('hung Tavily fetch is aborted; querySite falls back to canned', async () => {
+    process.env.TAVILY_API_KEY     = 'tvly-test';
+    process.env.TAVILY_TIMEOUT_MS  = '50';
+    const realFetch = global.fetch;
+    // Fetch hangs until aborted, then rejects with AbortError.
+    global.fetch = (url, opts) => new Promise((_, reject) => {
+      opts.signal.addEventListener('abort', () => reject(new Error('aborted')));
+    });
+
+    try {
+      const start = Date.now();
+      const r     = await querySite('the-verge', 'iPhone 17', { gpc: 0 });
+      const ms    = Date.now() - start;
+      expect(r.status).toBe('ok');
+      expect(r.review_source).toBe('canned');
+      // Should resolve within a small multiple of the configured timeout.
+      expect(ms).toBeLessThan(500);
+    } finally {
+      delete process.env.TAVILY_API_KEY;
+      delete process.env.TAVILY_TIMEOUT_MS;
+      global.fetch = realFetch;
+    }
   });
 });

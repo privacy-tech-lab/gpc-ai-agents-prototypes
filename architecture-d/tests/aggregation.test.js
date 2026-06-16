@@ -3,7 +3,7 @@
 const {
   gpcAdoptionRate, topicDistribution, publisherReach,
   topicByGpcMatrix, inferUserInterests, siteLevelView,
-} = require('../aggregation');
+} = require('../provider/aggregation');
 
 const sample_log = [
   { user_id: 'u1', query: 'iPhone',  query_topic: 'mobile_device', fanout_targets: ['the-verge', 'cnet'], meta_received: { gpc: 1 } },
