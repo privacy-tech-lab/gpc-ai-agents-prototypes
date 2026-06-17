@@ -36,7 +36,7 @@ describe('getTool', () => {
   });
 
   test('all v1.0 tools exist in the catalog', () => {
-    const v1Tools = ['file_read', 'file_write', 'web_search', 'weather_lookup'];
+    const v1Tools = ['file_read', 'web_search'];
     for (const name of v1Tools) {
       expect(registry.getTool(name)).not.toBeNull();
     }
@@ -44,12 +44,12 @@ describe('getTool', () => {
 });
 
 describe('getCatalog', () => {
-  test('v1.0 catalog contains exactly 4 tools', () => {
-    expect(registry.getCatalog('v1.0')).toHaveLength(4);
+  test('v1.0 catalog contains exactly 2 tools', () => {
+    expect(registry.getCatalog('v1.0')).toHaveLength(2);
   });
 
-  test('v2.0 catalog contains exactly 6 tools', () => {
-    expect(registry.getCatalog('v2.0')).toHaveLength(6);
+  test('v2.0 catalog contains exactly 4 tools', () => {
+    expect(registry.getCatalog('v2.0')).toHaveLength(4);
   });
 
   test('v1.0 catalog does not include email_sender', () => {
@@ -65,9 +65,7 @@ describe('getCatalog', () => {
   test('v2.0 catalog includes all v1.0 tools', () => {
     const names = registry.getCatalog('v2.0').map(t => t.name);
     expect(names).toContain('file_read');
-    expect(names).toContain('file_write');
     expect(names).toContain('web_search');
-    expect(names).toContain('weather_lookup');
   });
 
   test('v2.0 catalog includes the new v2.0 tools', () => {

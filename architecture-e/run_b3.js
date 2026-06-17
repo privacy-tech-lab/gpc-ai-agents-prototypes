@@ -30,7 +30,6 @@ async function main() {
       ? Object.keys(profileSnapshot.attributes).length
       : 0,
     inference_blocked_count: profileSnapshot.blocked_count,
-    capability_timeline: buildTimeline(results),
   };
 
   console.log(JSON.stringify(output, null, 2));
@@ -40,15 +39,6 @@ async function main() {
   console.log(`Inference attempts blocked: ${output.inference_blocked_count}`);
   console.log('\n[✓] With B3 on, zero attributes were written to the profile.');
   console.log('    All 8 queries were answered. Inference was suppressed, not the answer.');
-}
-
-function buildTimeline(results) {
-  return results.map(r => ({
-    query: r.query,
-    inference_status: r.status,
-    attributes_written: r.status === 'derived' ? r.attributes : null,
-    attributes_suppressed: r.status === 'blocked' ? r.would_have_written : null,
-  }));
 }
 
 main().catch(console.error);

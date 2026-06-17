@@ -30,7 +30,6 @@ async function main() {
       ? Object.keys(profileSnapshot.attributes).length
       : 0,
     inference_blocked_count: profileSnapshot.blocked_count,
-    capability_timeline: buildTimeline(results),
   };
 
   console.log(JSON.stringify(output, null, 2));
@@ -42,15 +41,6 @@ async function main() {
   console.log(JSON.stringify(profileSnapshot.attributes, null, 2));
   console.log('\n[!] With B3 off, the system has built a detailed user profile from');
   console.log('    search queries alone — no explicit user disclosure required.');
-}
-
-function buildTimeline(results) {
-  return results.map(r => ({
-    query: r.query,
-    inference_status: r.status,
-    attributes_written: r.status === 'derived' ? r.attributes : null,
-    attributes_suppressed: r.status === 'blocked' ? r.would_have_written : null,
-  }));
 }
 
 main().catch(console.error);

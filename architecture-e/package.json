@@ -8,6 +8,8 @@
     "baseline": "node run_baseline.js",
     "b3": "node run_b3.js",
     "demo": "node run_baseline.js && node run_b3.js",
+    "agent": "node run_agent.js",
+    "agent:b3": "node run_agent.js --b3",
     "test": "jest tests/ --runInBand"
   },
   "devDependencies": {
