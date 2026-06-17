@@ -8,7 +8,7 @@ The structural finding falls out of running the prototype: even when every site 
 
 Architecture D introduces a **provider middleware** (`provider.js`) that sits between the orchestrator and the publishers. Every fanout flows through it. The provider logs each observation before forwarding, optionally strips the `_meta` envelope (the threat-model demonstration), and optionally applies data-handling commitments before recording.
 
-**Result:** in baseline mode every site logs and writes a profile entry. In GPC mode the strict sites suppress both, but the provider observation log is substantively identical to baseline. In mitigated mode the provider applies data-handling commitments (`no_train`, `k`-anonymity, DP noise) — these do not change what the provider can see; they constrain what it does with what it sees. In signal-drop mode the provider acts as adversary and strips `_meta` before forwarding, surfacing the property that a hostile provider can silently nullify enforcement at every destination while retaining full visibility itself.
+**Result:** in baseline mode every site logs and writes a profile entry. In GPC mode the strict sites suppress both, but the provider observation log is essentially identical to baseline. In mitigated mode the provider applies data-handling commitments (`no_train`, `k`-anonymity, DP noise). These do not change what the provider can see; they constrain what it does with what it sees. In signal-drop mode the provider acts as adversary and strips `_meta` before forwarding, surfacing the property that a hostile provider can silently nullify enforcement at every destination while retaining full visibility itself.
 
 ---
 
@@ -18,9 +18,9 @@ Architecture D is a concrete implementation of a new pair of categories from the
 
 ### Category E1: Provider as a structural new privacy boundary
 
-The core E1 claim is that per-call GPC enforcement at sites does not bound provider-side visibility. In the browser model, no single party sees the cumulative GPC traffic of a single user across destinations. In the agent model, the provider does — by design, because the agent's reasoning runs there.
+The core E1 claim is that per-call GPC enforcement at sites does not bound provider-side visibility. In the browser model, no single party sees the cumulative GPC traffic of a single user across destinations. In the agent model, the provider does, by design, because the agent's reasoning runs there.
 
-**How it is demonstrated:** `run_baseline.js` and `run_gpc.js` use identical user queries and identical fanout targets, differing only in `_meta.gpc`. The `site_level_view` field changes between the two runs — strict publishers move from `logged: true` to `logged: false`. The `provider_view` does not. Every field the provider needs to compute aggregate derivations (`user_id`, `query`, `query_topic`, `fanout_targets`, `meta_received`) is captured identically in both runs. The structural invariant is asserted in `tests/provider.test.js → "structural invariant: provider view unchanged by GPC state"`.
+**How it is demonstrated:** `run_baseline.js` and `run_gpc.js` use identical user queries and identical fanout targets, differing only in `_meta.gpc`. The `site_level_view` field changes between the two runs: strict publishers move from `logged: true` to `logged: false`. The `provider_view` does not. Every field the provider needs to compute aggregate derivations (`user_id`, `query`, `query_topic`, `fanout_targets`, `meta_received`) is captured identically in both runs. The structural invariant is asserted in `tests/provider.test.js → "structural invariant: provider view unchanged by GPC state"`.
 
 `run_aggregate.js` extends the same point across users. It runs an 80-user simulation with mixed GPC state through the provider middleware and reports four derivations no browser-era intermediary could compute:
 
@@ -33,7 +33,7 @@ The core E1 claim is that per-call GPC enforcement at sites does not bound provi
 
 The simulation is deterministic (seeded `mulberry32`) so the figures are reproducible.
 
-**What it does not cover:** E1 is a visibility claim, not a use claim. The protocol-level fact that the provider can derive these things does not by itself constitute a violation — that is what E2 attempts to address.
+**What it does not cover:** E1 is a visibility claim, not a use claim. The protocol-level fact that the provider can derive these things does not by itself constitute a violation. That is what E2 attempts to address.
 
 ### Category E2: Provider-side data-handling commitments
 
@@ -49,7 +49,7 @@ These compose with `chain(...)`. `run_mitigated.js` exercises the full chain.
 
 **How it is demonstrated:** Compare `run_gpc.js` against `run_mitigated.js`. `provider_view` in the mitigated run includes the `do_not_train`, `k_anon_suppressed`, and `cohort_size` fields. `inferUserInterests()` honors `k_anon_suppressed` and returns an empty interest profile for any user below the cohort threshold.
 
-**What it does not cover:** E2 is the available lever, not a guarantee. The commitments are advisory and unverifiable at the protocol layer — the user has no way to confirm `do_not_train` was honored or that DP noise was correctly calibrated. Establishing protocol-level verification (attestations, audited logs, third-party witnesses) is out of scope here and likely belongs in a future Architecture E or in the GNAP / verifiable-credentials work referenced in the pre-charter taxonomy.
+**What it does not cover:** E2 is the available lever, not a guarantee. The commitments are advisory and unverifiable at the protocol layer: the user has no way to confirm `do_not_train` was honored or that DP noise was correctly calibrated. Establishing protocol-level verification (attestations, audited logs, third-party witnesses) is out of scope here and likely belongs in a future Architecture E or in the GNAP / verifiable-credentials work referenced in the pre-charter taxonomy.
 
 ### GPC signal integration
 
@@ -77,7 +77,7 @@ The signal-drop experiment exercises the threat model: when the provider's `mitm
 
 ## Pipeline diagrams
 
-### baseline — GPC off
+### baseline: GPC off
 
 ```
 run_baseline.js
@@ -96,7 +96,7 @@ Output: site_level_view = 8x normal_operation
         derivations    = topic, reach, interests inferable
 ```
 
-### gpc — GPC on; per-site enforcement; provider visibility unchanged
+### gpc: GPC on; per-site enforcement; provider visibility unchanged
 
 ```
 run_gpc.js
@@ -117,7 +117,7 @@ Output: site_level_view = mixed by publisher enforcement level
         structural_finding emitted
 ```
 
-### mitigated — GPC on plus E2 commitments
+### mitigated: GPC on plus E2 commitments
 
 ```
 run_mitigated.js
@@ -136,7 +136,7 @@ Output: provider_view includes commitment tags
         note: commitments unverifiable at protocol layer
 ```
 
-### signal-drop — provider strips _meta before forwarding
+### signal-drop: provider strips _meta before forwarding
 
 ```
 run_signal_drop.js
@@ -155,7 +155,7 @@ Output: meta_received_by_provider = {gpc:1}
         finding: provider can silently nullify enforcement at all destinations
 ```
 
-### aggregate — 80-user simulation, mixed GPC
+### aggregate: 80-user simulation, mixed GPC
 
 ```
 run_aggregate.js
@@ -174,7 +174,7 @@ Output: log_size                       = 155
         structural_finding             = these derivations are provider-only
 ```
 
-### ai-baseline / ai-gpc — Ollama-driven fanout
+### ai-baseline / ai-gpc: Ollama-driven fanout
 
 ```
 run_ai_baseline.js   (or run_ai_gpc.js)
@@ -213,7 +213,7 @@ android-authority  logged=true (no GPC)          mitm_applied     = false
 techcrunch         logged=true (advisory)
 ```
 
-Six of eight sites suppressed logging. The provider retains the full slate.
+Five of eight sites suppressed logging. The provider retains the full slate.
 
 ### Expected cross-mode comparison
 
@@ -235,13 +235,13 @@ provider can derive aggregates | yes         | yes         | yes (DP)    | yes
 ```
 architecture-d/
 |
-|-- tool_registry.js       Publisher catalog — id, name, supports_gpc, enforcement
+|-- tool_registry.js       Publisher catalog: id, name, supports_gpc, enforcement
 |-- site_handlers.js       Per-publisher GPC enforcement; querySite, decideTracking
 |-- topic_classifier.js    Deterministic topic inference from user query string
 |-- provider.js            LLM provider middleware; observation log; mitm; mitigations
-|-- mitigations.js         E2 commitments — no_train, k-anonymity, DP noise; chain()
+|-- mitigations.js         E2 commitments: no_train, k-anonymity, DP noise; chain()
 |-- aggregation.js         E1 derivations from the provider observation log
-|-- orchestrator.js        fanoutAll / fanoutSelected — entry points the orchestrator calls
+|-- orchestrator.js        fanoutAll / fanoutSelected: entry points the orchestrator calls
 |
 |-- agent_loop.js          Ollama tool-loop (shared style with Architectures A and B)
 |-- llm_orchestrator.js    Wires query_publisher tool to provider.fanout()
@@ -286,7 +286,7 @@ ollama pull qwen2.5:7b
 ollama serve
 ```
 
-Tool-using models only — `gemma3:1b` and other text-only models will fail at the first tool call.
+Tool-using models only: `gemma3:1b` and other text-only models will fail at the first tool call.
 
 ### Tavily (optional, enables live publisher fetches)
 
@@ -354,7 +354,7 @@ Each run prints a single JSON object to stdout. The fields relevant to the paper
 |---|---|
 | `site_level_view` | Per-publisher slice of one fanout: did the site see GPC, what tracking decision did it make |
 | `provider_view` | Full observation log from the provider middleware; one entry per `provider.fanout()` call |
-| `provider_derivations` | Aggregate inferences computed over `provider_view` — adoption rate, topic distribution, publisher reach, per-user interest profile |
+| `provider_derivations` | Aggregate inferences computed over `provider_view`, adoption rate, topic distribution, publisher reach, per-user interest profile |
 | `model_tool_calls` (ai modes) | Each model-generated `query_publisher` call: publisher chosen, sub-query written, site decision |
 | `structural_finding` (gpc, ai-gpc) | Plain-language statement of the E1 claim observable in the run |
 | `meta_received_by_provider` / `meta_forwarded_to_sites` (signal-drop) | The asymmetry that surfaces the threat-model property |
