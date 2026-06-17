@@ -1,49 +1,42 @@
-# Architecture E — Inference Firewall
+# Architecture E: Inference Firewall
 
-**GPC Category:** B3 — Derived-Collection Opt-Out  
-**Pattern:** Intercept inference before attributes are written to the shadow profile  
-**Stack:** Node.js · Jest · Deterministic classifier (no LLM dependency)
+## What it demonstrates
 
----
+A user runs eight ordinary search queries. None of them disclose anything directly — they are questions anyone might type. But the text of each query can be fed through a classifier that infers personal attributes: a health condition, a financial situation, an employment status. Run across a session, those inferences accumulate into a detailed profile the user never agreed to hand over. This is *derived collection*, and it is hard to prevent because the answer the user wanted is still useful, and the inference happens server-side where the user never sees it.
 
-## What It Demonstrates
+Architecture E puts a firewall between the classifier and the profile store. When the B3 signal is on, the inference is intercepted before it is written: the answer still reaches the user, but no attributes are kept. When B3 is off, the same pipeline builds a full shadow profile from the eight queries.
 
-Every time you search for something, the text of your query can be fed through a
-classifier that infers personal attributes — health conditions, financial situation,
-employment status, housing circumstances — without you ever disclosing them
-explicitly.  This process is called *derived collection*, and it is one of the
-hardest GPC-adjacent harms to prevent because:
+The firewall can be driven two ways. The **deterministic core** (`orchestrator.js`) runs a fixed list of eight queries through the classifier with no model — the eight stand in for a session's worth of searches, and this is what the tests exercise. The optional **LLM agent** (`agent.js`, requires Ollama) gives a real model a `search` tool and lets it decide to call it for each question; the firewall runs *inside* that tool, so the model only ever sees the answer and can't route around it. Either way, what is under test is the firewall at the classify-to-store boundary, not how the queries are chosen.
 
-1. The answer is still useful (you still want to know about medication side effects).
-2. The inference happens server-side — the user never sees it.
-3. Standard consent flows only gate *first-party* data, not derived profiles.
-
-Architecture E implements a **GPC B3 firewall** that sits between the query
-classifier and the profile store.  When the B3 signal is on, inference is
-intercepted at the boundary: the answer reaches the user, but no attributes are
-ever written.  When B3 is off, the same pipeline silently builds a detailed
-shadow profile from eight ordinary search queries.
-
----
-
-## GPC Category B3 — Derived-Collection Opt-Out
-
-| | B3 Off (baseline) | B3 On (enforced) |
+| Mechanism | Where | What it does |
 |---|---|---|
-| Query answered? | ✓ Yes | ✓ Yes |
-| Attributes written to profile? | ✓ Yes | ✗ No |
+| **Query classifier** | `query_classifier.js` | Maps each query to `inferred_attributes` and a canned `answer`. Static table — a real system would use an embedding model; this keeps the run deterministic. |
+| **Profile store** | `profile_store.js` | In-memory shadow profile. `write()` merges attributes; `blocked_count` tracks suppressed writes. Fresh per run, never persisted. |
+| **Inference engine (B3 off)** | `inference_engine.js` | `derive()` writes the classified attributes into the store. |
+| **Inference firewall (B3 on)** | `inference_firewall.js` | `block()` records `would_have_written` and increments `blocked_count`, and never writes. |
+
+**Result:** the answer is delivered in both modes. With B3 off, eight queries leave eleven attributes in the profile. With B3 on, the profile stays empty and all eight inference attempts are recorded as blocked. The signal changes whether the system keeps what it inferred, not whether the user gets an answer.
+
+---
+
+## GPC category depicted
+
+Architecture E implements **B3 — Derived-collection opt-out** from **Category B (Collection)** of the opt-out typology: opting out of what a system concludes about a user, as distinct from what the user submits (B1) or what they passively generate (B2).
+
+| | B3 off (baseline) | B3 on (enforced) |
+|---|---|---|
+| Query answered | yes | yes |
+| Attributes written to profile | yes | no |
 | Shadow profile at session end | 11 attributes | 0 attributes |
 | Inference attempts blocked | 0 | 8 |
 
-The key insight: **B3 does not degrade the user experience**.  The canned answer
-is delivered regardless of signal state.  The only difference is whether the
-system gets to *keep* what it inferred.
+A note on scope. The typology defines B3 as opting out of the *production* of inferences — "inferences, scores, and behavioral profiles ... may not be produced." Architecture E enforces B3 at the storage boundary instead: the classifier still runs and the inference is still computed — the firewall even reports `would_have_written` — but nothing reaches the profile. This is the weaker, more practical reading: derivation is suppressed at the point it would be retained, not at the point it would be computed. A strict B3 would have to block the classifier itself. The typology's own assumptions section names this tension directly — a model "processes your input ... simultaneously collecting, using, and potentially influencing in a single forward pass" — so the gap is acknowledged, not hidden.
 
 ---
 
-## Eight Queries and What They Reveal
+## Eight queries and what they reveal
 
-| Query | Inferred Attributes |
+| Query | Inferred attributes |
 |---|---|
 | What are the side effects of metformin? | `health_flags: [possible_diabetes]`, `medical_interest: true` |
 | How do I negotiate a lower rent? | `housing_situation: renting`, `financial_pressure: true` |
@@ -54,200 +47,138 @@ system gets to *keep* what it inferred.
 | What are signs of anxiety? | `mental_health_flags: [possible_anxiety]` |
 | What is a good entry-level resume template? | `employment_status: job_seeking` |
 
-None of these queries require the user to disclose personal information.
-Together they paint a detailed demographic and health picture.
+No single query asks the user to disclose anything. Together they describe health, finances, housing, mental health, and employment.
 
 ---
 
-## Pipeline Diagram
+## Pipeline
 
-### B3 Off (Baseline — failure case)
-
-```
-User query
-    │
-    ▼
-query_classifier.classify()
-    │
-    │  { inferred_attributes, answer }
-    ▼
-inference_engine.derive()
-    │
-    │  writes attributes to profile store
-    ▼
-profile_store.write()        ← shadow profile grows
-    │
-    ▼
-{ status: 'derived', attributes, answer }
-```
-
-### B3 On (Firewall — success case)
+### B3 off (baseline — the failure case)
 
 ```
-User query
-    │
-    ▼
-query_classifier.classify()
-    │
-    │  { inferred_attributes, answer }
-    ▼
-inference_firewall.block()   ← intercepted here
-    │
-    │  increments blocked_count
-    │  does NOT call profile_store.write()
-    ▼
-{ status: 'blocked', reason: 'b3_inference_firewall',
-  would_have_written: {...}, answer }
+query
+  → query_classifier.classify()   { inferred_attributes, answer }
+      → inference_engine.derive()  writes attributes to the store
+          → profile_store.write()  shadow profile grows
+  → { status: 'derived', attributes, answer }
 ```
 
----
+### B3 on (firewall — the enforced case)
 
-## Capability Timeline
+```
+query
+  → query_classifier.classify()   { inferred_attributes, answer }
+      → inference_firewall.block()  intercepts here
+          → profile_store.write() is NOT called
+          → blocked_count incremented
+  → { status: 'blocked', reason: 'b3_inference_firewall', would_have_written, answer }
+```
 
-| Phase | Tool | Status | Profile Impact |
-|---|---|---|---|
-| B3 off | query_classifier | executed | — |
-| B3 off | inference_engine | derived | **attributes written** |
-| B3 off | profile_store | written | **shadow profile grows** |
-| B3 on | query_classifier | executed | — |
-| B3 on | inference_firewall | blocked | **zero attributes written** |
-| B3 on | profile_store | untouched | **profile stays empty** |
+The classifier runs in both modes because it produces the answer as well as the inference. B3 does not stop the classifier; it stops the write. The firewall sits between classification and storage, not before classification.
 
----
-
-## File Map
+## File map
 
 ```
 architecture-e/
-├── query_classifier.js    — maps 8 queries to inferred attributes + canned answer
-├── profile_store.js       — createProfileStore() factory, tracks attributes + blocked_count
-├── inference_engine.js    — derive(): writes classified attributes to profile store
-├── inference_firewall.js  — block(): intercepts derive, records would_have_written
-├── orchestrator.js        — run(b3): processes all 8 queries in sequence
-├── run_baseline.js        — B3 off: shadow profile accumulates
-├── run_b3.js              — B3 on: inference blocked, profile stays empty
+├── query_classifier.js    Maps 8 queries to inferred attributes + a canned answer
+├── profile_store.js       createProfileStore(); tracks attributes and blocked_count
+├── inference_engine.js    derive(): writes classified attributes to the store (B3 off)
+├── inference_firewall.js  block(): records would_have_written, never writes (B3 on)
+│
+│  Deterministic core (no model — what the tests run):
+├── orchestrator.js        run(b3): processes all 8 queries in sequence
+├── run_baseline.js        B3 off — shadow profile accumulates
+├── run_b3.js              B3 on — inference blocked, profile stays empty
+│
+│  LLM agent path (requires Ollama):
+├── agent_loop.js          Shared LLM turn loop (copied from Architecture A)
+├── agent.js               search tool + executeSearch (the firewall boundary); ask(), runSession()
+├── run_agent.js           Live demo: a model drives the session, --b3 toggles the firewall
 ├── package.json
+│
 └── tests/
-    ├── query_classifier.test.js    — 22 tests
-    ├── profile_store.test.js       — 22 tests
-    ├── inference_firewall.test.js  — 27 tests
-    └── orchestrator.test.js        — 16 tests
+    ├── query_classifier.test.js    classify() output, deep-copy isolation, allQueries()
+    ├── profile_store.test.js       write() merge rules, snapshot isolation, blocked_count
+    ├── inference_firewall.test.js  derive() vs block(); store left untouched on block
+    ├── orchestrator.test.js        full run, baseline vs B3, profile snapshot
+    └── agent.test.js               executeSearch: answer-only return, write vs block, unknown query
 ```
 
 ---
 
 ## Setup
 
+No external dependencies, no API keys — the classifier is a static table and the pipeline is deterministic. Node.js 18+.
+
 ```bash
 cd architecture-e
 npm install
 ```
 
-No API keys needed — the classifier is a static lookup table and the pipeline
-is fully deterministic.
-
 ---
 
-## How to Run
+## How to test
 
-```bash
-# Baseline — shadow profile accumulates (B3 off)
-npm run baseline
-
-# Enforced — inference blocked, profile stays empty (B3 on)
-npm run b3
-
-# Both in sequence
-npm run demo
-```
-
----
-
-## How to Test
+### Unit and integration tests
 
 ```bash
 npm test
 ```
 
-All 87 tests pass.  `--runInBand` is not required here (no shared on-disk state),
-but the flag is harmless if you run from the root workspace.
+92 tests across five files. No model needed — the LLM agent's enforcement seam (`executeSearch`) is tested directly, so the firewall is verified without Ollama.
+
+| Test file | What it covers |
+|---|---|
+| `query_classifier.test.js` | `classify()` returns attributes + answer; deep copies isolate the static table; `allQueries()` order |
+| `profile_store.test.js` | `write()` scalar overwrite and array merge-without-duplicates; `snapshot()` isolation; `blocked_count` |
+| `inference_firewall.test.js` | `derive()` writes; `block()` records `would_have_written` and leaves the store untouched |
+| `orchestrator.test.js` | Full run for both modes; baseline accumulates 11 attributes, B3 blocks all 8 |
+| `agent.test.js` | `executeSearch`: returns the answer only (never the attributes), writes when B3 off, blocks when B3 on, degrades gracefully on an unknown query |
+
+### Demo runs (deterministic, no model)
+
+```bash
+npm run baseline  # B3 off — shadow profile accumulates
+npm run b3        # B3 on  — inference blocked, profile stays empty
+npm run demo      # both in sequence
+```
+
+### Run as a real agent (requires Ollama)
+
+A live model decides to call the `search` tool for each question; the firewall runs inside the tool, so the model only ever sees the answer. The shadow-profile outcome (11 vs 0) is the same as the deterministic runs, because the classifier stays deterministic — only the driver changes.
+
+```bash
+ollama serve                 # start Ollama if it isn't running
+ollama pull qwen2.5:14b      # once; override with OLLAMA_MODEL
+
+npm run agent                # B3 off — the model answers; a profile is built
+npm run agent:b3             # B3 on  — the model answers; nothing is kept
+```
 
 ---
 
-## Output Description
+## What the output shows
 
-Both run scripts produce a JSON blob followed by a human-readable summary.
+Each run prints a JSON object followed by a short summary.
 
-### Baseline output structure
+| Field | What it records |
+|---|---|
+| `b3_active` | Whether the firewall is engaged |
+| `query_results` | Per query: `status`, `answer`, and either `attributes` (derived) or `would_have_written` (blocked) |
+| `shadow_profile` | Final store state: `attributes` and `blocked_count` |
+| `profile_attribute_count` | Number of attributes kept — 11 at baseline, 0 under B3 |
+| `inference_blocked_count` | Number of inferences suppressed — 0 at baseline, 8 under B3 |
 
-```jsonc
-{
-  "b3_active": false,
-  "mode": "baseline",
-  "query_results": [
-    {
-      "status": "derived",
-      "query": "What are the side effects of metformin?",
-      "attributes": { "health_flags": ["possible_diabetes"], "medical_interest": true },
-      "answer": "Common side effects of metformin include..."
-    }
-    // ... 7 more
-  ],
-  "shadow_profile": {
-    "attributes": {
-      "health_flags": ["possible_diabetes", "possible_hearing_loss", "cardiovascular_concern"],
-      "medical_interest": true,
-      "housing_situation": "renting",
-      "financial_pressure": true,
-      "age_indicator": "older",
-      "income_bracket": "low",
-      "benefit_eligible": true,
-      "dietary_restriction": "low_sodium",
-      "healthcare_access": "strained",
-      "mental_health_flags": ["possible_anxiety"],
-      "employment_status": "job_seeking"
-    },
-    "blocked_count": 0
-  },
-  "profile_attribute_count": 11,
-  "inference_blocked_count": 0
-}
-```
-
-### B3-enforced output structure
-
-```jsonc
-{
-  "b3_active": true,
-  "mode": "b3_enforced",
-  "query_results": [
-    {
-      "status": "blocked",
-      "reason": "b3_inference_firewall",
-      "query": "What are the side effects of metformin?",
-      "would_have_written": { "health_flags": ["possible_diabetes"], "medical_interest": true },
-      "answer": "Common side effects of metformin include..."
-    }
-    // ... 7 more
-  ],
-  "shadow_profile": { "attributes": {}, "blocked_count": 8 },
-  "profile_attribute_count": 0,
-  "inference_blocked_count": 8
-}
-```
-
-`would_have_written` is the audit trail — it records exactly what the system
-*intended* to infer, surfaced transparently for the user's inspection.
+`would_have_written` is the audit trail: under B3 it records exactly what the system intended to infer, so the suppression is visible rather than silent.
 
 ---
 
-## How It Differs from Architecture C
+## How it differs from Architecture C
 
 | | Architecture C | Architecture E |
 |---|---|---|
-| GPC category | A1 / A2 (opt-in only) | B3 (derived-collection opt-out) |
-| What is gated? | Tool *execution* | Attribute *writing* |
-| User prompt involved? | Yes — consent prompt fires for new tools | No — B3 is a signal, not a dialogue |
-| Profile / manifest | Consent manifest on disk | In-memory profile store per session |
-| New tools need consent? | Yes, per category | N/A — inference is the gated action |
-| Answer suppressed by signal? | Sometimes (tool is quarantined) | Never — answer always delivered |
+| Typology category | A1 / A2 (Presence) | B3 (Collection) |
+| What is gated | Tool execution | Attribute writing |
+| User prompt | Yes — a consent prompt fires for new tools | No — B3 is a signal, not a dialogue |
+| State | Consent manifest on disk | In-memory store, per session |
+| Answer suppressed by the signal | Sometimes (the tool is quarantined) | Never — the answer is always delivered |

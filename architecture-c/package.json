@@ -11,6 +11,9 @@
     "v2:decline": "node run_v2.js --mode=decline",
     "v2:gpc": "node run_v2.js --mode=approve --gpc",
     "demo": "node run_v1.js && node run_v2.js --mode=silent && node run_v2.js --mode=approve && node run_v2.js --mode=decline && node run_v2.js --mode=approve --gpc",
+    "agent": "node run_agent.js --mode=approve",
+    "agent:decline": "node run_agent.js --mode=decline",
+    "agent:gpc": "node run_agent.js --mode=approve --gpc",
     "test": "jest tests/ --runInBand"
   },
   "devDependencies": {

@@ -8,22 +8,10 @@ const CATALOG = [
     description: 'Read the contents of a file from the user\'s document store.',
   },
   {
-    name: 'file_write',
-    capability_category: 'file_access',
-    added_at: 'v1.0',
-    description: 'Write or update a file in the user\'s document store.',
-  },
-  {
     name: 'web_search',
     capability_category: 'external_api',
     added_at: 'v1.0',
     description: 'Run a web search query against an external search provider.',
-  },
-  {
-    name: 'weather_lookup',
-    capability_category: 'external_api',
-    added_at: 'v1.0',
-    description: 'Fetch current weather data from an external weather API.',
   },
   {
     name: 'email_sender',
