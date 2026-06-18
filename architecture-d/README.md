@@ -331,6 +331,31 @@ TAVILY_API_KEY=tvly-...
 
 Mirrors the Tavily integration in Architecture A's `search_web` tool.
 
+### Fixtures (run any demo with no Tavily key and no Ollama)
+
+Two env flags replace the external services with checked-in JSON so a reviewer or a developer can exercise every code path without provisioning real keys or running a model.
+
+```bash
+# Tavily: every querySite call returns the per-publisher fixture.
+TAVILY_FIXTURE=1 npm run gpc
+
+# Tavily: every site returns the same variant (useful for parser exercises).
+TAVILY_FIXTURE=empty_results   npm run gpc   # forces the canned fallback
+TAVILY_FIXTURE=partial_results npm run gpc   # missing-content branch
+
+# Ollama: the agent loop replays the variant turn by turn, no model needed.
+OLLAMA_FIXTURE=tool_call      npm run ai-gpc   # 3 calls, then a summary
+OLLAMA_FIXTURE=tool_then_text npm run ai-gpc   # one multi-call turn, then a summary
+OLLAMA_FIXTURE=1              npm run ai-gpc   # defaults to tool_call
+```
+
+Fixture files live next to the code that consumes them:
+
+- `fixtures/tavily/<publisher>.json` for each named publisher; `full_results.json`, `empty_results.json`, `partial_results.json` for the response-shape variants.
+- `fixtures/ollama/tool_call.json`, `tool_then_text.json`, `direct_answer.json` for the agent paths.
+
+When a flag is set, `services/site_handlers.js` and `orchestrator/agent_loop.js` short-circuit before reaching the network. `review_source` reads as `'tavily_fixture'` instead of `'tavily_live'` so the JSON output makes the swap visible.
+
 ### HTTP entry (optional)
 
 `npm run start` boots the Express app on `ASSISTANT_PORT` (default 4011). The route reads `Sec-GPC` from the request headers and builds the privacy context before dispatching the fanout. The body is capped at 10 kB and SIGINT/SIGTERM trigger a graceful shutdown; the app is not otherwise hardened — do not expose it on a public interface without a reverse proxy that adds auth, rate limiting, and request limits.

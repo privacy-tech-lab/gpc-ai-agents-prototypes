@@ -52,6 +52,54 @@ describe('querySite', () => {
     expect(r.review_snippet).toBeTruthy();
   });
 
+  test('happy-path Tavily returns tavily_live with the parsed content', async () => {
+    process.env.TAVILY_API_KEY = 'tvly-test';
+    const realFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [{
+          title:   'iPhone 17 review',
+          url:     'https://example.com/iphone-17',
+          content: 'A live snippet from the publisher.',
+        }],
+      }),
+    });
+    try {
+      const r = await querySite('the-verge', 'iPhone 17', { gpc: 1 });
+      expect(r.status).toBe('ok');
+      expect(r.review_source).toBe('tavily_live');
+      expect(r.review_snippet).toContain('A live snippet from the publisher.');
+      expect(r.review_snippet).toContain('https://example.com/iphone-17');
+    } finally {
+      delete process.env.TAVILY_API_KEY;
+      global.fetch = realFetch;
+    }
+  });
+
+  test('TAVILY_FIXTURE=1 loads the per-publisher fixture and reports tavily_fixture', async () => {
+    process.env.TAVILY_FIXTURE = '1';
+    try {
+      const r = await querySite('the-verge', 'iPhone 17', { gpc: 1 });
+      expect(r.status).toBe('ok');
+      expect(r.review_source).toBe('tavily_fixture');
+      expect(r.review_snippet).toMatch(/polished refinement/i);
+    } finally {
+      delete process.env.TAVILY_FIXTURE;
+    }
+  });
+
+  test('TAVILY_FIXTURE=empty_results forces the canned fallback (no content in fixture)', async () => {
+    process.env.TAVILY_FIXTURE = 'empty_results';
+    try {
+      const r = await querySite('the-verge', 'iPhone 17', { gpc: 1 });
+      expect(r.status).toBe('ok');
+      expect(r.review_source).toBe('canned');
+    } finally {
+      delete process.env.TAVILY_FIXTURE;
+    }
+  });
+
   test('hung Tavily fetch is aborted; querySite falls back to canned', async () => {
     process.env.TAVILY_API_KEY     = 'tvly-test';
     process.env.TAVILY_TIMEOUT_MS  = '50';

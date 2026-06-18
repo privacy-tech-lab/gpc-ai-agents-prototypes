@@ -1,0 +1,11 @@
+[
+  {
+    "choices": [
+      {
+        "message": {
+          "content": "Direct answer with no tool calls. The iPhone 17 is an iterative refresh: small hardware gains, a meaningful camera step, and a software cycle that does most of the work of making the device feel new. Useful as a fixture only when the caller sets minToolCalls to 0."
+        }
+      }
+    ]
+  }
+]

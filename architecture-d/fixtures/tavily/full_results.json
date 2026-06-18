@@ -1,0 +1,9 @@
+{
+  "results": [
+    {
+      "title": "Generic publisher coverage of the query",
+      "url": "https://example.com/coverage",
+      "content": "This is a representative full Tavily result body. It exercises the live-fetch parse path: title, url, and content all present. Use this fixture as the catch-all when a publisher does not have its own fixture file."
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+[
+  {
+    "choices": [
+      {
+        "message": {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_1",
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"the-verge\",\"sub_query\":\"iPhone 17 review polish refinement\"}"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      {
+        "message": {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_2",
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"cnet\",\"sub_query\":\"iPhone 17 build quality camera\"}"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      {
+        "message": {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_3",
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"wired\",\"sub_query\":\"iPhone 17 software polish\"}"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      {
+        "message": {
+          "content": "Across The Verge, CNET, and Wired, the consensus on the iPhone 17 is consistent: an iterative hardware refresh with a real bump in build quality, marginal-to-good camera improvements, and the most polished iOS release in years driving the day-to-day experience."
+        }
+      }
+    ]
+  }
+]

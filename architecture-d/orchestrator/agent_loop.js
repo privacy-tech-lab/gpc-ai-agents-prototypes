@@ -1,13 +1,32 @@
 /**
- * Shared Ollama-driven tool loop — same pattern as Architecture A / B.
+ * Shared Ollama-driven tool loop, same pattern as Architecture A / B.
  *
  * Uses tool_choice='required' until the minimum number of distinct tool
  * calls have been attempted, then switches to 'auto' so the model can
  * write a final summary response.
+ *
+ * When OLLAMA_FIXTURE is set, callModel is short-circuited and replies
+ * are pulled from fixtures/ollama/<variant>.json in sequence. This lets
+ * a dev exercise different agent paths (tool_call, tool_then_text,
+ * direct_answer) deterministically, with no Ollama running. See the
+ * README "Fixtures" section for the selector convention.
  */
+
+const path = require('path');
 
 const OLLAMA_BASE = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434/v1';
 const MODEL       = process.env.OLLAMA_MODEL    ?? 'qwen2.5:7b';
+
+function loadOllamaFixture() {
+  const variant = process.env.OLLAMA_FIXTURE;
+  if (!variant) return null;
+  const name = variant === '1' ? 'tool_call' : variant;
+  try {
+    return require(path.join(__dirname, '..', 'fixtures', 'ollama', `${name}.json`));
+  } catch (err) {
+    throw new Error(`OLLAMA_FIXTURE='${variant}' but fixtures/ollama/${name}.json could not be loaded: ${err.message}`);
+  }
+}
 
 async function callModel(messages, tools, tool_choice) {
   const body = { model: MODEL, messages, stream: false };
@@ -51,9 +70,14 @@ async function runAgentLoop({
   const toolCallLog = [];
   let   finalResponse = '';
 
+  const fixture     = loadOllamaFixture();
+  let   fixtureTurn = 0;
+
   for (let turn = 0; turn < maxTurns; turn++) {
     const tool_choice = toolCallLog.length < minToolCalls ? 'required' : 'auto';
-    const completion  = await callModel(messages, toolDefinitions, tool_choice);
+    const completion  = fixture
+      ? (fixture[fixtureTurn++] ?? fixture[fixture.length - 1])
+      : await callModel(messages, toolDefinitions, tool_choice);
     const choice      = completion.choices[0];
     const msg         = choice.message;
 
@@ -104,4 +128,4 @@ async function runAgentLoop({
   return { finalResponse, toolCalls: toolCallLog, truncated };
 }
 
-module.exports = { runAgentLoop, MODEL };
+module.exports = { runAgentLoop, MODEL, loadOllamaFixture };

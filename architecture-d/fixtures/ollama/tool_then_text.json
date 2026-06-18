@@ -1,0 +1,46 @@
+[
+  {
+    "choices": [
+      {
+        "message": {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_1",
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"the-verge\",\"sub_query\":\"iPhone 17 overall review\"}"
+              }
+            },
+            {
+              "id": "call_2",
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"cnet\",\"sub_query\":\"iPhone 17 hardware\"}"
+              }
+            },
+            {
+              "id": "call_3",
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"wired\",\"sub_query\":\"iPhone 17 software experience\"}"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      {
+        "message": {
+          "content": "The three publishers agree on the shape of the iPhone 17: an iterative hardware update, a meaningful camera lift, and a software release that does most of the practical work of making the device feel new."
+        }
+      }
+    ]
+  }
+]
