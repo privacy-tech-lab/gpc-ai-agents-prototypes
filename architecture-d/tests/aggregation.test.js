@@ -49,6 +49,34 @@ describe('aggregation derivations', () => {
     expect(inferUserInterests(suppressed_log, 'u1')).toEqual([]);
   });
 
+  test('publisherReach skips entries with non-array fanout_targets', () => {
+    // Regression. An entry with undefined fanout_targets used to throw
+    // "is not iterable" and crash the whole report.
+    const malformedLog = [
+      { user_id: 'a', query_topic: 't', fanout_targets: ['the-verge', 'cnet'], meta_received: { gpc: 1 } },
+      { user_id: 'b', query_topic: 't', fanout_targets: undefined,             meta_received: { gpc: 0 } },
+      { user_id: 'c', query_topic: 't', fanout_targets: 'not-an-array',        meta_received: { gpc: 1 } },
+    ];
+    expect(publisherReach(malformedLog)).toEqual({ 'the-verge': 1, 'cnet': 1 });
+  });
+
+  test('aggregation functions skip null, undefined, and non-object log entries', () => {
+    // Regression. Aggregation used to throw "Cannot read properties of
+    // null (reading 'meta_received')" if any entry was non-object.
+    const dirty = [
+      { user_id: 'a', query_topic: 't', fanout_targets: ['x'], meta_received: { gpc: 1 } },
+      null,
+      undefined,
+      'string entry',
+      42,
+      { user_id: 'a', query_topic: 't', fanout_targets: ['y'], meta_received: { gpc: 0 } },
+    ];
+    expect(gpcAdoptionRate(dirty)).toBeCloseTo(0.5);
+    expect(topicDistribution(dirty)).toEqual({ t: 2 });
+    expect(publisherReach(dirty)).toEqual({ x: 1, y: 1 });
+    expect(inferUserInterests(dirty, 'a')).toEqual([{ topic: 't', count: 2 }]);
+  });
+
   test('siteLevelView extracts the per-site slice of a fanout result', () => {
     const site_results = [
       { site: 'the-verge', site_received_gpc: true,  tracking_decision: { logged: false, profile_write: false, reason: 'gpc_strict_enforcement' } },

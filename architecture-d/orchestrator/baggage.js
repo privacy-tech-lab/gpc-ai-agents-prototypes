@@ -19,10 +19,13 @@ function encodeBaggage(entries) {
 }
 
 /**
- * Decode a W3C Baggage header value into a plain object.
+ * Decode a W3C Baggage header value into a plain object. Returns {}
+ * for any non-string input (null, undefined, number, object). Callers
+ * do not need to defensively coerce: a baggage header that is not a
+ * string is, by definition, absent.
  */
 function decodeBaggage(header) {
-  if (!header) return {};
+  if (typeof header !== 'string' || !header) return {};
   return Object.fromEntries(
     header.split(',').map((item) => {
       const [k, ...rest] = item.trim().split('=');

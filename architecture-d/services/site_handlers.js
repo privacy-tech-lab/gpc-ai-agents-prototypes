@@ -61,7 +61,11 @@ function decideTracking(pub, gpc_on) {
 async function fetchFromTavily(domain, query) {
   const api_key = process.env.TAVILY_API_KEY;
   if (!api_key) return null;
-  const timeoutMs = Number(process.env.TAVILY_TIMEOUT_MS) || 5000;
+  // Reject non-positive or NaN values. Otherwise setTimeout would
+  // either fire immediately (aborting every fetch) or trigger a Node
+  // "negative timeout" warning per call.
+  const rawTimeout = Number(process.env.TAVILY_TIMEOUT_MS);
+  const timeoutMs  = Number.isFinite(rawTimeout) && rawTimeout > 0 ? rawTimeout : 5000;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
