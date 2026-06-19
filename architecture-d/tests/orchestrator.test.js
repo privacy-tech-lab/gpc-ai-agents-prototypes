@@ -77,6 +77,19 @@ describe('fanout helpers', () => {
     expect(reasons.has('gpc_advisory_partial')).toBe(true);
     expect(reasons.has('site_does_not_support_gpc')).toBe(true);
   });
+
+  // Regression. handleRequest used to throw "header.split is not a
+  // function" when a caller passed a non-string baggageHeader (object,
+  // number, etc.). The HTTP route always passes a string, but the
+  // function is exported and reachable directly.
+  test('handleRequest tolerates non-string baggageHeader (object, null, undefined)', async () => {
+    const { handleRequest } = require('../orchestrator/orchestrator');
+    for (const bad of [null, undefined, { malformed: true }, 42, true]) {
+      const r = await handleRequest({ user_id: 'u1', query: 'iPhone 17 review summary', baggageHeader: bad });
+      expect(r.gpc_active).toBe(false);
+      expect(r.meta_envelope.gpc).toBe(0);
+    }
+  });
 });
 
 

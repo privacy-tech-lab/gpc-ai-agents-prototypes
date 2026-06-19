@@ -43,6 +43,26 @@ describe('field extractors degrade gracefully on missing pieces', () => {
     expect(sitesSuppressed({})).toBe('—');
   });
 
+  test('sitesSuppressed: returns em-dash on malformed shape (non-array site_level_view)', () => {
+    // Regression. A string used to crash the .filter() call.
+    expect(sitesSuppressed({ site_level_view: 'not an array' })).toBe('—');
+    expect(sitesSuppressed({ site_level_view: { 0: 'a' } })).toBe('—');
+    expect(sitesSuppressed({ site_level_view: 42 })).toBe('—');
+  });
+
+  test('observationCount: returns em-dash on malformed provider_view shape', () => {
+    expect(observationCount({ provider_view: 'not an array' })).toBe('—');
+    expect(observationCount({ provider_view: 42 })).toBe('—');
+  });
+
+  test('metaForwarded / metaReceived return em-dash when the field is missing on a present observation', () => {
+    // Regression. Used to JSON.stringify(undefined) and render the
+    // literal word "undefined" in the compare table.
+    const r = { provider_view: [{}] };
+    expect(metaForwarded(r)).toBe('—');
+    expect(metaReceived(r)).toBe('—');
+  });
+
   test('sitesSuppressed: counts only entries with tracking_decision.logged === false', () => {
     const r = { site_level_view: [
       { site: 'a', tracking_decision: { logged: false } },
