@@ -1,12 +1,24 @@
 [
   {
-    "_note": "Placeholder fixture. The model replies with text only, no tool calls. Useful when the caller sets minToolCalls or requiredTools to be empty.",
+    "id": "chatcmpl-943",
+    "object": "chat.completion",
+    "created": 1781860231,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
     "choices": [
       {
+        "index": 0,
         "message": {
-          "content": "Placeholder direct answer with no tool calls."
-        }
+          "role": "assistant",
+          "content": "Hello!"
+        },
+        "finish_reason": "stop"
       }
-    ]
+    ],
+    "usage": {
+      "prompt_tokens": 29,
+      "completion_tokens": 3,
+      "total_tokens": 32
+    }
   }
 ]

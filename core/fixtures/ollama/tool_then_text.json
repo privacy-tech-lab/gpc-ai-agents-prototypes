@@ -1,23 +1,84 @@
 [
   {
-    "_note": "Placeholder fixture. The model emits multiple tool calls in one turn, then produces a final text response on the next turn.",
+    "id": "chatcmpl-514",
+    "object": "chat.completion",
+    "created": 1781860212,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
     "choices": [
       {
+        "index": 0,
         "message": {
-          "content": null,
+          "role": "assistant",
+          "content": "",
           "tool_calls": [
-            { "id": "call_a", "type": "function", "function": { "name": "placeholder_tool", "arguments": "{}" } },
-            { "id": "call_b", "type": "function", "function": { "name": "placeholder_tool", "arguments": "{}" } }
+            {
+              "id": "call_6e28kbn9",
+              "index": 0,
+              "type": "function",
+              "function": {
+                "name": "research_topic",
+                "arguments": "{\"topic\":\"smartphones\"}"
+              }
+            },
+            {
+              "id": "call_cytb0kyh",
+              "index": 1,
+              "type": "function",
+              "function": {
+                "name": "research_topic",
+                "arguments": "{\"topic\":\"laptops\"}"
+              }
+            },
+            {
+              "id": "call_ee6cdro4",
+              "index": 2,
+              "type": "function",
+              "function": {
+                "name": "research_topic",
+                "arguments": "{\"topic\":\"audio gear\"}"
+              }
+            },
+            {
+              "id": "call_xs71jngs",
+              "index": 3,
+              "type": "function",
+              "function": {
+                "name": "research_topic",
+                "arguments": "{\"topic\":\"home automation\"}"
+              }
+            }
           ]
-        }
+        },
+        "finish_reason": "tool_calls"
       }
-    ]
+    ],
+    "usage": {
+      "prompt_tokens": 176,
+      "completion_tokens": 82,
+      "total_tokens": 258
+    }
   },
   {
+    "id": "chatcmpl-568",
+    "object": "chat.completion",
+    "created": 1781860231,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
     "choices": [
       {
-        "message": { "content": "Placeholder summary after multiple tool calls." }
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Here are the summaries for your requested topics:\n\n- Smartphones: The smartphone is a mobile device that combines the features of a computer, phone and Internet access into one handheld gadget.\n- Laptops: A laptop (also known as notebook) is a portable personal computer with a clamshell form factor, an integrated display and keyboard in a single unit, built-in rechargeable batteries for portability, and a pointing device (such as a touchpad or a trackpoint).\n- Audio Gear: Audio gear typically refers to the equipment used for recording, producing, mixing and playing back audio.\n- Home Automation: Home automation is the use of various technology systems within a home being connected together for communication and control purposes.\n\nIf you have any more questions on these topics, feel free to ask!"
+        },
+        "finish_reason": "stop"
       }
-    ]
+    ],
+    "usage": {
+      "prompt_tokens": 344,
+      "completion_tokens": 158,
+      "total_tokens": 502
+    }
   }
 ]

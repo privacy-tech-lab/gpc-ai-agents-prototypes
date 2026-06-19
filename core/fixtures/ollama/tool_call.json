@@ -1,31 +1,145 @@
 [
   {
-    "_note": "Placeholder fixture. Replace with a real captured Ollama chat-completion run via the recorder script (#50).",
+    "id": "chatcmpl-468",
+    "object": "chat.completion",
+    "created": 1781860164,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
     "choices": [
       {
+        "index": 0,
         "message": {
-          "content": null,
+          "role": "assistant",
+          "content": "范冰琪\n{\"name\": \"research_topic\", \"arguments\": {\"topic\": \"smartphones\"}}\n</tool_call>"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 182,
+      "completion_tokens": 22,
+      "total_tokens": 204
+    }
+  },
+  {
+    "id": "chatcmpl-283",
+    "object": "chat.completion",
+    "created": 1781860173,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "已经达到研究主题的调用要求，之前已经为\"智能手机\"这个话题调用了research_topic工具。由于您没有提出新的研究主题或者请求其他的帮助信息，我将在此停住，等待您的下一步指示。\n如果没有其他问题或需要进一步的信息，请告知我这样就可以结束对话了。\n\n如果您有任何新的查询或想了解另一个主题，请告诉我具体的需求或调用research_topic函数并提供一个新的话题名称。"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 230,
+      "completion_tokens": 88,
+      "total_tokens": 318
+    }
+  },
+  {
+    "id": "chatcmpl-287",
+    "object": "chat.completion",
+    "created": 1781860176,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "范冰琪\n{\"name\": \"research_topic\", \"arguments\": {\"topic\": \"smartphones\"}}\n</tool_call>"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 345,
+      "completion_tokens": 22,
+      "total_tokens": 367
+    }
+  },
+  {
+    "id": "chatcmpl-350",
+    "object": "chat.completion",
+    "created": 1781860178,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "范冰琪\n{\"name\": \"research_topic\", \"arguments\": {\"topic\": \"smartphones\"}}\n</tool_call>"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 393,
+      "completion_tokens": 22,
+      "total_tokens": 415
+    }
+  },
+  {
+    "id": "chatcmpl-898",
+    "object": "chat.completion",
+    "created": 1781860195,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "范冰琪\n{\"name\": \"research_topic\", \"arguments\": {\"topic\": \"smartphones\"}}\nคณะกรรม Geliştirici notu: Bu bir yanıt düzenleyicisi tarafından el ile eklendi, değil mi? İşlev çağrısını gerçekleştirdikten sonra ya bir yanıt almalıyız ya da devam etmek için başka bir işlev çağrısı yapmamız gerekebilir. Şu anda tekrarlı \"research_topic\" çağrısına gerek yok. Yardımcımıza göre, daha fazla bilgi istersek yeni bir konu belirtmemiz gerekiyor.\n",
           "tool_calls": [
             {
-              "id": "call_placeholder_1",
+              "id": "call_bogcdiy0",
+              "index": 0,
               "type": "function",
               "function": {
-                "name": "placeholder_tool",
-                "arguments": "{}"
+                "name": "research_topic",
+                "arguments": "{\"topic\":\"smartphones\"}"
               }
             }
           ]
-        }
+        },
+        "finish_reason": "tool_calls"
       }
-    ]
+    ],
+    "usage": {
+      "prompt_tokens": 441,
+      "completion_tokens": 156,
+      "total_tokens": 597
+    }
   },
   {
+    "id": "chatcmpl-979",
+    "object": "chat.completion",
+    "created": 1781860204,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
     "choices": [
       {
+        "index": 0,
         "message": {
-          "content": "Placeholder final response. Real captures will replace this."
-        }
+          "role": "assistant",
+          "content": "关于智能手机的话题，我们已经获取了相关信息。如果您想了解具体的内容或者进一步讨论，请告知您的需求。\n\n这里是一个关于智能手机的一句话总结：\"Smartphones are portable devices that combine mobile phone technology with computing elements to enable users to access the internet, send messages, and run applications on a handheld device.\"\n\n如果需要深入探讨某个特定方面，或是研究新的主题，请提供详细信息或指定另一个话题。"
+        },
+        "finish_reason": "stop"
       }
-    ]
+    ],
+    "usage": {
+      "prompt_tokens": 603,
+      "completion_tokens": 85,
+      "total_tokens": 688
+    }
   }
 ]

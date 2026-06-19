@@ -1,9 +1,45 @@
 {
-  "_note": "Placeholder fixture with a result missing the `content` field, to test null-guards in callers.",
+  "query": "iPhone 17 review",
+  "follow_up_questions": null,
+  "answer": null,
+  "images": [],
   "results": [
     {
-      "title": "Partial result",
-      "url":   "https://example.com/partial"
+      "url": "https://forums.macrumors.com/threads/review-a-week-with-the-iphone-17.2466567",
+      "title": "Review: A Week With the iPhone 17 | MacRumors Forums",
+      "score": 0.9222657,
+      "raw_content": null
+    },
+    {
+      "url": "https://www.phonearena.com/reviews/apple-iphone-17-review_id7677",
+      "title": "Apple iPhone 17 review: The iPhone you should actually buy",
+      "content": "With a review score of 7.65, the iPhone 17 shines in terms of performance, display quality, and wireless charging speed against most of its",
+      "score": 0.8952393,
+      "raw_content": null
+    },
+    {
+      "url": "https://pokde.net/review/apple-iphone-17-review-the-hidden-gem",
+      "title": "Apple iPhone 17 Review — The Hidden Gem",
+      "content": "Facebook-f     X-twitter     Telegram     Rss. Reading: Apple iPhone 17 Review – The Hidden Gem. We appreciate the support from readers like you at Pokde. # Apple iPhone 17 Review – The Hidden Gem. Apple iPhone 17 Review - The Hidden Gem - 13. ##### iPhone 17 Review. The iPhone 17 proves that you do not need a “Pro” label to get a true flagship experience. Sure, Apple could have done better with its AI integration and USB speeds, but in everyday use, this phone easily shines where it matters most. The iPhone 17 might just be the most well-balanced iPhone Apple has made in years. Here’s my **iPhone 17 review**, and we’re about to find out if the base model still packs the wow factor. Apple iPhone 17 Review - The Hidden Gem. The variant that I have here is the Lavender color. Apple iPhone 17 Review - The Hidden Gem. Unlike the iPhone Air, the iPhone 17 still comes with a physical SIM card slot, meaning it’s not an eSIM-only device.",
+      "score": 0.8732259,
+      "raw_content": null
+    },
+    {
+      "url": "https://www.applevis.com/blog/iphone-17-review-apple-really-outdid-themselves",
+      "title": "iPhone 17 Review: \"Apple Really Outdid Themselves\" | AppleVis",
+      "content": "Coming from the iPhone 15, I definitely noticed immediate improvements, and can already declare, one month in, that this is the best upgrade I’ve received so far. The very first thing I noticed about the iPhone 17 was the sound quality. It’s something I had heard so much about and was very much looking forward to. Both with playing media and just the general sound of VoiceOver, there seems to be almost this base-like quality and it’s so much easier to hear. I did notice a difference in the VoiceOver sound when I raise the volume, which takes some getting used to, but all in all I really appreciate the high-quality sound. I’m not sure if the type of case matters — mine is a pretty slim one that didn’t come from the Apple store — but even so, it seems to stick a lot better on the charger and is impossible to accidentally bump off of the charging circle.",
+      "score": 0.8622012,
+      "raw_content": null
+    },
+    {
+      "url": "https://appleinsider.com/articles/25/12/17/iphone-17-pro-review-three-months-later-still-fresh",
+      "title": "iPhone 17 Pro review: Still fresh after months of use",
+      "content": "# iPhone 17 Pro review three months later: Still fresh. iPhone 17 Pro review three months later: Still loving the phone. More than three months have passed since the launch of Apple's iPhone 17 Pro, and I've been using it daily. It's still the best choice and balance of size, cost, battery life, and features. This time, I had a real choice to make with the compact form factor of the iPhone Air or the iPhone 17 Pro. Clearly, the iPhone 17 Pro ended up winning, but I've also continued to use the iPhone Air. Over the last few months, I've had plenty of time to evaluate the iPhone 17 Pro on its own, as an upgrade, and even how it compares to the iPhone Air. For me, it comes down to design, performance, and cameras.",
+      "score": 0.84858394,
+      "raw_content": null
     }
-  ]
+  ],
+  "response_time": 0,
+  "request_id": "ec1a92f9-e94e-495e-8f6b-c29d68b6d91f",
+  "_derived_note": "Derived from full_results.json with results[0].content removed. Tests the missing-field branch in callers."
 }
