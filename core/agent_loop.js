@@ -23,7 +23,7 @@
 
 'use strict';
 
-const { callModel } = require('./ollama');
+const { callModel } = require('./llm');
 
 /**
  * @param {object}   opts

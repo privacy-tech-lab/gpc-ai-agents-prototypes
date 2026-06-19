@@ -1,12 +1,12 @@
 /**
  * Architecture B turn loop.
  *
- * The network call lives in core/ollama.js. This file owns the per-call _meta
+ * The network call lives in core/llm.js. This file owns the per-call _meta
  * envelope construction (Layer 2) and the requiredTools nudging that are
  * specific to Architecture B.
  */
 
-const { callModel, DEFAULT_MODEL } = require('../../core/ollama');
+const { callModel, DEFAULT_MODEL } = require('../../core/llm');
 
 const MODEL = DEFAULT_MODEL;
 

@@ -6,12 +6,12 @@
  * been attempted, then switches to 'auto' so the model can write a final
  * summary response.
  *
- * The network call lives in core/ollama.js. This file owns only the
+ * The network call lives in core/llm.js. This file owns only the
  * `minToolCalls` loop semantics and the truncation diagnostic that are specific
  * to Architecture D.
  */
 
-const { callModel, DEFAULT_MODEL } = require('../../core/ollama');
+const { callModel, DEFAULT_MODEL } = require('../../core/llm');
 
 const MODEL = DEFAULT_MODEL;
 
