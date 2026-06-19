@@ -66,6 +66,12 @@ See [architecture-e/README.md](architecture-e/README.md) for setup, demo, and te
 
 ---
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the issue template, PR conventions, and the writing rules we use across this repo.
+
+---
+
 ## Copyright
 
 Copyright 2026 Privacy Tech Lab at Wesleyan University. Licensed under the MIT License — see [LICENSE](LICENSE).
