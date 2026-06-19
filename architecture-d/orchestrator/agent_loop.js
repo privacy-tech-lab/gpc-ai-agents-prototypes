@@ -13,7 +13,7 @@
 
 const { callModel, DEFAULT_MODEL } = require('../../core/ollama');
 
-const MODEL = process.env.OLLAMA_MODEL ?? 'qwen2.5:7b';
+const MODEL = DEFAULT_MODEL;
 
 /**
  * Run a tool-using agent loop until the model produces a final response.
@@ -45,7 +45,7 @@ async function runAgentLoop({
 
   for (let turn = 0; turn < maxTurns; turn++) {
     const tool_choice = toolCallLog.length < minToolCalls ? 'required' : 'auto';
-    const completion  = await callModel(messages, toolDefinitions, tool_choice, { model: MODEL, turn: modelCallIdx++ });
+    const completion  = await callModel(messages, toolDefinitions, tool_choice, { turn: modelCallIdx++ });
     const choice      = completion.choices[0];
     const msg         = choice.message;
 

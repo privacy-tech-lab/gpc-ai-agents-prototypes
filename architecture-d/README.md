@@ -313,10 +313,10 @@ The repo uses a single root-level `.env` shared across every architecture. See `
 
 ### Ollama (required for ai-* run modes)
 
-Defaults: `http://localhost:11434`, `qwen2.5:7b` (~5 GB, tool-capable, fits comfortably on a laptop). Override via `OLLAMA_BASE_URL` and `OLLAMA_MODEL` in `.env` or as inline env vars. See `https://ollama.com` for installation.
+Defaults: `http://localhost:11434`, `qwen2.5:14b` (~9 GB, tool-capable). Override via `OLLAMA_BASE_URL` and `OLLAMA_MODEL` in `.env` or as inline env vars. See `https://ollama.com` for installation.
 
 ```bash
-ollama pull qwen2.5:7b
+ollama pull qwen2.5:14b
 ollama serve
 ```
 
