@@ -10,6 +10,8 @@ For umbrella issues with sub-issues, use GitHub's native sub-issue and blocked-b
 
 ## Pull requests
 
+Use the PR template at `.github/pull_request_template.md`. It pre-populates the body with Summary, Changes, Test plan, and Related.
+
 One branch per feature, one PR per branch. Open the PR against `main`. Link the issue with `Closes #N` in the PR body so GitHub auto-closes the issue on merge.
 
 When two or more feature branches are in flight, use `git worktree add ../prototypes-<short-name> <branch>` so each branch has its own working directory. Do not `git checkout` back and forth in the main checkout.
