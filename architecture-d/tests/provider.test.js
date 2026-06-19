@@ -161,4 +161,33 @@ describe('provider middleware', () => {
     const okSites = r.site_results.filter((s) => s.status === 'ok').map((s) => s.site).sort();
     expect(okSites).toEqual(['cnet', 'the-verge']);
   });
+
+  test('getProviderView handles functions on the observation (JSON fallback path)', async () => {
+    // Regression. structuredClone throws on functions. The layered
+    // clone falls back to JSON which drops the function silently.
+    const fnMit = {
+      name:  'fn',
+      apply: (o) => { o.callback = () => 'hi'; return o; },
+    };
+    const p = createProvider({ mitigations: fnMit });
+    await p.fanout('u1', 'iPhone 17', ['the-verge'], { gpc: 1 });
+    const view = p.getProviderView();
+    expect(view).toHaveLength(1);
+    expect(view[0].user_id).toBe('u1');
+  });
+
+  test('getProviderView handles circular references introduced by a mitigation', async () => {
+    // Regression. JSON.parse(JSON.stringify(...)) used to throw on a
+    // circular structure. structuredClone handles cycles natively.
+    const cyclic = {
+      name:  'cyclic',
+      apply: (o) => { o.self = o; return o; },
+    };
+    const p = createProvider({ mitigations: cyclic });
+    await p.fanout('u1', 'iPhone 17', ['the-verge'], { gpc: 1 });
+    const view = p.getProviderView();
+    expect(view).toHaveLength(1);
+    expect(view[0].user_id).toBe('u1');
+    expect(view[0].self).toBe(view[0]);
+  });
 });
