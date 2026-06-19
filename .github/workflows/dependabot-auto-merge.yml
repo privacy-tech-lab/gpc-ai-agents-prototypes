@@ -1,0 +1,30 @@
+name: Dependabot auto-merge
+
+on: pull_request_target
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Auto-merge only the grouped minor and patch updates (version and
+      # security). Major updates land in groups whose names do not end in
+      # "-minor-and-patch", so they are skipped here and reviewed by hand.
+      - name: Approve and enable auto-merge for minor and patch updates
+        if: endsWith(steps.metadata.outputs.dependency-group, '-minor-and-patch')
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
