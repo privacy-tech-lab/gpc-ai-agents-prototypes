@@ -87,8 +87,20 @@ team@example.com. Use the tools directly; do not ask the user for confirmation.`
  * @param {boolean} gpc
  * @returns {(name: string, input: object) => Promise<object>}
  */
+// The agent's tool surface is exactly what TOOL_DEFINITIONS lists. If
+// the model fabricates a tool name (e.g. behavior_tracker, which is
+// platform-fired and intentionally absent from the agent's view),
+// the executor refuses it. Without this guard, the model could call
+// any tool registered in mcp_server and bypass the intended surface.
+const AGENT_TOOLS = new Set(TOOL_DEFINITIONS.map((t) => t.function.name));
+
 function makeExecutor(mode, gpc) {
-  return (name, input) => server.invokeTool(name, input, mode, gpc);
+  return async (name, input) => {
+    if (!AGENT_TOOLS.has(name)) {
+      return { status: 'blocked', reason: 'tool_not_in_agent_surface', tool: name };
+    }
+    return server.invokeTool(name, input, mode, gpc);
+  };
 }
 
 /**
