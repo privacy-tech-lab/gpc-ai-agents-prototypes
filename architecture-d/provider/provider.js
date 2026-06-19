@@ -103,7 +103,17 @@ function createProvider(opts = {}) {
 
   return {
     fanout,
-    getProviderView: () => observation_log.map(o => JSON.parse(JSON.stringify(o))),
+    // Defensive deep-clone. structuredClone handles cycles, Dates,
+    // Maps, and Sets but throws on functions and symbols. JSON
+    // handles functions (drops them) but throws on cycles. Try the
+    // modern path first, fall back to JSON, then to the raw object
+    // so getProviderView never throws regardless of what a custom
+    // mitigation has put on the observation.
+    getProviderView: () => observation_log.map((o) => {
+      try { return structuredClone(o); } catch { /* fallthrough */ }
+      try { return JSON.parse(JSON.stringify(o)); } catch { /* fallthrough */ }
+      return o;
+    }),
     /**
      * Clears the observation log. Intended for test setup. Should not
      * be called while fanouts are in flight — the `observation_id`

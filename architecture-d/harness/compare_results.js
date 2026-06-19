@@ -24,7 +24,9 @@ function loadJson(file) {
 }
 
 function sitesSuppressed(result) {
-  if (!result?.site_level_view) return '—';
+  // Array.isArray rather than a truthy check. A malformed result file
+  // with site_level_view set to a string used to crash .filter().
+  if (!Array.isArray(result?.site_level_view)) return '—';
   // `tracking_decision` is absent when querySite returned an error
   // (e.g. unknown publisher). Treat as "not suppressed" for the count
   // so the report degrades gracefully rather than throwing.
@@ -33,19 +35,19 @@ function sitesSuppressed(result) {
 }
 
 function observationCount(result) {
-  if (!result?.provider_view) return '—';
+  if (!Array.isArray(result?.provider_view)) return '—';
   return String(result.provider_view.length);
 }
 
 function metaForwarded(result) {
   const v = result?.provider_view?.[0];
-  if (!v) return '—';
+  if (!v || v.meta_forwarded === undefined) return '—';
   return JSON.stringify(v.meta_forwarded);
 }
 
 function metaReceived(result) {
   const v = result?.provider_view?.[0];
-  if (!v) return '—';
+  if (!v || v.meta_received === undefined) return '—';
   return JSON.stringify(v.meta_received);
 }
 

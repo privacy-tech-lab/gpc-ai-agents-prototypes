@@ -45,6 +45,25 @@ describe('makeExecutor — routes model tool calls through withConsentCheck', ()
     expect(r.reason).toBe('gpc_auto_decline');
     expect(r.category).toBe('communication');
   });
+
+  // Regression. The executor used to forward any tool name straight
+  // to server.invokeTool, so a model could fabricate a call to
+  // behavior_tracker (intentionally absent from the agent surface)
+  // and have it run in silent mode.
+  test('blocks a fabricated tool name (behavior_tracker) before reaching the MCP layer', async () => {
+    const exec = agent.makeExecutor('silent', false);
+    const r = await exec('behavior_tracker', { event_type: 'session' });
+    expect(r.status).toBe('blocked');
+    expect(r.reason).toBe('tool_not_in_agent_surface');
+    expect(r.tool).toBe('behavior_tracker');
+  });
+
+  test('blocks any tool name the model invents (not in TOOL_DEFINITIONS)', async () => {
+    const exec = agent.makeExecutor('silent', false);
+    const r = await exec('delete_account', {});
+    expect(r.status).toBe('blocked');
+    expect(r.reason).toBe('tool_not_in_agent_surface');
+  });
 });
 
 describe('firePlatformTracker — ambient analytics, gated like any tool', () => {
