@@ -5,7 +5,7 @@
  * baseline run. The structural finding of the architecture.
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
 
 const fs   = require('fs');
 const path = require('path');

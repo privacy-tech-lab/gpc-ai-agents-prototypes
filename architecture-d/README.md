@@ -306,8 +306,10 @@ Requires Node.js 18+.
 ```bash
 cd architecture-d
 npm install
-cp .env.example .env        # optional; only needed to pin defaults or set TAVILY_API_KEY
+cp ../.env.example ../.env  # optional; only needed to pin defaults or set TAVILY_API_KEY
 ```
+
+The repo uses a single root-level `.env` shared across every architecture. See `../.env.example` for the full list of supported variables.
 
 ### Ollama (required for ai-* run modes)
 

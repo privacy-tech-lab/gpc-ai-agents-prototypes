@@ -1,0 +1,14 @@
+{
+  "name": "core",
+  "version": "1.0.0",
+  "description": "Shared IO layer: Tavily search and Ollama chat-completion callers used by every architecture.",
+  "main": "index.js",
+  "type": "commonjs",
+  "license": "ISC",
+  "scripts": {
+    "test": "jest tests/ --runInBand"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
+  }
+}

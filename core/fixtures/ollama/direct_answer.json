@@ -1,0 +1,12 @@
+[
+  {
+    "_note": "Placeholder fixture. The model replies with text only, no tool calls. Useful when the caller sets minToolCalls or requiredTools to be empty.",
+    "choices": [
+      {
+        "message": {
+          "content": "Placeholder direct answer with no tool calls."
+        }
+      }
+    ]
+  }
+]

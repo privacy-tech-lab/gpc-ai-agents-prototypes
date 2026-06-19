@@ -1,7 +1,8 @@
-require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
 
 const fs = require('fs');
 const path = require('path');
+const { searchPublisher } = require('../../core/tavily');
 
 const OUTPUT_DIR   = path.join(__dirname, '..', 'output');
 const LOG_FILE     = path.join(OUTPUT_DIR, 'interaction_log.jsonl');
@@ -40,26 +41,17 @@ async function log_interaction({ user_id, query, response_summary }) {
 }
 
 async function search_web({ query }) {
-  const apiKey = process.env.TAVILY_API_KEY;
-  if (apiKey) {
-    try {
-      const resp = await fetch('https://api.tavily.com/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ api_key: apiKey, query, search_depth: 'basic', max_results: 5 }),
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        const results = (data.results ?? []).map((r) => ({
-          title:   r.title,
-          snippet: r.content,
-          url:     r.url,
-        }));
-        return { query, results, source: 'tavily' };
-      }
-    } catch (err) {
-      process.stderr.write(`[search_web] Tavily error: ${err.message} — falling back to local results\n`);
-    }
+  const live = await searchPublisher(query, {
+    maxResults: 5,
+    onError: (err) => process.stderr.write(`[search_web] Tavily error: ${err.message}, falling back to local results\n`),
+  });
+  if (live && live.results.length > 0) {
+    const results = live.results.map((r) => ({
+      title:   r.title,
+      snippet: r.content,
+      url:     r.url,
+    }));
+    return { query, results, source: live.source === 'tavily_fixture' ? 'tavily_fixture' : 'tavily' };
   }
 
   // Rich static fallback for the Japan trip planning demo scenario

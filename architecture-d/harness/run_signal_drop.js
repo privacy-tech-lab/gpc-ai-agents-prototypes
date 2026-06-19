@@ -8,7 +8,7 @@
  * here is the provider, not a sub-agent in the chain.
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
 
 const fs   = require('fs');
 const path = require('path');

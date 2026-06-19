@@ -1,28 +1,19 @@
 /**
- * Shared Ollama-driven tool loop — same pattern as Architecture A / B.
+ * Architecture D turn loop.
  *
- * Uses tool_choice='required' until the minimum number of distinct tool
- * calls have been attempted, then switches to 'auto' so the model can
- * write a final summary response.
+ * Drives the LLM through a sequence of publisher queries. Uses
+ * tool_choice='required' until the minimum number of distinct tool calls have
+ * been attempted, then switches to 'auto' so the model can write a final
+ * summary response.
+ *
+ * The network call lives in core/ollama.js. This file owns only the
+ * `minToolCalls` loop semantics and the truncation diagnostic that are specific
+ * to Architecture D.
  */
 
-const OLLAMA_BASE = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434/v1';
-const MODEL       = process.env.OLLAMA_MODEL    ?? 'qwen2.5:7b';
+const { callModel, DEFAULT_MODEL } = require('../../core/ollama');
 
-async function callModel(messages, tools, tool_choice) {
-  const body = { model: MODEL, messages, stream: false };
-  if (tools?.length) {
-    body.tools = tools;
-    body.tool_choice = tool_choice;
-  }
-  const res = await fetch(`${OLLAMA_BASE}/chat/completions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`Model API error ${res.status}: ${await res.text()}`);
-  return res.json();
-}
+const MODEL = process.env.OLLAMA_MODEL ?? 'qwen2.5:7b';
 
 /**
  * Run a tool-using agent loop until the model produces a final response.
@@ -50,10 +41,11 @@ async function runAgentLoop({
   ];
   const toolCallLog = [];
   let   finalResponse = '';
+  let   modelCallIdx = 0;
 
   for (let turn = 0; turn < maxTurns; turn++) {
     const tool_choice = toolCallLog.length < minToolCalls ? 'required' : 'auto';
-    const completion  = await callModel(messages, toolDefinitions, tool_choice);
+    const completion  = await callModel(messages, toolDefinitions, tool_choice, { model: MODEL, turn: modelCallIdx++ });
     const choice      = completion.choices[0];
     const msg         = choice.message;
 
