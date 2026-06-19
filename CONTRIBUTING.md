@@ -36,5 +36,3 @@ These apply to issue bodies, PR descriptions, commit messages, code comments, an
 | arch-C       | Ken (CapClark)            |
 | arch-D       | Vidur (vidurgupta01)      |
 | arch-E       | Ken (CapClark)            |
-
-Shreya is the merger / general reviewer for cross-architecture work.
