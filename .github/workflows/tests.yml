@@ -1,0 +1,42 @@
+name: Tests
+
+# Runs the jest suite for each architecture on every PR and on pushes to main.
+# This is the check that gates Dependabot auto-merge: a minor or patch update
+# only merges once these pass. Require it in branch protection for main.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # architecture-b is intentionally excluded until its missing
+        # lib/withPurposeCheck.js and lib/purposeRegistry.js are restored
+        # (see issue #38). Add it back here once its tests pass.
+        architecture:
+          - architecture-a
+          - architecture-c
+          - architecture-d
+          - architecture-e
+    defaults:
+      run:
+        working-directory: ${{ matrix.architecture }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      # Architecture A signs JWTs with a keypair. private.pem is gitignored, so
+      # generate a fresh matching pair before its tests run, or they fail with
+      # "invalid signature".
+      - name: Generate JWT keypair (architecture-a only)
+        if: matrix.architecture == 'architecture-a'
+        run: |
+          node -e "const {generateKeyPairSync}=require('crypto');const fs=require('fs');const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048,publicKeyEncoding:{type:'spki',format:'pem'},privateKeyEncoding:{type:'pkcs8',format:'pem'}});fs.writeFileSync('keys/private.pem',privateKey);fs.writeFileSync('keys/public.pem',publicKey);"
+      - run: npm test

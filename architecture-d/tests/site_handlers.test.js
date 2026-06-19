@@ -52,6 +52,27 @@ describe('querySite', () => {
     expect(r.review_snippet).toBeTruthy();
   });
 
+  test('invalid TAVILY_TIMEOUT_MS values are ignored (no negative-timeout warning, no immediate abort)', async () => {
+    process.env.TAVILY_API_KEY = 'tvly-test';
+    const realFetch = global.fetch;
+    let signalAbortedAtCall = null;
+    global.fetch = async (url, opts) => {
+      signalAbortedAtCall = opts.signal?.aborted ?? null;
+      return { ok: true, json: async () => ({ results: [{ url: 'x', title: 't', content: 'c' }] }) };
+    };
+
+    for (const bad of ['-1', '0', 'NaN', 'abc']) {
+      process.env.TAVILY_TIMEOUT_MS = bad;
+      const r = await querySite('the-verge', 'iPhone 17', { gpc: 0 });
+      expect(r.status).toBe('ok');
+      expect(signalAbortedAtCall).toBe(false);
+    }
+
+    delete process.env.TAVILY_API_KEY;
+    delete process.env.TAVILY_TIMEOUT_MS;
+    global.fetch = realFetch;
+  });
+
   test('hung Tavily fetch is aborted; querySite falls back to canned', async () => {
     process.env.TAVILY_API_KEY     = 'tvly-test';
     process.env.TAVILY_TIMEOUT_MS  = '50';

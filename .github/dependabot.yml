@@ -1,0 +1,42 @@
+version: 2
+updates:
+  # npm dependencies for every architecture prototype. One entry covers all
+  # five package directories. Minor and patch updates are grouped so they can
+  # be auto-merged; major updates are grouped separately and left for manual
+  # review. The same split applies to security updates.
+  - package-ecosystem: npm
+    directories:
+      - /architecture-a
+      - /architecture-b
+      - /architecture-c
+      - /architecture-d
+      - /architecture-e
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      # Version updates
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+      npm-major:
+        update-types:
+          - major
+      # Security updates
+      npm-security-minor-and-patch:
+        applies-to: security-updates
+        update-types:
+          - minor
+          - patch
+      npm-security-major:
+        applies-to: security-updates
+        update-types:
+          - major
+
+  # The GitHub Actions used by the workflows in this repo. Left ungrouped, so
+  # action bumps come as individual PRs for manual review.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

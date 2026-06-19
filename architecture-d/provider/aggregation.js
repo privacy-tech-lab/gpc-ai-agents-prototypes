@@ -7,15 +7,23 @@
  */
 
 function gpcOn(entry) {
-  return entry.meta_received && (entry.meta_received.gpc === 1 || entry.meta_received.gpc === true);
+  return entry?.meta_received && (entry.meta_received.gpc === 1 || entry.meta_received.gpc === true);
+}
+
+// Treat null, undefined, and non-object entries as invisible to the
+// aggregation functions. A malformed log (custom mitigation, imported
+// file) used to crash the report with "Cannot read properties of null".
+function isValidEntry(e) {
+  return e !== null && typeof e === 'object';
 }
 
 /**
  * Fraction of observations carrying GPC=1.
  */
 function gpcAdoptionRate(log) {
-  if (log.length === 0) return 0;
-  return log.filter(gpcOn).length / log.length;
+  const valid = log.filter(isValidEntry);
+  if (valid.length === 0) return 0;
+  return valid.filter(gpcOn).length / valid.length;
 }
 
 /**
@@ -23,16 +31,22 @@ function gpcAdoptionRate(log) {
  */
 function topicDistribution(log) {
   const counts = {};
-  for (const e of log) counts[e.query_topic] = (counts[e.query_topic] || 0) + 1;
+  for (const e of log) {
+    if (!isValidEntry(e)) continue;
+    counts[e.query_topic] = (counts[e.query_topic] || 0) + 1;
+  }
   return counts;
 }
 
 /**
  * Count of fanout reaches per publisher (one increment per call per site).
+ * Defensive against entries that lack fanout_targets so a malformed log
+ * (custom mitigation, imported file) does not crash the report.
  */
 function publisherReach(log) {
   const reach = {};
   for (const e of log) {
+    if (!isValidEntry(e) || !Array.isArray(e.fanout_targets)) continue;
     for (const site of e.fanout_targets) {
       reach[site] = (reach[site] || 0) + 1;
     }
@@ -47,6 +61,7 @@ function publisherReach(log) {
 function topicByGpcMatrix(log) {
   const matrix = {};
   for (const e of log) {
+    if (!isValidEntry(e)) continue;
     const t = e.query_topic;
     if (!matrix[t]) matrix[t] = { gpc_on: 0, gpc_off: 0 };
     if (gpcOn(e)) matrix[t].gpc_on += 1;
@@ -60,7 +75,7 @@ function topicByGpcMatrix(log) {
  * observations the provider has agreed (via mitigation) to suppress.
  */
 function inferUserInterests(log, user_id) {
-  const entries = log.filter(e => e.user_id === user_id && !e.k_anon_suppressed);
+  const entries = log.filter((e) => isValidEntry(e) && e.user_id === user_id && !e.k_anon_suppressed);
   const topic_counts = {};
   for (const e of entries) topic_counts[e.query_topic] = (topic_counts[e.query_topic] || 0) + 1;
   return Object.entries(topic_counts)
