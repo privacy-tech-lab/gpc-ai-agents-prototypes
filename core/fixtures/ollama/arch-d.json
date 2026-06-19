@@ -1,0 +1,102 @@
+[
+  {
+    "id": "chatcmpl-616",
+    "object": "chat.completion",
+    "created": 1781892088,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "คณะกรรมการทำงานต้องการข้อมูลเกี่ยวกับ iPhone 17 จากบรรณาธิการเทคโนโลยีหลายๆ คน มาดูรายละเอียดที่ต่างๆ เว็บไซต์ที่ระบุไว้พร้อมกับถามคำถามเฉพาะเพื่อจัดทำสรุปได้ครับ\n\nเรามาเริ่มจากการสอบถาม The Verge ซึ่งมีเนื้อหาครอบคลุมหลายเรื่องในแวดวงเทคโนโลยี\n",
+          "tool_calls": [
+            {
+              "id": "call_ba2hdegq",
+              "index": 0,
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"the-verge\",\"sub_query\":\"iPhone 17 release and features\"}"
+              }
+            },
+            {
+              "id": "call_m4gva3ws",
+              "index": 1,
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"ars-technica\",\"sub_query\":\"iPhone 17 technology and performance\"}"
+              }
+            },
+            {
+              "id": "call_okhp7nav",
+              "index": 2,
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"cnet\",\"sub_query\":\"iPhone 17 review and analysis\"}"
+              }
+            },
+            {
+              "id": "call_8y3mqf2n",
+              "index": 3,
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"the-verge\",\"sub_query\":\"iPhone 17 release and features\"}"
+              }
+            },
+            {
+              "id": "call_o3scpknh",
+              "index": 4,
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"ars-technica\",\"sub_query\":\"iPhone 17 technology and performance\"}"
+              }
+            },
+            {
+              "id": "call_3ovz7jog",
+              "index": 5,
+              "type": "function",
+              "function": {
+                "name": "query_publisher",
+                "arguments": "{\"publisher_id\":\"cnet\",\"sub_query\":\"iPhone 17 review and analysis\"}"
+              }
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 392,
+      "completion_tokens": 473,
+      "total_tokens": 865
+    }
+  },
+  {
+    "id": "chatcmpl-37",
+    "object": "chat.completion",
+    "created": 1781892154,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "The iPhone 17 has been reviewed by several tech publishers and generally received positive feedback for its features, performance, and value:\n\n- **The Verge** praises the iPhone 17's introduction of an always-on display and high-refresh-rate screen, bringing it closer in feature parity with higher-tier models. They find that these updates have meaningfully improved user experience.\n\n- **Ars Technica** highlights that while the latest Pro models offer some unique design elements such as aluminum unibody construction and improvements to telephoto zoom quality, the standard iPhone 17 offers significant features previously exclusive to Pro models in terms of display technology and processor performance.\n\n- **CNET** argues that despite having a less powerful CPU (A19 vs. A19 Pro), there are barely any noticeable differences in usage between the iPhone 17 and its higher-tier counterparts, such as camera quality, battery life, and overall usability. Therefore, they assert it might be sufficient for most users without an excessive cost compared to other models.\n\nWhile these reviews suggest that the iPhone 17 offers a commendable balance of value and advanced features over previous standard model iPhones, there remains a notable difference in raw performance capabilities between the Pro series and its non-Pro counterparts."
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 2579,
+      "completion_tokens": 252,
+      "total_tokens": 2831
+    }
+  }
+]

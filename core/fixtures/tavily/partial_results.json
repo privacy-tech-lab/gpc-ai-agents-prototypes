@@ -7,14 +7,7 @@
     {
       "url": "https://forums.macrumors.com/threads/review-a-week-with-the-iphone-17.2466567",
       "title": "Review: A Week With the iPhone 17 | MacRumors Forums",
-      "score": 0.9222657,
-      "raw_content": null
-    },
-    {
-      "url": "https://www.phonearena.com/reviews/apple-iphone-17-review_id7677",
-      "title": "Apple iPhone 17 review: The iPhone you should actually buy",
-      "content": "With a review score of 7.65, the iPhone 17 shines in terms of performance, display quality, and wireless charging speed against most of its",
-      "score": 0.8952393,
+      "score": 0.9224337,
       "raw_content": null
     },
     {
@@ -37,9 +30,16 @@
       "content": "# iPhone 17 Pro review three months later: Still fresh. iPhone 17 Pro review three months later: Still loving the phone. More than three months have passed since the launch of Apple's iPhone 17 Pro, and I've been using it daily. It's still the best choice and balance of size, cost, battery life, and features. This time, I had a real choice to make with the compact form factor of the iPhone Air or the iPhone 17 Pro. Clearly, the iPhone 17 Pro ended up winning, but I've also continued to use the iPhone Air. Over the last few months, I've had plenty of time to evaluate the iPhone 17 Pro on its own, as an upgrade, and even how it compares to the iPhone Air. For me, it comes down to design, performance, and cameras.",
       "score": 0.84858394,
       "raw_content": null
+    },
+    {
+      "url": "https://www.reddit.com/r/iphone17/comments/1q4fi7t/my_1_month_review_of_the_iphone_17_as_a_longtime",
+      "title": "My 1 Month Review of the iPhone 17 as a long-time Android User",
+      "content": "Overall, I am satisfied with my purchase of the iPhone 17. I don't think it's perfect, but I can say that it is one of the phones with the best",
+      "score": 0.8364614,
+      "raw_content": null
     }
   ],
-  "response_time": 0,
-  "request_id": "ec1a92f9-e94e-495e-8f6b-c29d68b6d91f",
+  "response_time": 1.21,
+  "request_id": "2d9740e6-a432-4851-9308-c4b042ff4706",
   "_derived_note": "Derived from full_results.json with results[0].content removed. Tests the missing-field branch in callers."
 }

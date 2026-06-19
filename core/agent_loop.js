@@ -45,6 +45,7 @@ async function runAgentLoop({
   executeToolFn,
   maxTurns = 10,
   emptyResponseNudge = 'Please provide a brief summary.',
+  fixture,
 }) {
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -59,7 +60,7 @@ async function runAgentLoop({
     const pending     = requiredTools.filter((t) => !calledTools.has(t));
     const toolChoice  = pending.length > 0 ? 'required' : 'auto';
 
-    const completion  = await callModel(messages, toolDefinitions, toolChoice, { turn: modelCallIdx++ });
+    const completion  = await callModel(messages, toolDefinitions, toolChoice, { turn: modelCallIdx++, fixture });
     const choice      = completion.choices[0];
     const msg         = choice.message;
 

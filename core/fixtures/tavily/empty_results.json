@@ -4,7 +4,7 @@
   "answer": null,
   "images": [],
   "results": [],
-  "response_time": 0,
-  "request_id": "ec1a92f9-e94e-495e-8f6b-c29d68b6d91f",
+  "response_time": 1.21,
+  "request_id": "2d9740e6-a432-4851-9308-c4b042ff4706",
   "_derived_note": "Derived from full_results.json with results emptied. Tavily returns broadly-matched results even for nonsense queries, so a direct capture of an empty payload is not reliable."
 }

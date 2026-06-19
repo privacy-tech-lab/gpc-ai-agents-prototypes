@@ -14,6 +14,7 @@ async function runAgentLoop(opts) {
   return baseRun({
     ...opts,
     emptyResponseNudge: 'Please give the user a brief answer.',
+    fixture:            opts.fixture ?? 'arch-e',
   });
 }
 

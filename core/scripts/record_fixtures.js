@@ -13,21 +13,30 @@
  *   - TAVILY_API_KEY in the environment (load via root .env).
  *   - Ollama server reachable at OLLAMA_BASE_URL (default localhost:11434).
  *   - OLLAMA_MODEL pulled locally (default qwen2.5:14b).
+ *   - architecture-a/keys/private.pem present (run arch-A keygen if not).
  *
  * What it writes:
- *   - core/fixtures/tavily/full_results.json    real Tavily payload with results
- *   - core/fixtures/tavily/empty_results.json   real empty-results payload (nonsense query)
- *   - core/fixtures/tavily/partial_results.json derived from full_results with `content` stripped
- *   - core/fixtures/ollama/tool_call.json       one captured agent run (tool calls then summary)
- *   - core/fixtures/ollama/tool_then_text.json  capture where the model emits multiple tool calls
- *                                               in one turn then a text reply on the next turn
- *   - core/fixtures/ollama/direct_answer.json   capture where the model replies with text only
+ *
+ *   core/fixtures/tavily/
+ *     full_results.json     real Tavily payload with results (generic query)
+ *     empty_results.json    derived from full_results with results: []
+ *     partial_results.json  derived from full_results with results[0].content stripped
+ *     <publisher>.json      one per arch-D publisher (the-verge, cnet, etc.)
+ *
+ *   core/fixtures/ollama/
+ *     arch-a.json           real arch-A search agent run (Japan trip)
+ *     arch-b.json           real arch-B medical agent run
+ *     arch-c.json           real arch-C agent runSession
+ *     arch-d.json           real arch-D research agent run (iPhone 17)
+ *     arch-e.json           real arch-E inference query
  */
 
 const fs   = require('fs');
 const path = require('path');
 
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
+
+const REPO_ROOT = path.join(__dirname, '..', '..');
 
 const TAVILY_DIR = path.join(__dirname, '..', 'fixtures', 'tavily');
 const OLLAMA_DIR = path.join(__dirname, '..', 'fixtures', 'ollama');
@@ -39,26 +48,29 @@ function ensureDir(p) { fs.mkdirSync(p, { recursive: true }); }
 function writeJson(file, payload) {
   fs.writeFileSync(file, JSON.stringify(payload, null, 2) + '\n');
   const size = fs.statSync(file).size;
-  const rel  = path.relative(path.join(__dirname, '..', '..'), file);
+  const rel  = path.relative(REPO_ROOT, file);
   console.log(`  wrote ${rel} (${size} bytes)`);
 }
 
 // ── Tavily ──────────────────────────────────────────────────────────────────
 
-async function callTavily(query) {
+async function callTavily(query, opts = {}) {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
     throw new Error('TAVILY_API_KEY is not set. Add it to the root .env or export it inline.');
   }
-  const res = await fetch('https://api.tavily.com/search', {
+  const body = {
+    api_key:      apiKey,
+    query,
+    search_depth: 'basic',
+    max_results:  5,
+  };
+  if (opts.domain) body.include_domains = [opts.domain];
+
+  const res  = await fetch('https://api.tavily.com/search', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({
-      api_key:      apiKey,
-      query,
-      search_depth: 'basic',
-      max_results:  5,
-    }),
+    body:    JSON.stringify(body),
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`Tavily call failed (${res.status}): ${text.slice(0, 200)}`);
@@ -69,12 +81,12 @@ async function recordTavily() {
   console.log('\n[1/2] Capturing Tavily fixtures');
   ensureDir(TAVILY_DIR);
 
+  console.log('  generic query for full_results');
   const full = await callTavily('iPhone 17 review');
   writeJson(path.join(TAVILY_DIR, 'full_results.json'), full);
 
   // Tavily returns broadly-matched results even for nonsense queries, so an
-  // honest empty-results capture is unreliable. Derive it from the real shape
-  // by emptying the results array.
+  // honest empty-results capture is unreliable. Derive it from the real shape.
   const empty = structuredClone(full);
   empty.results = [];
   empty._derived_note = 'Derived from full_results.json with results emptied. Tavily returns broadly-matched results even for nonsense queries, so a direct capture of an empty payload is not reliable.';
@@ -84,21 +96,21 @@ async function recordTavily() {
   if (partial.results?.[0]) delete partial.results[0].content;
   partial._derived_note = 'Derived from full_results.json with results[0].content removed. Tests the missing-field branch in callers.';
   writeJson(path.join(TAVILY_DIR, 'partial_results.json'), partial);
+
+  console.log('  per-publisher captures for arch-D');
+  const { PUBLISHERS } = require(path.join(REPO_ROOT, 'architecture-d', 'services', 'tool_registry'));
+  for (const pub of PUBLISHERS) {
+    process.stdout.write(`    ${pub.id.padEnd(20)} `);
+    const payload = await callTavily('iPhone 17 review', { domain: pub.domain });
+    fs.writeFileSync(path.join(TAVILY_DIR, `${pub.id}.json`), JSON.stringify(payload, null, 2) + '\n');
+    console.log(`OK (${(payload.results ?? []).length} results)`);
+  }
 }
 
-// ── Ollama ──────────────────────────────────────────────────────────────────
+// ── Ollama capture helper ──────────────────────────────────────────────────
 
-/**
- * Run a self-contained agent loop against the live Ollama and capture every
- * chat-completion turn. Wraps global.fetch to intercept the model responses
- * without changing the loop itself.
- *
- * @param {string} variant      label for the run, used in the system prompt to bias the model
- * @param {object} promptOpts   { systemPrompt, userMessage, requiredTools, toolDefinitions }
- * @returns {Promise<Array>}    captured chat-completion responses, in order
- */
-async function captureOllamaRun(variant, promptOpts) {
-  const captured = [];
+async function captureOllamaRun(label, runFn) {
+  const captured  = [];
   const realFetch = global.fetch;
   global.fetch = async (url, opts) => {
     const res = await realFetch(url, opts);
@@ -107,69 +119,81 @@ async function captureOllamaRun(variant, promptOpts) {
       try {
         const parsed = await cloned.json();
         captured.push(parsed);
-      } catch { /* non-JSON, skip */ }
+      } catch { /* non-JSON response, skip */ }
     }
     return res;
   };
-
   try {
-    const { runAgentLoop } = require('../agent_loop');
-    await runAgentLoop({
-      ...promptOpts,
-      executeToolFn: async () => ({ status: 'ok', mock: variant }),
-    });
+    await runFn();
   } finally {
     global.fetch = realFetch;
   }
+  if (!captured.length) throw new Error(`No Ollama turns captured for ${label}. Is ollama serve running?`);
   return captured;
 }
 
-const RESEARCH_TOOL = [{
-  type: 'function',
-  function: {
-    name: 'research_topic',
-    description: 'Look up a topic and return a one-sentence summary.',
-    parameters: {
-      type: 'object',
-      properties: { topic: { type: 'string' } },
-      required: ['topic'],
-    },
-  },
-}];
+// ── Per-arch captures ──────────────────────────────────────────────────────
 
-async function recordOllama() {
-  console.log('\n[2/2] Capturing Ollama fixtures');
+async function recordPerArch() {
+  console.log('\n[2/2] Capturing per-arch Ollama runs');
   ensureDir(OLLAMA_DIR);
 
-  console.log('  capturing tool_call (one tool call per turn, then summary)');
-  const toolCall = await captureOllamaRun('tool_call', {
-    systemPrompt:    'You are a research assistant. You MUST call the research_topic tool before saying anything to the user. Call the tool now with the first topic. Do not write any text response until you have called the tool.',
-    userMessage:     'Research one topic: smartphones.',
-    requiredTools:   ['research_topic'],
-    toolDefinitions: RESEARCH_TOOL,
+  console.log('  arch-A (search agent: Japan trip)');
+  const archA = await captureOllamaRun('arch-a', async () => {
+    const orch = require(path.join(REPO_ROOT, 'architecture-a', 'orchestrator', 'orchestrator'));
+    await orch.handleRequest({
+      query:         'Plan a 5-day trip to Japan covering Tokyo, Kyoto, and Osaka.',
+      user_id:       'recorder',
+      baggageHeader: 'gpc=0',
+    });
   });
-  if (!toolCall.length) throw new Error('No Ollama responses captured for tool_call. Is ollama serve running?');
-  writeJson(path.join(OLLAMA_DIR, 'tool_call.json'), toolCall);
+  writeJson(path.join(OLLAMA_DIR, 'arch-a.json'), archA);
 
-  console.log('  capturing tool_then_text (multi-call turn, then summary)');
-  const toolThenText = await captureOllamaRun('tool_then_text', {
-    systemPrompt:    'You are a research assistant. In your first response, make 3 tool calls at once. Then on your next turn, write a summary.',
-    userMessage:     'Research smartphones, laptops, and audio gear, all at once.',
-    requiredTools:   ['research_topic'],
-    toolDefinitions: RESEARCH_TOOL,
+  console.log('  arch-B (medical agent)');
+  const archB = await captureOllamaRun('arch-b', async () => {
+    const medical = require(path.join(REPO_ROOT, 'architecture-b', 'agents', 'medical_agent'));
+    await medical.run({
+      query:           'What does my blood pressure reading mean, and should I adjust my medication?',
+      patient_id:      'patient-001',
+      privacyContext:  { gpc: 0 },
+    });
   });
-  if (!toolThenText.length) throw new Error('No Ollama responses captured for tool_then_text.');
-  writeJson(path.join(OLLAMA_DIR, 'tool_then_text.json'), toolThenText);
+  writeJson(path.join(OLLAMA_DIR, 'arch-b.json'), archB);
 
-  console.log('  capturing direct_answer (text only, no tool calls)');
-  const direct = await captureOllamaRun('direct_answer', {
-    systemPrompt:    'You are a friendly assistant. Reply with a short text answer.',
-    userMessage:     'Say hello.',
-    requiredTools:   [],
-    toolDefinitions: [],
+  console.log('  arch-C (productivity agent: file_read then summary)');
+  const archC = await captureOllamaRun('arch-c', async () => {
+    const agent = require(path.join(REPO_ROOT, 'architecture-c', 'agent'));
+    await agent.runSession({
+      userMessage: 'Summarize notes.txt for me.',
+      mode:        'silent',
+      gpc:         false,
+    });
   });
-  if (!direct.length) throw new Error('No Ollama responses captured for direct_answer.');
-  writeJson(path.join(OLLAMA_DIR, 'direct_answer.json'), direct);
+  writeJson(path.join(OLLAMA_DIR, 'arch-c.json'), archC);
+
+  console.log('  arch-D (research agent: iPhone 17 fanout)');
+  const archD = await captureOllamaRun('arch-d', async () => {
+    const orch = require(path.join(REPO_ROOT, 'architecture-d', 'orchestrator', 'orchestrator'));
+    await orch.handleAgentRequest({
+      user_id:       'recorder',
+      query:         'Research the iPhone 17 across tech publishers and summarize the key consensus points.',
+      baggageHeader: 'gpc=1',
+    });
+  });
+  writeJson(path.join(OLLAMA_DIR, 'arch-d.json'), archD);
+
+  console.log('  arch-E (inference firewall agent)');
+  const archE = await captureOllamaRun('arch-e', async () => {
+    const agent = require(path.join(REPO_ROOT, 'architecture-e', 'agent'));
+    const { createProfileStore } = require(path.join(REPO_ROOT, 'architecture-e', 'profile_store'));
+    const store = createProfileStore();
+    await agent.ask({
+      question: 'where can I find affordable diabetes medication near me?',
+      store,
+      b3:       false,
+    });
+  });
+  writeJson(path.join(OLLAMA_DIR, 'arch-e.json'), archE);
 }
 
 // ── Entry ──────────────────────────────────────────────────────────────────
@@ -182,7 +206,7 @@ async function main() {
   }
 
   await recordTavily();
-  await recordOllama();
+  await recordPerArch();
 
   console.log('\nDone. Run `cd core && npm test` to confirm the captures parse cleanly.');
 }
