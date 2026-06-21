@@ -1,5 +1,69 @@
 # Architecture D: Fanout and Provider Aggregation Surface
 
+## Problem
+
+A user asks an AI assistant to research a topic across many tech publishers. The assistant fans the request out to each publisher in parallel. Even if every publisher honors GPC perfectly, the LLM provider sits at the chokepoint where every outbound call passes through. From that vantage point the provider sees what every user is asking, which publishers each user chose, and the GPC state on every call. None of this visibility is possible for a browser-era intermediary.
+
+Without the opt-out, every publisher logs the call and writes a profile entry, and the provider's observation log records every sub-query, every chosen publisher, and the full GPC state. Across users the provider can derive GPC adoption rates, topic distributions, and per-user interest profiles.
+
+With the opt-out, strict publishers suppress their logging and their profile writes, and advisory publishers suppress only the profile write. The provider's observation log is substantively unchanged. The structural finding (Category E1) is that per-site enforcement does not bound provider-side visibility. The protocol-level lever (Category E2) is provider-side data-handling commitments (no-train tag, k-anonymity suppression, DP noise on aggregates). These commitments are illustrative in this prototype and unverifiable at the protocol layer; a future spec layer would need to make them verifiable through attestations, audited logs, or third-party witnesses.
+
+## Stakeholders
+
+- **User.** The person whose query enters the system, carrying the GPC signal in the W3C `baggage` header or in `Sec-GPC`.
+- **Orchestrator.** The HTTP entry point. Reads the GPC bit off the request, builds the `_meta` envelope, hands the request to the agent.
+- **Research agent (LLM).** Runs against Ollama (default `qwen2.5:14b`). Decides which publishers to call and what sub-query to send to each.
+- **LLM provider.** The middleware that every fanout call passes through. Logs each observation, optionally strips `_meta` before forwarding (the man-in-the-middle threat), and optionally applies data-handling commitments. This is the new privacy boundary the prototype demonstrates.
+- **Publishers (8).** Each tech-review site in the registry. Each declares its own GPC enforcement level (`strict`, `advisory`, or `none`) and makes its own logging and profile-write decisions based on the `_meta` it actually receives.
+- **Aggregator.** Post-session analysis (`provider/aggregation.js`) that runs derivations over the provider's observation log: adoption rate, topic distribution, per-user interest profiles.
+
+## Interaction diagram
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Orch as Orchestrator
+    participant Agent as Research Agent (LLM)
+    participant Prov as LLM Provider
+    participant Sites as Publishers (8x)
+
+    User->>Orch: query, GPC bit in baggage header
+    Orch->>Agent: handleAgentRequest with _meta envelope
+    Agent->>Prov: fanout(user_id, sub_query, [publisher], _meta)
+    Note over Prov: Logs user_id, sub_query, topic, fanout_targets, meta_received
+
+    alt provider behaves honestly
+        Prov->>Sites: querySite(id, sub_query, _meta)
+    else provider is hostile (mitm=true)
+        Prov->>Sites: querySite(id, sub_query, {})
+        Note over Prov: meta_forwarded is empty, sites cannot see the user's GPC bit
+    end
+
+    Sites-->>Prov: site result and tracking decision
+    Prov-->>Agent: site_results
+    Agent->>Agent: more publisher calls until enough material, then summarize
+    Agent-->>Orch: final summary plus all tool calls
+    Orch-->>User: user-facing answer
+
+    Note over Prov: Across sessions: GPC adoption, topic distribution, per-user interest profile
+```
+
+## Data collected
+
+What flows through, where each piece lives, and what changes under GPC=1.
+
+| Data type | Where it lives | What happens with GPC on |
+|---|---|---|
+| User query (raw) | Orchestrator memory, provider observation log | The provider still records it. Per-publisher logging depends on each publisher's enforcement level. |
+| Per-publisher sub-query (LLM-generated) | Provider observation log, each publisher | Still recorded by the provider. Strict publishers do not log it; advisory publishers log it but do not write to the profile; non-supporting publishers log and write. |
+| GPC state on each call | `meta_received` and `meta_forwarded` on every provider observation | The bit is preserved in `meta_received`. Sites receive `meta_forwarded`, which is identical to `meta_received` unless the provider is hostile (signal-drop mode), in which case `meta_forwarded` is empty. |
+| Fanout targets (which publishers were chosen) | Provider observation log | Still recorded. GPC does not change what the provider can see about the user's publisher choice. |
+| Query topic (inferred) | Provider observation log | Recorded by the provider's classifier on every call regardless of GPC. |
+| Per-publisher profile writes | Each publisher's own profile store | Strict and advisory publishers do not write under GPC=1. Non-supporting publishers write. |
+| Derived population metrics (adoption rate, topic distribution, interests) | Aggregator output | Still derivable by the provider. The E2 commitments constrain what the provider does with them. Those commitments are illustrative and not externally verifiable at the protocol layer. |
+
+---
+
 ## What it demonstrates
 
 A user with GPC enabled asks an AI assistant to *"research the iPhone 17 across tech publishers and summarise the key consensus points."* The agent fans out to eight publishers in parallel. Every site receives the request, every strict publisher honors the GPC signal correctly (no logging, no profile write), and the user receives a summarised answer either way.
