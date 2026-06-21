@@ -64,6 +64,20 @@ What flows through, where each piece lives, and what changes under GPC=1.
 
 ---
 
+## Mitigation
+
+The signal-drop run exists to make the problem visible, not to fix it. The arch-D prototype does not implement a mitigation against a hostile provider; per-call site enforcement is structurally unable to bind one. A mitigation has to come from a layer the prototype does not include. Three lines of attack, all out of scope here:
+
+**Signed envelopes.** The user (or the assistant the user trusts) signs each fanout call with a JWT. Each publisher verifies the JWT against a public key it can discover (similar to the JWKS / DKIM pattern for email). A stripping provider either omits the JWT, which the publisher detects and falls back to baseline, or forges one, which fails signature verification. The cost: per-call user signing puts the user's device in the loop on every call, which adds latency proportional to the fanout size. Session-scoped delegation (the user signs a token good for N minutes) avoids the latency but reopens a lying-by-omission hole, since a hostile orchestrator can choose not to include the delegation token on calls where it wants to bypass.
+
+**Trusted execution.** The provider runs in a TEE and publishes attestations that publishers verify. The provider cannot lie because the hardware enforces the honest path. No per-call user round-trip is needed. Requires hardware and attestation infrastructure that does not exist for the AI provider tier today (Confidential Computing, AWS Nitro, and Intel SGX-style designs are the closest analogues).
+
+**Audited observation log.** The provider commits every observation to a tamper-evident log the user can audit retrospectively (similar to Certificate Transparency for the web PKI). This detects drops after the fact rather than preventing them, which makes it more deployable but provides only deterrent (sanctions for caught violations), not real-time enforcement.
+
+In all three cases the work sits at a layer outside arch-D's scope, much closer to the W3C GNAP and Verifiable Credentials track. The pre-charter taxonomy file in this repo lists this surface as future work.
+
+---
+
 ## What it demonstrates
 
 A user with GPC enabled asks an AI assistant to *"research the iPhone 17 across tech publishers and summarise the key consensus points."* The agent fans out to eight publishers in parallel. Every site receives the request, every strict publisher honors the GPC signal correctly (no logging, no profile write), and the user receives a summarised answer either way.
@@ -136,20 +150,20 @@ These compose with `chain(...)`. `run_mitigated.js` exercises the full chain.
 
 The signal travels in the `_meta` envelope (`_meta.gpc: 0|1`), matching the convention used in Architectures A and B. The orchestrator does not call sites directly; it calls `provider.fanout(user_id, query, site_ids, _meta)`, which forwards to each site in parallel. At the inbound boundary the orchestrator reads the W3C `baggage` header (or the `Sec-GPC` header on `POST /ask`) and builds the envelope from there.
 
-```
-Orchestrator                Provider                    Sites (8x)
-   |                          |                           |
-   |--fanout(query, _meta)--->|                           |
-   |                          |  log observation          |
-   |                          |  apply mitigations        |
-   |                          |                           |
-   |                          |--mitm? strip _meta-+      |
-   |                          |                    |      |
-   |                          |--meta_forwarded -->|----->| querySite(id, q, meta)
-   |                          |                    |----->| ...
-   |                          |                    |----->| (8 sites in parallel)
-   |                          |                           |
-   |<---site_results, log_id--|                           |
+```mermaid
+sequenceDiagram
+    participant Orch as Orchestrator
+    participant Prov as Provider
+    participant Sites as Sites (8x)
+    Orch->>Prov: fanout(query, _meta)
+    Note over Prov: log observation, apply mitigations
+    alt provider behaves honestly
+        Prov->>Sites: querySite(id, q, meta) [8x in parallel]
+    else provider is hostile (mitm=true)
+        Prov->>Sites: querySite(id, q, {}) [meta_forwarded stripped]
+    end
+    Sites-->>Prov: site results
+    Prov-->>Orch: site_results, log_id
 ```
 
 The signal-drop experiment exercises the threat model: when the provider's `mitm` flag is on, `meta_forwarded` is `{}` even though `meta_received` retains the user's original GPC=1. Sites cannot tell the strip happened. The user cannot tell from the response. Only the provider knows.
@@ -160,83 +174,81 @@ The signal-drop experiment exercises the threat model: when the provider's `mitm
 
 ### baseline — GPC off
 
-```
-run_baseline.js
-  |
-  `--> handleRequest({ user_id: 'user-1', query: 'iPhone 17 review summary', baggageHeader: 'gpc=0' })
-         |
-         `--> provider.fanout(user_id, query, [8 publishers], {gpc:0})
-                |
-                |--> [LOG] {user, query, topic, targets, meta:{gpc:0}}
-                |
-                `--> 8x querySite(id, query, {gpc:0})
-                       `-> tracking_decision: { logged:true, profile_write:true }
-
-Output: site_level_view = 8x normal_operation
-        provider_view  = 1 observation with full fields
-        derivations    = topic, reach, interests inferable
+```mermaid
+sequenceDiagram
+    participant Run as run_baseline.js
+    participant Orch as handleRequest
+    participant Prov as Provider
+    participant Sites as Publishers (8x)
+    Run->>Orch: user_id=user-1, query, baggage gpc=0
+    Orch->>Prov: fanout(user-1, query, [8 pubs], {gpc:0})
+    Note over Prov: log obs: {user, query, topic, targets, meta:{gpc:0}}
+    Prov->>Sites: querySite(id, query, {gpc:0}) [8x parallel]
+    Sites-->>Prov: tracking: logged=true, profile_write=true
+    Prov-->>Orch: site_results
+    Note right of Prov: site_level_view: 8x normal_operation<br/>provider_view: 1 obs with full fields<br/>derivations (topic, reach, interests) all inferable
 ```
 
 ### gpc — GPC on; per-site enforcement; provider visibility unchanged
 
-```
-run_gpc.js
-  |
-  `--> handleRequest({ user_id: 'user-1', query: 'iPhone 17 review summary', baggageHeader: 'gpc=1' })
-         |
-         `--> provider.fanout(user_id, query, [8 publishers], {gpc:1})
-                |
-                |--> [LOG] {user, query, topic, targets, meta:{gpc:1}}
-                |
-                `--> 8x querySite(id, query, {gpc:1})
-                       `-> strict   sites: { logged:false, profile_write:false }
-                          advisory sites: { logged:true,  profile_write:false }
-                          none     site:  { logged:true,  profile_write:true  }
-
-Output: site_level_view = mixed by publisher enforcement level
-        provider_view  = structurally identical to baseline
-        structural_finding emitted
+```mermaid
+sequenceDiagram
+    participant Run as run_gpc.js
+    participant Orch as handleRequest
+    participant Prov as Provider
+    participant Strict as Strict sites
+    participant Adv as Advisory sites
+    participant None as Non-supporting sites
+    Run->>Orch: user_id=user-1, query, baggage gpc=1
+    Orch->>Prov: fanout(user-1, query, [8 pubs], {gpc:1})
+    Note over Prov: log obs (identical fields to baseline)
+    par parallel fanout
+        Prov->>Strict: querySite(id, query, {gpc:1})
+        Strict-->>Prov: logged=false, profile_write=false
+    and
+        Prov->>Adv: querySite(id, query, {gpc:1})
+        Adv-->>Prov: logged=true, profile_write=false
+    and
+        Prov->>None: querySite(id, query, {gpc:1})
+        None-->>Prov: logged=true, profile_write=true
+    end
+    Prov-->>Orch: site_results
+    Note right of Prov: site_level_view: mixed by enforcement level<br/>provider_view: structurally identical to baseline<br/>structural_finding emitted
 ```
 
 ### mitigated — GPC on plus E2 commitments
 
-```
-run_mitigated.js
-  |
-  |--> mitigations = chain(noTrainCommitment(), kAnonymity(5), dpNoise(1.0))
-  |--> provider    = createProvider({ mitigations })
-  |
-  `--> handleRequest({ user_id: 'user-1', query: 'iPhone 17 review summary', baggageHeader: 'gpc=1', provider })
-         `--> provider.fanout(...)
-                |
-                |--> [RAW LOG]  -> mitigations.apply()
-                |       no_train tag + k-anon suppression check
-                |--> [FINAL LOG] {..., do_not_train:true, k_anon_suppressed:true, cohort_size:1}
-
-Output: provider_view includes commitment tags
-        inferUserInterests honors k_anon_suppressed
-        note: commitments unverifiable at protocol layer
+```mermaid
+sequenceDiagram
+    participant Run as run_mitigated.js
+    participant Orch as handleRequest
+    participant Prov as Provider (with mitigations)
+    participant Sites as Publishers (8x)
+    Note over Prov: mitigations = chain(noTrain, kAnonymity(5), dpNoise(1.0))
+    Run->>Orch: user_id=user-1, query, baggage gpc=1
+    Orch->>Prov: fanout(user-1, query, [8 pubs], {gpc:1})
+    Note over Prov: raw log -> mitigations.apply()<br/>no_train tag + k-anon suppression check<br/>final log: {..., do_not_train:true, k_anon_suppressed:true, cohort_size:1}
+    Prov->>Sites: querySite(id, query, {gpc:1}) [8x parallel]
+    Sites-->>Prov: site results (per enforcement level)
+    Prov-->>Orch: site_results
+    Note right of Prov: provider_view includes commitment tags<br/>inferUserInterests honors k_anon_suppressed<br/>note: commitments unverifiable at protocol layer
 ```
 
 ### signal-drop — provider strips _meta before forwarding
 
-```
-run_signal_drop.js
-  |
-  |--> provider = createProvider({ mitm: true })
-  |
-  `--> handleRequest({ user_id: 'user-1', query: 'iPhone 17 review summary', baggageHeader: 'gpc=1', provider })
-         `--> provider.fanout(user_id, query, [8 publishers], {gpc:1})
-                |
-                |--> [LOG] meta_received:{gpc:1}, meta_forwarded:{}
-                |
-                `--> 8x querySite(id, query, {})  [no GPC seen by sites]
-                       `-> all sites: { logged:true, profile_write:true }
-
-Output: meta_received_by_provider = {gpc:1}
-        meta_forwarded_to_sites   = {}
-        site_level_view = 8x normal_operation (sites saw no GPC)
-        finding: provider can silently nullify enforcement at all destinations
+```mermaid
+sequenceDiagram
+    participant Run as run_signal_drop.js
+    participant Orch as handleRequest
+    participant Prov as Provider (mitm=true)
+    participant Sites as Publishers (8x)
+    Run->>Orch: user_id=user-1, query, baggage gpc=1
+    Orch->>Prov: fanout(user-1, query, [8 pubs], {gpc:1})
+    Note over Prov: log: meta_received={gpc:1}, meta_forwarded={}
+    Prov->>Sites: querySite(id, query, {}) [8x, no GPC seen by sites]
+    Sites-->>Prov: all sites: logged=true, profile_write=true
+    Prov-->>Orch: site_results
+    Note right of Prov: meta_received_by_provider: {gpc:1}<br/>meta_forwarded_to_sites: {}<br/>site_level_view: 8x normal_operation<br/>finding: provider can silently nullify enforcement at all destinations
 ```
 
 ### aggregate — 80-user simulation, mixed GPC
