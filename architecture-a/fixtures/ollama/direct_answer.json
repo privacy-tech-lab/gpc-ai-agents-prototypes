@@ -1,0 +1,12 @@
+[
+  {
+    "choices": [
+      {
+        "message": {
+          "content": "GPC (Global Privacy Control) is a browser-level signal that tells websites and services not to sell or share your personal data.",
+          "tool_calls": null
+        }
+      }
+    ]
+  }
+]

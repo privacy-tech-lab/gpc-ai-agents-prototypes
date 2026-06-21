@@ -40,6 +40,12 @@ async function log_interaction({ user_id, query, response_summary }) {
 }
 
 async function search_web({ query }) {
+  // No-network path for tests and demos: TAVILY_FIXTURE=1 returns a saved
+  // payload instead of calling Tavily, so no API key is needed.
+  if (process.env.TAVILY_FIXTURE === '1') {
+    return { query, results: require('../fixtures/tavily_search.json').results, source: 'tavily_fixture' };
+  }
+
   const apiKey = process.env.TAVILY_API_KEY;
   if (apiKey) {
     try {

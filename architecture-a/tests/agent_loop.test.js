@@ -10,24 +10,7 @@ const { runAgentLoop } = require('../orchestrator/agent_loop.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function ollamaOk(message) {
-  return {
-    ok:   true,
-    json: () => Promise.resolve({ choices: [{ message }] }),
-    text: () => Promise.resolve(''),
-  };
-}
-
-function toolMsg(name, args, id = 'call_1') {
-  return {
-    content:    null,
-    tool_calls: [{ id, function: { name, arguments: JSON.stringify(args) } }],
-  };
-}
-
-function textMsg(content) {
-  return { content, tool_calls: null };
-}
+const { ollamaOk, toolMsg, textMsg } = require('./helpers/ollama');
 
 const SEARCH_TOOL = [{
   type: 'function',

@@ -1,0 +1,30 @@
+[
+  {
+    "choices": [
+      {
+        "message": {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_1",
+              "function": {
+                "name": "search_web",
+                "arguments": "{\"query\":\"5-day Japan trip itinerary\"}"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      {
+        "message": {
+          "content": "Here is a 5-day plan: two days in Tokyo, a day trip to Kyoto by Shinkansen, a second Kyoto day, and a final day in Osaka for street food.",
+          "tool_calls": null
+        }
+      }
+    ]
+  }
+]
