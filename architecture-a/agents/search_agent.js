@@ -5,7 +5,7 @@
  * how many searches to make and when it has enough raw material. It may call
  * search_web multiple times with refined queries.
  *
- * The GPC signal is forwarded via the MCP _meta envelope on every tool call
+ * The GPC signal is forwarded via the MCP __meta envelope on every tool call
  * (Layer 2). search_web is not sensitive so it always executes regardless of
  * the GPC flag — demonstrating that opt-out blocks storage, not retrieval.
  */
@@ -42,11 +42,11 @@ const TOOL_DEFINITIONS = [
 /**
  * @param {object}  task
  * @param {string}  task.query
- * @param {object}  [task.meta]    — MCP _meta envelope (gpc, jwt)
+ * @param {object}  [task._meta]    — MCP __meta envelope (gpc, jwt)
  * @param {Array}   [task.timing]
  * @returns {{ answer: string, rawResults: Array, toolCalls: Array }}
  */
-async function run({ query, meta = {}, timing = null }) {
+async function run({ query, _meta = {}, timing = null }) {
   const { finalResponse, toolCalls } = await runAgentLoop({
     systemPrompt:    SYSTEM_PROMPT,
     userMessage:     query,
@@ -55,8 +55,8 @@ async function run({ query, meta = {}, timing = null }) {
     maxTurns:        10,
     executeToolFn:   async (toolName, toolInput) => {
       const start  = Date.now();
-      // Layer 2: meta envelope forwarded on every tool call
-      const result = await callTool(toolName, toolInput, meta, null);
+      // Layer 2: _meta envelope forwarded on every tool call
+      const result = await callTool(toolName, toolInput, _meta, null);
       if (timing) timing.push({ tool: toolName, durationMs: Date.now() - start, status: result.status });
       return result;
     },

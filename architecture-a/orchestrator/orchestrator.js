@@ -1,5 +1,3 @@
-const { readGpcFromBaggage } = require('./baggage.js');
-const { issueToken } = require('../mcp-server/identity_provider.js');
 const searchAgent = require('../agents/search_agent.js');
 const synthesisAgent = require('../agents/synthesis_agent.js');
 const storage = require('../services/storage.js');
@@ -9,28 +7,24 @@ const { MODEL } = require('./agent_loop.js');
  * @param {object} options
  * @param {string}  options.query
  * @param {string}  options.user_id
- * @param {string}  [options.baggageHeader]
+ * @param {string}  [options.secGpc]   — value of the Sec-GPC request header ('1' or absent)
  * @param {Array}   [options.timing]
  */
-async function handleRequest({ query, user_id, baggageHeader = '', timing = [] }) {
-  // Layer 1: extract GPC from transport header
-  const gpc = readGpcFromBaggage(baggageHeader);
+async function handleRequest({ query, user_id, secGpc = '', timing = [] }) {
+  // Layer 1: read GPC from Sec-GPC header (W3C GPC spec §3.3)
+  const gpc = secGpc === '1';
 
-  // Layer 3: mint JWT encoding GPC before any boundary crossing
-  const jwt = issueToken('orchestrator', gpc);
-
-  // Layer 2: meta envelope carried on every downstream call
-  const meta = { gpc: gpc ? 1 : 0, jwt };
+  // Layer 2: _meta envelope carried on every downstream call
+  const _meta = { gpc: gpc ? 1 : 0 };
 
   // Agent 1: retrieval — LLM decides how many searches to run
-  const searchResult = await searchAgent.run({ query, meta, timing });
+  const searchResult = await searchAgent.run({ query, _meta, timing });
 
-  // Agent boundary: same meta envelope forwarded to synthesis agent
   // Agent 2: synthesis — LLM reasons over raw results, calls no tools
   const synthesisResult = await synthesisAgent.run({
     query,
     rawResults: searchResult.rawResults,
-    meta,
+    _meta,
     timing,
   });
 
@@ -39,14 +33,14 @@ async function handleRequest({ query, user_id, baggageHeader = '', timing = [] }
     user_id,
     query,
     answer: synthesisResult.answer,
-    meta,
+    _meta,
     timing,
   });
 
   return {
     model:         MODEL,
     gpc_active:    gpc,
-    meta_envelope: { gpc: meta.gpc },
+    meta_envelope: { gpc: _meta.gpc },
     answer:        synthesisResult.answer,
     rawResults:    searchResult.rawResults,
     searchCalls:   searchResult.toolCalls,

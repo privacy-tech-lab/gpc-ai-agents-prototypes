@@ -81,12 +81,10 @@ function main() {
     ].join(' │ '));
   }
 
-  const logLines  = countLines(path.join(OUTPUT_DIR, 'interaction_log.jsonl'));
-  const storeSize = countEntries(path.join(OUTPUT_DIR, 'vector_store.json'));
+  const logLines = countLines(path.join(OUTPUT_DIR, 'interaction_log.jsonl'));
 
   console.log('\n── Storage state after runs ──');
   console.log(`  interaction_log.jsonl : ${logLines} entries`);
-  console.log(`  vector_store.json     : ${storeSize} entries`);
 
   if (baseline?.timing?.length) {
     console.log('\n── Per-tool timing (baseline) ──');
