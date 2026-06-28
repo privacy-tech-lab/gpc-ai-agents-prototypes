@@ -1,12 +1,11 @@
 {
-  "manifest_version": "v2.0",
+  "manifest_version": "v1.0",
   "approved_categories": [
     "file_access",
     "external_api"
   ],
   "declined_categories": [
-    "communication",
-    "analytics"
+    "communication"
   ],
   "consented_at": {
     "file_access": "2026-01-15T00:00:00.000Z",

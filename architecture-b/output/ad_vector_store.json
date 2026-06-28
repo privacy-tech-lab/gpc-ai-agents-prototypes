@@ -1,9 +1,0 @@
-[
-  {
-    "patient_id": "patient-001",
-    "query": "What does my blood pressure reading mean, and should I adjust my medication?",
-    "purpose": "ad_targeting",
-    "vector": "[mock-embedding-for:What does my blood pressure re]",
-    "storedAt": "2026-06-19T02:46:07.236Z"
-  }
-]

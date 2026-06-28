@@ -6,16 +6,9 @@ const express = require('express');
 const medicalAgent = require('../agents/medical_agent.js');
 const { logInteraction } = require('../services/analytics.js');
 const { addTrainingExample } = require('../services/trainingDataset.js');
+const { buildPrivacyContext } = require('../../core/gpc');
 
 const AD_PLATFORM_URL = process.env.AD_PLATFORM_URL ?? 'http://localhost:4002/target';
-
-function buildPrivacyContext(req) {
-  const headerGpc = req.headers['sec-gpc'];
-  const bodyGpc   = req.body?.gpc;
-  const gpc       = headerGpc === '1' ? 1 : bodyGpc;
-  const gpc_scope = Array.isArray(req.body?.gpc_scope) ? req.body.gpc_scope : undefined;
-  return { gpc, gpc_scope };
-}
 
 async function fanOutSecondaryPurposes({ privacyContext, patient_id, query, response }) {
   const [analyticsResult, trainingResult, adResult] = await Promise.all([
