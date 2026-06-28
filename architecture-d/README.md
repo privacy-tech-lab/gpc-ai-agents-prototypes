@@ -306,15 +306,17 @@ Requires Node.js 18+.
 ```bash
 cd architecture-d
 npm install
-cp .env.example .env        # optional; only needed to pin defaults or set TAVILY_API_KEY
+cp ../.env.example ../.env  # optional; only needed to pin defaults or set TAVILY_API_KEY
 ```
+
+The repo uses a single root-level `.env` shared across every architecture. See `../.env.example` for the full list of supported variables.
 
 ### Ollama (required for ai-* run modes)
 
-Defaults: `http://localhost:11434`, `qwen2.5:7b` (~5 GB, tool-capable, fits comfortably on a laptop). Override via `OLLAMA_BASE_URL` and `OLLAMA_MODEL` in `.env` or as inline env vars. See `https://ollama.com` for installation.
+Defaults: `http://localhost:11434`, `qwen2.5:14b` (~9 GB, tool-capable). Override via `OLLAMA_BASE_URL` and `OLLAMA_MODEL` in `.env` or as inline env vars. See `https://ollama.com` for installation.
 
 ```bash
-ollama pull qwen2.5:7b
+ollama pull qwen2.5:14b
 ollama serve
 ```
 

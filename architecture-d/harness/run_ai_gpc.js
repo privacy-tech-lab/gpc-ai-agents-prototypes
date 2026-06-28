@@ -2,10 +2,10 @@
  * AI GPC: Ollama drives the fanout with GPC on. Sites enforce per-call;
  * the provider observes every model decision in addition to every site
  * response. Requires a running Ollama instance with the configured
- * model loaded (default qwen2.5:7b).
+ * model loaded (default qwen2.5:14b).
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
 
 const fs   = require('fs');
 const path = require('path');
@@ -64,6 +64,6 @@ async function main() {
 
 main().catch((err) => {
   console.error('ai-gpc failed:', err.message);
-  console.error('Is Ollama running? Try: ollama serve && ollama pull qwen2.5:7b');
+  console.error('Is Ollama running? Try: ollama serve && ollama pull qwen2.5:14b');
   process.exit(1);
 });

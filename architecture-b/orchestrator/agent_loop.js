@@ -1,20 +1,14 @@
-const OLLAMA_BASE = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434/v1';
-const MODEL = process.env.OLLAMA_MODEL ?? 'qwen2.5:14b';
+/**
+ * Architecture B turn loop.
+ *
+ * The network call lives in core/ollama.js. This file owns the per-call _meta
+ * envelope construction (Layer 2) and the requiredTools nudging that are
+ * specific to Architecture B.
+ */
 
-async function callModel(messages, tools, toolChoice) {
-  const body = { model: MODEL, messages, stream: false };
-  if (tools?.length) {
-    body.tools = tools;
-    body.tool_choice = toolChoice;
-  }
-  const res = await fetch(`${OLLAMA_BASE}/chat/completions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`Model API error ${res.status}: ${await res.text()}`);
-  return res.json();
-}
+const { callModel, DEFAULT_MODEL } = require('../../core/ollama');
+
+const MODEL = DEFAULT_MODEL;
 
 /**
  * @param {object}   opts
@@ -45,11 +39,12 @@ async function runAgentLoop({
   const toolCallLog = [];
   const calledTools = new Set();
   let finalResponse = '';
+  let modelCallIdx = 0;
 
   for (let turn = 0; turn < maxTurns; turn++) {
     const pending    = requiredTools.filter((t) => !calledTools.has(t));
     const toolChoice = pending.length > 0 ? 'required' : 'auto';
-    const completion = await callModel(messages, toolDefinitions, toolChoice);
+    const completion = await callModel(messages, toolDefinitions, toolChoice, { turn: modelCallIdx++ });
     const choice     = completion.choices[0];
     const msg        = choice.message;
 

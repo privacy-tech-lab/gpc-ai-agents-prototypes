@@ -1,0 +1,10 @@
+{
+  "_note": "Placeholder fixture. Replace with a real captured Tavily response via the recorder script (#50).",
+  "results": [
+    {
+      "title":   "Placeholder result title",
+      "url":     "https://example.com/placeholder",
+      "content": "Placeholder Tavily result body. Real captures will replace this file."
+    }
+  ]
+}

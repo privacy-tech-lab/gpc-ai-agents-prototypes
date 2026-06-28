@@ -1,0 +1,31 @@
+[
+  {
+    "_note": "Placeholder fixture. Replace with a real captured Ollama chat-completion run via the recorder script (#50).",
+    "choices": [
+      {
+        "message": {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_placeholder_1",
+              "type": "function",
+              "function": {
+                "name": "placeholder_tool",
+                "arguments": "{}"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "choices": [
+      {
+        "message": {
+          "content": "Placeholder final response. Real captures will replace this."
+        }
+      }
+    ]
+  }
+]

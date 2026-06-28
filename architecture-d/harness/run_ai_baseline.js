@@ -2,10 +2,10 @@
  * AI baseline: Ollama drives the fanout with GPC off.
  * The model receives the user query, decides which publishers to call
  * and what sub-query to send each. Requires a running Ollama instance
- * with the configured model loaded (default qwen2.5:7b).
+ * with the configured model loaded (default qwen2.5:14b).
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
 
 const fs   = require('fs');
 const path = require('path');
@@ -62,6 +62,6 @@ async function main() {
 
 main().catch((err) => {
   console.error('ai-baseline failed:', err.message);
-  console.error('Is Ollama running? Try: ollama serve && ollama pull qwen2.5:7b');
+  console.error('Is Ollama running? Try: ollama serve && ollama pull qwen2.5:14b');
   process.exit(1);
 });

@@ -16,6 +16,14 @@ Experimental prototypes exploring how the Global Privacy Control (GPC) signal pr
 
 ---
 
+## Shared layer (`core/`)
+
+The five architectures share a `core/` module for the network calls they have in common: Tavily search (used by arch-A and arch-D) and Ollama chat completion (used by all five). Each arch keeps its own enforcement, envelope construction, and agent-loop semantics; only the raw IO is shared.
+
+The same module also owns the fixture-gate (`TAVILY_FIXTURE` and `OLLAMA_FIXTURE` env vars), so a fresh clone can run any AI demo deterministically without an API key or a local Ollama. See [`core/`](core/) for the implementation and tests.
+
+---
+
 ## Architecture A: Signal Propagation in a Multi-Agent Pipeline
 
 **Scenario:** a user asks an AI assistant to plan a 5-day trip to Japan. The assistant searches the web, synthesises an itinerary, and (without GPC) saves the result to the user's profile and syncs to a third-party vendor.

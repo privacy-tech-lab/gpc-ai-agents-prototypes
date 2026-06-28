@@ -10,12 +10,21 @@
  * (synthesise an answer across N sites) succeeds either way. Only the
  * site-side tracking decisions vary.
  *
+ * Tavily IO lives in core/tavily.js. This file owns the per-publisher
+ * tracking decision, the canned fragment fallback, and the snippet
+ * formatting that is specific to Architecture D.
+ *
  * When TAVILY_API_KEY is set, the review snippet is fetched live from
- * the publisher's domain via Tavily; otherwise it falls back to a fixed
- * canned fragment so the demo runs deterministically.
+ * the publisher's domain via Tavily; otherwise the fallback canned
+ * fragment is used so the demo runs deterministically. The fixture-gate
+ * (TAVILY_FIXTURE env var) is consumed by core/tavily.js; each call
+ * passes the site_id as a fixture hint, so with TAVILY_FIXTURE=1 core
+ * looks for `fixtures/tavily/<site_id>.json` and falls back to
+ * `full_results.json` if no per-site file is present.
  */
 
-const { getPublisher } = require('./tool_registry');
+const { getPublisher }    = require('./tool_registry');
+const { searchPublisher } = require('../../core/tavily');
 
 const CANNED_FRAGMENTS = {
   'the-verge':         'Polished refinement, iterative gains.',
@@ -31,8 +40,8 @@ const CANNED_FRAGMENTS = {
 /**
  * Site-level tracking decision.
  *
- * @param {object}  pub        — publisher record from the registry
- * @param {boolean} gpc_on     — whether the request carried GPC=1
+ * @param {object}  pub        publisher record from the registry
+ * @param {boolean} gpc_on     whether the request carried GPC=1
  * @returns {{ logged: boolean, profile_write: boolean, reason: string }}
  */
 function decideTracking(pub, gpc_on) {
@@ -46,51 +55,6 @@ function decideTracking(pub, gpc_on) {
     return { logged: true, profile_write: false, reason: 'gpc_advisory_partial' };
   }
   return { logged: true, profile_write: true, reason: 'normal_operation' };
-}
-
-/**
- * Fetch a single review snippet from the publisher's domain via Tavily.
- * Returns null on any failure so callers fall back to the canned fragment.
- *
- * Aborts after TAVILY_TIMEOUT_MS (default 5000 ms) so a hung Tavily
- * call cannot stall an entire fanout.
- *
- * @param {string} domain
- * @param {string} query
- */
-async function fetchFromTavily(domain, query) {
-  const api_key = process.env.TAVILY_API_KEY;
-  if (!api_key) return null;
-  // Reject non-positive or NaN values. Otherwise setTimeout would
-  // either fire immediately (aborting every fetch) or trigger a Node
-  // "negative timeout" warning per call.
-  const rawTimeout = Number(process.env.TAVILY_TIMEOUT_MS);
-  const timeoutMs  = Number.isFinite(rawTimeout) && rawTimeout > 0 ? rawTimeout : 5000;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch('https://api.tavily.com/search', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        api_key,
-        query,
-        include_domains: [domain],
-        search_depth:    'basic',
-        max_results:     1,
-      }),
-      signal: controller.signal,
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    const first = json.results?.[0];
-    if (!first) return null;
-    return { url: first.url, title: first.title, content: first.content };
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
 }
 
 /**
@@ -108,11 +72,18 @@ async function querySite(site_id, query, _meta = {}) {
 
   const gpc_on            = _meta.gpc === 1 || _meta.gpc === true;
   const tracking_decision = decideTracking(pub, gpc_on);
-  const live              = await fetchFromTavily(pub.domain, query);
 
-  const review_snippet = live
-    ? `[${pub.name}] ${live.content} (${live.url})`
+  const hit   = await searchPublisher(query, {
+    domain:     pub.domain,
+    maxResults: 1,
+    fixture:    site_id,
+  });
+  const first = hit?.results?.[0];
+
+  const review_snippet = first?.content
+    ? `[${pub.name}] ${first.content} (${first.url})`
     : `[${pub.name}] ${CANNED_FRAGMENTS[site_id] || 'Generic review.'} (re: "${query}")`;
+  const review_source = first?.content ? hit.source : 'canned';
 
   return {
     status: 'ok',
@@ -121,7 +92,7 @@ async function querySite(site_id, query, _meta = {}) {
     enforcement: pub.enforcement,
     query,
     review_snippet,
-    review_source: live ? 'tavily_live' : 'canned',
+    review_source,
     site_received_gpc: gpc_on,
     tracking_decision,
   };
