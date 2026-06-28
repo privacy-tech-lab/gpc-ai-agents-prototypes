@@ -4,25 +4,7 @@ Experimental prototypes exploring how the Global Privacy Control (GPC) signal pr
 
 ---
 
-## Architectures
-
-| Architecture | GPC category | Core mechanism |
-|---|---|---|
-| [A](architecture-a/README.md) | Presence, Use, Persistence, Behavioral influence | Four-layer signal propagation: transport header, agent protocol envelope, JWT trust boundary, data-layer interceptor |
-| [B](architecture-b/README.md) | Use, Persistence, Behavioral influence | Purpose-scoped enforcement: a single interaction fans out to secondary pipelines gated by declared purpose; partial opt-out via `gpc_scope` |
-| [C](architecture-c/README.md) | A1 (no integration-by-update), A2 (opt-in only) | Consent-scoped tool registry: new tools added by platform updates are quarantined until the user approves; GPC auto-declines non-primary categories |
-| [D](architecture-d/README.md) | E1 (provider as new privacy boundary), E2 (provider-side commitments) | Fanout aggregation surface: the LLM provider observes every outbound call and can derive cross-session profiles even when all downstream sites enforce GPC correctly |
-| [E](architecture-e/README.md) | B3 (derived-collection opt-out) | Inference firewall: a classifier that infers personal attributes from queries is intercepted at the boundary; attributes are never written when B3 is on |
-
----
-
-## Shared layer (`core/`)
-
-The five architectures share a `core/` module for the network calls they have in common: Tavily search (used by arch-A and arch-D) and Ollama chat completion (used by all five). Each arch keeps its own enforcement, envelope construction, and agent-loop semantics; only the raw IO is shared.
-
-The same module also owns the fixture-gate (`TAVILY_FIXTURE` and `OLLAMA_FIXTURE` env vars), so a fresh clone can run any AI demo deterministically without an API key or a local Ollama. See [`core/`](core/) for the implementation and tests.
-
----
+# Architectures
 
 ## Architecture A: Signal Propagation in a Multi-Agent Pipeline
 
