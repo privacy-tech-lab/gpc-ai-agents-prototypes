@@ -3,11 +3,11 @@
  *
  * Rather than spawning a real stdio subprocess (which adds significant test
  * complexity), this module imports the tool handlers directly and applies the
- * same gpc_policy.js interceptors.  The observable behaviour — tool call
+ * same gpc_policy.js interceptors. The observable behaviour — tool call
  * results including blocked responses — is identical.
  *
- * Layer 2: the `meta` argument maps to the MCP params._meta field, which is
- * how the GPC signal travels inside task envelopes between agents.
+ * Each call mirrors the MCP params structure: { name, arguments, _meta }.
+ * The GPC signal travels in params._meta.gpc, matching how server.js reads it.
  */
 
 const { withGpc } = require('../mcp-server/gpc_policy.js');
@@ -21,16 +21,16 @@ const wrappedHandlers = {
 };
 
 /**
- * Call a tool, embedding the GPC signal in the MCP metadata envelope.
+ * Simulate an MCP tools/call request.
  *
- * @param {string}  toolName
- * @param {object}  args      — tool-specific arguments
- * @param {object}  meta      — MCP _meta field; set meta.gpc=1 to opt out
- * @param {object}  [timing]  — optional array to push timing records into
+ * @param {string}  toolName           — maps to params.name
+ * @param {object}  args               — maps to params.arguments
+ * @param {object}  [_meta]            — maps to params._meta; set _meta.gpc=1 to opt out
+ * @param {Array}   [timing]
  */
-async function callTool(toolName, args, meta = {}, timing = null) {
+async function callTool(toolName, args, _meta = {}, timing = null) {
   const start = Date.now();
-  const result = await wrappedHandlers[toolName](args, meta);
+  const result = await wrappedHandlers[toolName](args, _meta);
   const elapsed = Date.now() - start;
 
   if (timing) {
