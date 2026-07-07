@@ -5,7 +5,7 @@
  *  - Sensitive tools are blocked when gpc=1 (boolean, number, string)
  *  - Non-sensitive tools always execute
  *  - Timing metadata is included in ok results
- *  - gpc=0 / gpc=false / missing meta — tools run normally
+ *  - gpc absent / missing meta — tools run normally
  */
 
 const { withGpc, SENSITIVE_TOOLS } = require('../mcp-server/gpc_policy.js');
@@ -61,9 +61,9 @@ describe('withGpc — passthrough behaviour', () => {
     expect(mockHandler).toHaveBeenCalledTimes(1);
   });
 
-  test('sensitive tool executes when gpc=0', async () => {
+  test('sensitive tool executes when gpc is absent', async () => {
     const fn = withGpc('user_profile_lookup', mockHandler);
-    const result = await fn({}, { gpc: 0 });
+    const result = await fn({}, {});
     expect(result.status).toBe('ok');
     expect(mockHandler).toHaveBeenCalledTimes(1);
   });

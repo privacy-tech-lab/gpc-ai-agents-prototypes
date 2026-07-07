@@ -8,8 +8,8 @@ const {
 const sample_log = [
   { user_id: 'u1', query: 'iPhone',  query_topic: 'mobile_device', fanout_targets: ['the-verge', 'cnet'], meta_received: { gpc: 1 } },
   { user_id: 'u1', query: 'Pixel',   query_topic: 'mobile_device', fanout_targets: ['the-verge'],         meta_received: { gpc: 1 } },
-  { user_id: 'u2', query: 'laptop',  query_topic: 'laptop',        fanout_targets: ['ars-technica'],      meta_received: { gpc: 0 } },
-  { user_id: 'u3', query: 'iPhone',  query_topic: 'mobile_device', fanout_targets: ['cnet'],              meta_received: { gpc: 0 } },
+  { user_id: 'u2', query: 'laptop',  query_topic: 'laptop',        fanout_targets: ['ars-technica'],      meta_received: {} },
+  { user_id: 'u3', query: 'iPhone',  query_topic: 'mobile_device', fanout_targets: ['cnet'],              meta_received: {} },
 ];
 
 describe('aggregation derivations', () => {
@@ -54,7 +54,7 @@ describe('aggregation derivations', () => {
     // "is not iterable" and crash the whole report.
     const malformedLog = [
       { user_id: 'a', query_topic: 't', fanout_targets: ['the-verge', 'cnet'], meta_received: { gpc: 1 } },
-      { user_id: 'b', query_topic: 't', fanout_targets: undefined,             meta_received: { gpc: 0 } },
+      { user_id: 'b', query_topic: 't', fanout_targets: undefined,             meta_received: {} },
       { user_id: 'c', query_topic: 't', fanout_targets: 'not-an-array',        meta_received: { gpc: 1 } },
     ];
     expect(publisherReach(malformedLog)).toEqual({ 'the-verge': 1, 'cnet': 1 });
@@ -69,7 +69,7 @@ describe('aggregation derivations', () => {
       undefined,
       'string entry',
       42,
-      { user_id: 'a', query_topic: 't', fanout_targets: ['y'], meta_received: { gpc: 0 } },
+      { user_id: 'a', query_topic: 't', fanout_targets: ['y'], meta_received: {} },
     ];
     expect(gpcAdoptionRate(dirty)).toBeCloseTo(0.5);
     expect(topicDistribution(dirty)).toEqual({ t: 2 });

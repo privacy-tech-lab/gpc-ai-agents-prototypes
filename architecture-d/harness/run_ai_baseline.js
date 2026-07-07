@@ -26,7 +26,7 @@ async function main() {
   const result = await handleAgentRequest({
     user_id:       userId,
     query,
-    baggageHeader: encodeBaggage({ gpc: '0' }),
+    baggageHeader: '',
   });
 
   const providerView = result.provider_view;
