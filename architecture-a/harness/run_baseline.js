@@ -1,5 +1,5 @@
 /**
- * Baseline run: gpc=false.
+ * Baseline run: no GPC signal.
  * All storage operations execute; profile and log are written to disk.
  */
 
@@ -17,7 +17,6 @@ async function main() {
   const result = await handleRequest({
     query:   'Help me plan a 5-day trip to Japan — what should I see, eat, and know before I go?',
     user_id: 'user-42',
-    secGpc:  '0',
     timing,
   });
 

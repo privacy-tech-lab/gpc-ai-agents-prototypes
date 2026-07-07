@@ -15,7 +15,8 @@ async function handleRequest({ query, user_id, secGpc = '', timing = [] }) {
   const gpc = secGpc === '1';
 
   // Layer 2: _meta envelope carried on every downstream call
-  const _meta = { gpc: gpc ? 1 : 0 };
+  // gpc key is present only when the signal is active; absence means no signal
+  const _meta = gpc ? { gpc: 1 } : {};
 
   // Agent 1: retrieval — LLM decides how many searches to run
   const searchResult = await searchAgent.run({ query, _meta, timing });
@@ -40,7 +41,7 @@ async function handleRequest({ query, user_id, secGpc = '', timing = [] }) {
   return {
     model:         MODEL,
     gpc_active:    gpc,
-    meta_envelope: { gpc: _meta.gpc },
+    meta_envelope: _meta,
     answer:        synthesisResult.answer,
     rawResults:    searchResult.rawResults,
     searchCalls:   searchResult.toolCalls,

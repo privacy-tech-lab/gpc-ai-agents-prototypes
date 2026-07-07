@@ -35,11 +35,6 @@ beforeAll(() => {
 // ── Layer 1: Sec-GPC header ───────────────────────────────────────────────────
 
 describe('Layer 1 — Sec-GPC header', () => {
-  test('Sec-GPC: 0 → gpc_active is false', async () => {
-    const result = await handleRequest({ query: 'test', user_id: 'u1', secGpc: '0' });
-    expect(result.gpc_active).toBe(false);
-  });
-
   test('Sec-GPC: 1 → gpc_active is true', async () => {
     const result = await handleRequest({ query: 'test', user_id: 'u1', secGpc: '1' });
     expect(result.gpc_active).toBe(true);
@@ -49,14 +44,19 @@ describe('Layer 1 — Sec-GPC header', () => {
     const result = await handleRequest({ query: 'test', user_id: 'u1' });
     expect(result.gpc_active).toBe(false);
   });
+
+  test('Sec-GPC: 0 is not a valid signal → gpc_active is false', async () => {
+    const result = await handleRequest({ query: 'test', user_id: 'u1', secGpc: '0' });
+    expect(result.gpc_active).toBe(false);
+  });
 });
 
 // ── Layer 2: MCP _meta envelope ───────────────────────────────────────────────
 
 describe('Layer 2 — MCP _meta envelope', () => {
-  test('meta_envelope carries gpc=0 when GPC is off', async () => {
-    const result = await handleRequest({ query: 'test', user_id: 'u1', secGpc: '0' });
-    expect(result.meta_envelope.gpc).toBe(0);
+  test('meta_envelope has no gpc key when signal is absent', async () => {
+    const result = await handleRequest({ query: 'test', user_id: 'u1' });
+    expect('gpc' in result.meta_envelope).toBe(false);
   });
 
   test('meta_envelope carries gpc=1 when GPC is on', async () => {
@@ -69,7 +69,7 @@ describe('Layer 2 — MCP _meta envelope', () => {
 
 describe('Layer 4 — MCP tool enforcement', () => {
   test('baseline: sensitive storage tools return ok', async () => {
-    const _meta  = { gpc: 0 };
+    const _meta  = {};
     const result = await store({ user_id: 'u-baseline', query: 'q', answer: 'a', _meta, timing: [] });
 
     expect(result.stored).toContain('save_to_profile');
@@ -106,7 +106,7 @@ describe('Layer 4 — MCP tool enforcement', () => {
 describe('Timing instrumentation', () => {
   test('timing array is populated for all tool calls', async () => {
     const timing = [];
-    await handleRequest({ query: 'timing test', user_id: 'u-timing', secGpc: '0', timing });
+    await handleRequest({ query: 'timing test', user_id: 'u-timing', timing });
     expect(timing.length).toBeGreaterThanOrEqual(1);
     timing.forEach((t) => {
       expect(typeof t.durationMs).toBe('number');

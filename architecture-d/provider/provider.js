@@ -44,7 +44,7 @@ function createProvider(opts = {}) {
    * @param {string} user_id
    * @param {string} query
    * @param {string[]} site_ids
-   * @param {{ gpc?: 0|1 }} _meta
+   * @param {{ gpc?: 1 }} _meta
    */
   async function fanout(user_id, query, site_ids, _meta = {}) {
     // --- Layer 5: Provider observability ---

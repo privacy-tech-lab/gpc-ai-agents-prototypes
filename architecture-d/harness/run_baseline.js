@@ -1,5 +1,5 @@
 /**
- * Baseline run: gpc=0.
+ * Baseline run: no GPC signal.
  * Fanout to every publisher in the registry; every site applies its
  * default tracking policy. Reference for the GPC run to compare against.
  */
@@ -26,7 +26,7 @@ async function main() {
   const result = await handleRequest({
     user_id:       userId,
     query,
-    baggageHeader: encodeBaggage({ gpc: '0' }),
+    baggageHeader: '',
   });
 
   const providerView = result.provider_view;

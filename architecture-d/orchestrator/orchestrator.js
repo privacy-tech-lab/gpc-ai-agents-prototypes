@@ -46,7 +46,8 @@ async function handleRequest({ user_id, query, baggageHeader = '', provider }) {
   const gpcActive = readGpcFromBaggage(baggageHeader);
 
   // Layer 2: assemble the `_meta` envelope carried into the provider.
-  const meta = { gpc: gpcActive ? 1 : 0 };
+  // gpc key is present only when the signal is active; absence means no signal.
+  const meta = gpcActive ? { gpc: 1 } : {};
 
   // Layer 3: hand the fanout to the provider middleware.
   const p            = provider ?? createProvider();
@@ -54,7 +55,7 @@ async function handleRequest({ user_id, query, baggageHeader = '', provider }) {
 
   return {
     gpc_active:    gpcActive,
-    meta_envelope: { gpc: meta.gpc },
+    meta_envelope: meta,
     fanout:        fanoutResult,
     provider_view: p.getProviderView(),
   };
@@ -66,14 +67,14 @@ async function handleRequest({ user_id, query, baggageHeader = '', provider }) {
  */
 async function handleAgentRequest({ user_id, query, baggageHeader = '', provider }) {
   const gpcActive = readGpcFromBaggage(baggageHeader);
-  const meta      = { gpc: gpcActive ? 1 : 0 };
+  const meta      = gpcActive ? { gpc: 1 } : {};
   const p         = provider ?? createProvider();
 
   const agentResult = await researchAgent.run({ provider: p, user_id, query, meta });
 
   return {
     gpc_active:    gpcActive,
-    meta_envelope: { gpc: meta.gpc },
+    meta_envelope: meta,
     agent:         agentResult,
     provider_view: p.getProviderView(),
   };
@@ -105,7 +106,7 @@ app.post('/ask', async (req, res) => {
   // Lift the privacy context back onto a W3C baggage header so the
   // function-level entries (handleRequest / handleAgentRequest) have a
   // single canonical input shape.
-  const baggageHeader = encodeBaggage({ gpc: privacyContext.gpc === 1 ? '1' : '0' });
+  const baggageHeader = privacyContext.gpc === 1 ? encodeBaggage({ gpc: '1' }) : '';
 
   try {
     const result = mode === 'agent'

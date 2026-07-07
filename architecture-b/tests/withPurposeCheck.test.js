@@ -38,9 +38,9 @@ describe('evaluatePurpose — primary purpose (not in registry)', () => {
   });
 });
 
-describe('evaluatePurpose — secondary purposes, GPC off', () => {
-  test('analytics with gpc=0 → allowed', () => {
-    const r = evaluatePurpose({ gpc: 0 }, 'analytics', RESTRICTABLE_PURPOSES_SET);
+describe('evaluatePurpose — secondary purposes, GPC signal absent', () => {
+  test('analytics with no gpc field → allowed', () => {
+    const r = evaluatePurpose({}, 'analytics', RESTRICTABLE_PURPOSES_SET);
     expect(r.allowed).toBe(true);
     expect(r.reason).toBe('gpc_not_active');
   });
@@ -50,8 +50,8 @@ describe('evaluatePurpose — secondary purposes, GPC off', () => {
     expect(r.allowed).toBe(true);
   });
 
-  test('ad_targeting with gpc=false → allowed', () => {
-    const r = evaluatePurpose({ gpc: false }, 'ad_targeting', RESTRICTABLE_PURPOSES_SET);
+  test('ad_targeting with no gpc field → allowed', () => {
+    const r = evaluatePurpose({}, 'ad_targeting', RESTRICTABLE_PURPOSES_SET);
     expect(r.allowed).toBe(true);
   });
 });
@@ -129,13 +129,13 @@ describe('withPurposeCheck — wrapper behaviour', () => {
       registry: RESTRICTABLE_PURPOSES_SET,
       layer:    'analytics_pipeline',
     });
-    const result = await guarded({ x: 1 }, { gpc: 0 });
+    const result = await guarded({ x: 1 }, {});
     expect(result.status).toBe('ok');
     expect(result.purpose).toBe('analytics');
     expect(result.layer).toBe('analytics_pipeline');
     expect(result.result).toEqual({ data: 'result' });
     expect(mockFn).toHaveBeenCalledTimes(1);
-    expect(mockFn).toHaveBeenCalledWith({ x: 1 }, { gpc: 0 });
+    expect(mockFn).toHaveBeenCalledWith({ x: 1 }, {});
   });
 
   test('blocked: does not call fn, returns blocked envelope', async () => {
