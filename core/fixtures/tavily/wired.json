@@ -1,0 +1,45 @@
+{
+  "query": "iPhone 17 review",
+  "follow_up_questions": null,
+  "answer": null,
+  "images": [],
+  "results": [
+    {
+      "url": "https://www.wired.com/review/apple-iphone-17",
+      "title": "Apple iPhone 17 Review: Close to Perfect | WIRED",
+      "content": "If you need to upgrade this year, the iPhone 17 comes close to perfection. It helps that the iPhone 17 has many of the features of its pricier siblings, from the brighter screen with ProMotion and Ceramic Shield 2 to the new square-shaped 18-MP selfie camera. No, you don't need to upgrade if you have an iPhone 16 or iPhone 15—maybe even an iPhone 13. Apple limited the feature, dubbed “ProMotion,” to its Pro iPhones for the past four years, but it finally caught up with the rest of the market, adding a 120-Hz display for the iPhone 17. It easily bests the iPhone Air's battery life and comes close to the iPhone 17 Pro, but if you want the absolute best run time, look to the iPhone 17 Pro Max. If you're coming from a phone older than the iPhone 15 (I hope you are!), remember that the iPhone now has a USB-C port.",
+      "score": 0.87807417,
+      "raw_content": null
+    },
+    {
+      "url": "https://www.wired.com/review/apple-iphone-17-pro-and-iphone-17-pro-max",
+      "title": "Apple iPhone 17 Pro and iPhone 17 Pro Max Review: Level Up | WIRED",
+      "content": "# Review: Apple iPhone 17 Pro and iPhone 17 Pro Max. Big, beefy batteries mean you might not have to charge your iPhone every day anymore. At first glance, the iPhone 17 Pro and iPhone 17 Pro Max seem like a drastic upgrade over their predecessors. The specs might not read as revolutionary on paper: a bigger battery, a brighter screen, better performance, and a new telephoto zoom camera. You might say, “It's just a phone,” but when a gadget looks and feels great, it makes using it all the more enjoyable, and I think Apple has done a nice job here. The iPhone 17 Pro still got hot, but the heat was spread out over the entire back of the phone, so it didn't feel as uncomfortable to hold while gaming (unlike the iPhone 17 and Air).",
+      "score": 0.8576849,
+      "raw_content": null
+    },
+    {
+      "url": "https://www.wired.com/review/apple-iphone-17e",
+      "title": "Apple iPhone 17e Review: MagSafe Makes a Difference | WIRED",
+      "content": "A bump in storage and the addition of MagSafe make Apple’s cheapest iPhone a better value proposition than its predecessor. Would you rather buy a brand-new MacBook Neo—a whole computer—or Apple's cheapest iPhone 17e smartphone for the same amount of cash? It needs to be connected to the internet everywhere you go, and the iPhone 17e even adds Emergency SOS via Satellite for extra peace of mind. It needs good enough cameras to snap pics of everything important—your dog, that sunset, those receipts for your expenses—and a selfie camera that looks good on FaceTimes and Zooms. The iPhone 17e can do all of this fairly well for $599. It's one of my favorite iPhone features, and I consider it a must-have, which is why I view its inclusion in the iPhone 17e as a big value boost. It may not be obvious to some, but the smoother screen is one of those things that's hard to appreciate until you experience it.",
+      "score": 0.78670514,
+      "raw_content": null
+    },
+    {
+      "url": "https://www.wired.com/gallery/review-apple-iphone-17-camera",
+      "title": "Review: Apple iPhone 17 Camera | WIRED",
+      "content": "# Review: Apple iPhone 17 Camera. Apple iPhone 17, 2X zoom. Apple iPhone 17, main camera. Google Pixel 10, main camera. Apple iPhone 17, selfie camera. Google Pixel 10, selfie camera. The Best 3-in-1 Apple Wireless Chargers For Charging All Your Devices. I tried all the top models to find the best 3-in-1 Apple charging stations, pads, and more. Keep your iPhone, Apple Watch, and AirPods topped up with these WIRED-tested docking systems. The Best Wireless Chargers to Refuel Your Phone (or Watch). These WIRED-tested stands and pads will take the hassle out of refueling your phone, wireless earbuds, and watch. Whether you need a travel-friendly slate or something affordable for the kids, we tested every model to find the right one for every occasion. The Best Portable Chargers and Power Banks for All Your Devices. These WIRED-tested ebook readers let you take your library anywhere. Save with one of these WIRED-tested options from US Mobile, Boost, and Google Fi. What’s the Best Alexa Speaker for You?",
+      "score": 0.77873385,
+      "raw_content": null
+    },
+    {
+      "url": "https://www.wired.com/story/exciting-camera-features-on-apples-new-iphone-17-lineup",
+      "title": "3 Exciting Camera Features on Apple’s New iPhone 17 Lineup | WIRED",
+      "content": "An upgraded selfie camera with a square sensor, dual camera capture, and 8X optical-like image quality has me excited about the new iPhone 17 models. There was a period somewhere in the middle where it lagged, but over the past several years it has produced some of the best mobile cameras on the market, and it still delivers one of the best video capture experiences—even for aspiring filmmakers. With the new iPhone 17 range—which includes the iPhone Air—Apple has a bevy of camera upgrades that go beyond more megapixels and larger image sensors. If you've ever experienced that, you'll be happy to know that you no longer have to change your phone's physical orientation to capture a selfie in portrait or landscape mode. With a square, paired with a wider field of view, the iPhone can automatically detect when more people are in the frame and will capture a horizontal photo even when you're holding the iPhone in portrait orientation.",
+      "score": 0.76951396,
+      "raw_content": null
+    }
+  ],
+  "response_time": 0.85,
+  "request_id": "1fe69bac-89fb-49af-8a76-5d0dc34259e7"
+}

@@ -1,4 +1,10 @@
 {
-  "_note": "Placeholder fixture for the empty-results branch of every consumer.",
-  "results": []
+  "query": "iPhone 17 review",
+  "follow_up_questions": null,
+  "answer": null,
+  "images": [],
+  "results": [],
+  "response_time": 1.21,
+  "request_id": "2d9740e6-a432-4851-9308-c4b042ff4706",
+  "_derived_note": "Derived from full_results.json with results emptied. Tavily returns broadly-matched results even for nonsense queries, so a direct capture of an empty payload is not reliable."
 }

@@ -45,7 +45,7 @@ async function runAgentLoop({
 
   for (let turn = 0; turn < maxTurns; turn++) {
     const tool_choice = toolCallLog.length < minToolCalls ? 'required' : 'auto';
-    const completion  = await callModel(messages, toolDefinitions, tool_choice, { turn: modelCallIdx++ });
+    const completion  = await callModel(messages, toolDefinitions, tool_choice, { turn: modelCallIdx++, fixture: 'arch-d' });
     const choice      = completion.choices[0];
     const msg         = choice.message;
 

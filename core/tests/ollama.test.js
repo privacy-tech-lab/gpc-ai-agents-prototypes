@@ -73,32 +73,50 @@ describe('callModel with OLLAMA_FIXTURE', () => {
     delete process.env.OLLAMA_FIXTURE;
   });
 
-  test('OLLAMA_FIXTURE=1 defaults to tool_call and replays each turn in order', async () => {
+  test('OLLAMA_FIXTURE=1 defaults to the arch-a capture and the fixture contains at least one tool-call turn', async () => {
     process.env.OLLAMA_FIXTURE = '1';
     global.fetch = jest.fn(() => { throw new Error('fetch must not be called when OLLAMA_FIXTURE is set'); });
+    const fixture = require('../fixtures/ollama/arch-a.json');
+    const hasToolCall = fixture.some((turn) =>
+      Array.isArray(turn?.choices?.[0]?.message?.tool_calls) &&
+      turn.choices[0].message.tool_calls.length > 0
+    );
+    expect(hasToolCall).toBe(true);
     const t0 = await callModel([], [], 'auto', { turn: 0 });
-    const t1 = await callModel([], [], 'auto', { turn: 1 });
-    expect(t0.choices[0].message.tool_calls).toBeTruthy();
-    expect(t1.choices[0].message.content).toMatch(/Placeholder final response/);
+    expect(t0).toEqual(fixture[0]);
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  test('OLLAMA_FIXTURE=direct_answer replays the text-only fixture', async () => {
-    process.env.OLLAMA_FIXTURE = 'direct_answer';
-    const out = await callModel([], [], 'auto', { turn: 0 });
-    expect(out.choices[0].message.content).toMatch(/direct answer/);
+  test('OLLAMA_FIXTURE=arch-d replays a real arch-D research run', async () => {
+    process.env.OLLAMA_FIXTURE = 'arch-d';
+    const fixture = require('../fixtures/ollama/arch-d.json');
+    // arch-D's fanout pattern: at least one turn with multiple tool calls (the multi-call variant),
+    // and a final turn with text content (the summary).
+    const hasMultiCall  = fixture.some((turn) =>
+      Array.isArray(turn?.choices?.[0]?.message?.tool_calls) &&
+      turn.choices[0].message.tool_calls.length > 1
+    );
+    const hasTextTurn = fixture.some((turn) => {
+      const msg = turn?.choices?.[0]?.message;
+      return msg?.content && (!msg.tool_calls || msg.tool_calls.length === 0);
+    });
+    expect(hasMultiCall).toBe(true);
+    expect(hasTextTurn).toBe(true);
+    const t0 = await callModel([], [], 'auto', { turn: 0 });
+    expect(t0).toEqual(fixture[0]);
   });
 
-  test('OLLAMA_FIXTURE=tool_then_text replays the multi-call variant', async () => {
-    process.env.OLLAMA_FIXTURE = 'tool_then_text';
-    const t0 = await callModel([], [], 'required', { turn: 0 });
-    expect(t0.choices[0].message.tool_calls).toHaveLength(2);
+  test('OLLAMA_FIXTURE=arch-c replays a real arch-C productivity run', async () => {
+    process.env.OLLAMA_FIXTURE = 'arch-c';
+    const t0 = await callModel([], [], 'auto', { turn: 0 });
+    expect(t0).toEqual(require('../fixtures/ollama/arch-c.json')[0]);
   });
 
   test('overflowing the fixture array returns the last entry', async () => {
-    process.env.OLLAMA_FIXTURE = 'direct_answer';
-    const out = await callModel([], [], 'auto', { turn: 99 });
-    expect(out.choices[0].message.content).toMatch(/direct answer/);
+    process.env.OLLAMA_FIXTURE = 'arch-d';
+    const fixture = require('../fixtures/ollama/arch-d.json');
+    const out = await callModel([], [], 'auto', { turn: 999 });
+    expect(out).toEqual(fixture[fixture.length - 1]);
   });
 
   test('OLLAMA_FIXTURE pointing at a missing variant throws a clear error', async () => {

@@ -1,0 +1,79 @@
+[
+  {
+    "id": "chatcmpl-546",
+    "object": "chat.completion",
+    "created": 1781892183,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": " Александа, для того чтобы найти доступные лекарства от диабета недалеко от вас, могу предложить несколько шагов:\n\n1. Проверить наличие рецептурных программ помощи пациентам в местном аптеке.\n2. Посетить сайт药店locator网站，寻找提供糖尿病药物的廉价药房。你可以在网站上输入你的位置，找到附近的药店。\n3. 联系当地的社区健康中心或诊所，他们可能提供更便宜的药物或者有帮助项目。\n4. 检查是否符合药品折扣计划或患者援助项目的条件。\n\n我可以帮你先搜索一下你附近有哪些药房提供糖尿病药物，你介意告诉我你现在的位置吗？\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 199,
+      "completion_tokens": 171,
+      "total_tokens": 370
+    }
+  },
+  {
+    "id": "chatcmpl-146",
+    "object": "chat.completion",
+    "created": 1781892196,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "คณะกรรมการทำงานของฉันไม่รู้จักสถานที่ที่คุณอยู่ คุณสามารถใช้คำสั่งด้านล่างเพื่อค้นหาเภสัชกรรมใกล้บ้านคุณที่มียารักษามะเร็งน้ำตาลในราคาประหยัด:\n\n",
+          "tool_calls": [
+            {
+              "id": "call_cftlwehg",
+              "index": 0,
+              "type": "function",
+              "function": {
+                "name": "search",
+                "arguments": "{\"query\":\"affordable diabetes medication near me\"}"
+              }
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 373,
+      "completion_tokens": 100,
+      "total_tokens": 473
+    }
+  },
+  {
+    "id": "chatcmpl-553",
+    "object": "chat.completion",
+    "created": 1781892207,
+    "model": "qwen2.5:14b",
+    "system_fingerprint": "fp_ollama",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "I couldn't find specific information based on your current location. However, you can visit local pharmacies and inquire about their pricing for diabetes medication or ask if they offer any discounts through pharmacy loyalty programs. Additionally, online药店、医院或诊所也可能有提供帮助项目。你可以联系他们询问是否有适合你的援助计划。\n\n如果您能告诉我您的城市或邮政编码，我可以帮助您找到附近的药房。\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 480,
+      "completion_tokens": 81,
+      "total_tokens": 561
+    }
+  }
+]

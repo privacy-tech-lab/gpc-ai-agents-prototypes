@@ -1,0 +1,45 @@
+{
+  "query": "iPhone 17 review",
+  "follow_up_questions": null,
+  "answer": null,
+  "images": [],
+  "results": [
+    {
+      "url": "https://arstechnica.com/gadgets/2025/09/review-apples-injects-just-the-right-amount-of-pro-into-the-regular-iphone-17",
+      "title": "Apple iPhone 17 review: Sometimes boring is best - Ars Technica",
+      "content": "And it sounds like a small thing, but the screen upgrade—together with a doubling of base storage from 128GB to 256GB—makes the gap between this year’s iPhone and iPhone Pro feel narrower than it’s been in a long time. The iPhone 17 has very little that we haven’t seen in an iPhone before, compared to the redesigned Pro or the all-new Air. But it’s this year’s best upgrade, and it’s not particularly close. The iPhone Air’s single camera has the same specs and uses the same sensor as the iPhone 17’s main camera, so we’ve already written a bit about how well it does relative to the iPhone Pro and to an iPhone 15 Pro from a couple of years ago. One improvement to the iPhone 17’s camera sensor this year is that the ultrawide camera is also upgraded to a 48 MP sensor so that it can benefit from the same shrinking-and-pixel-binning strategy Apple uses for the main camera.",
+      "score": 0.8440111,
+      "raw_content": null
+    },
+    {
+      "url": "https://arstechnica.com/tag/iphone-17",
+      "title": "Tag: iphone 17 - Ars Technica",
+      "content": "Apple iPhone 17 review: Sometimes boring is best. The least exciting iPhone this year is also the best value for the money. Andrew Cunningham – 9/25/2025",
+      "score": 0.8430832,
+      "raw_content": null
+    },
+    {
+      "url": "https://arstechnica.com/gadgets/2025/10/apple-iphone-17-pro-review-come-for-the-camera-stay-for-the-battery",
+      "title": "Apple iPhone 17 Pro review: Come for the camera, stay for the battery - Ars Technica",
+      "content": "# Apple iPhone 17 Pro review: Come for the camera, stay for the battery. If your iPhone is your main or only camera, the iPhone 17 Pro is for you. Apple’s “Pro” iPhones usually look and feel a lot like the regular ones, just with some added features stacked on top. This year’s iPhone 17 Pro looks and feels like more of a departure from the basic iPhone, thanks to a new design that prioritizes function over form. It’s as though Apple anticipated the main complaints about the iPhone Air—why would I want a phone with worse battery and fewer cameras, why don’t they just make the phone *thicker* so they can fit in more *things*—and made a version of the iPhone that they could point to and say, “We already make that phone—it’s that one over there.”. But it’s no longer the aluminum-framed glass-sandwich design that the iPhone 17 still uses; it’s a reformulated “aluminum unibody” design that also protects a substantial portion of the phone’s back.",
+      "score": 0.8409005,
+      "raw_content": null
+    },
+    {
+      "url": "https://arstechnica.com/tag/iphone-air",
+      "title": "Tag: iphone air - Ars Technica",
+      "content": "Apple iPhone 17 review: Sometimes boring is best. The least exciting iPhone this year is also the best value for the money. Andrew Cunningham – 9/25/2025",
+      "score": 0.81347597,
+      "raw_content": null
+    },
+    {
+      "url": "https://arstechnica.com/reviews/page/2",
+      "title": "Category: Reviews - Ars Technica",
+      "content": "iOS 17 review: StandBy for more features. Messaging features lead a low-key refresh of the iPhone's software. Samuel Axon – 9/20/2023",
+      "score": 0.80771893,
+      "raw_content": null
+    }
+  ],
+  "response_time": 0.79,
+  "request_id": "495b15ca-7f8b-4557-84bf-6b07ddad1d3d"
+}

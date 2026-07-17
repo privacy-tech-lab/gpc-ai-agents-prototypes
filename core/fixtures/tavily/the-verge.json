@@ -1,0 +1,45 @@
+{
+  "query": "iPhone 17 review",
+  "follow_up_questions": null,
+  "answer": null,
+  "images": [],
+  "results": [
+    {
+      "url": "https://www.theverge.com/tech/779568/iphone-17-review-apple-best-features",
+      "title": "Apple iPhone 17 review: the one to get | The Verge",
+      "content": "# The iPhone 17 is the one to get this year. This year’s iPhone is more useful, has more storage, and starts at the same price. It’s not just that you missed out on classic “pro” features like a more powerful processor or a telephoto lens — it’s that you missed out on core make-your-phone better stuff. Apple has slowly whittled down that list by bringing the most important features over to its standard phone, but the two biggest exclusions have, until now, remained: the always-on display and high-refresh-rate screen. I’ve been testing the iPhone 17 for the past week, and I can say that the addition of these two features has meaningfully improved the experience of using the base iPhone. In size, resolution, and specs, the iPhone 17’s display is the same as what you’ll find on this year’s Pro. And the most notable thing about the change is that the iPhone 17 finally has an always-on display.",
+      "score": 0.87218446,
+      "raw_content": null
+    },
+    {
+      "url": "https://www.theverge.com/tech/779265/iphone-17-pro-max-review",
+      "title": "Apple iPhone 17 Pro and iPhone 17 Pro Max review | The Verge",
+      "content": "# Apple’s iPhone 17 Pro is a bold redesign but a basic upgrade. iphone-17-pro-pro-max. It’s a tricky year to review the iPhone Pro. It’s long been the go-to choice for anyone who wants an iPhone with the nicest screen, longest battery, and great cameras. This is the first time the iPhone Pro feels like it’s truly targeted at creators — people who need the longest battery life and the best cameras to record video and photos. But now I don’t have to for the former, and neither do you, because, also for the first time, the regular iPhone 17 has the same bright, smooth, always-on screen as the Pro (and Air). And it starts at $799, compared to the $1,099 starting price of the iPhone 17 Pro and $1,199 for the iPhone 17 Pro Max. The iPhone 17 is the new iPhone for most people, and the iPhone Air is the most exciting new iPhone, at least given its totally new ultra-thin design. ### iPhone 17 Pro. ### iPhone 17 Pro Max.",
+      "score": 0.8332299,
+      "raw_content": null
+    },
+    {
+      "url": "https://www.theverge.com/apple/772543/apple-iphone-17-launch-price-availability",
+      "title": "Apple’s iPhone 17 drops the Plus, but gains a bigger, faster display | The Verge",
+      "content": "# Apple’s iPhone 17 drops the Plus, but gains a bigger, faster display. This iteration has been upgraded with a larger 6.3-inch display and a 120Hz ProMotion refresh rate. Some of the biggest updates for this generation are in the cameras, including a 48-megapixel “dual fusion” camera system on the rear that combines the capabilities of multiple cameras into one, according to Apple. The iPhone 17 also introduces a new 18MP Center Stage front camera, which sports a sensor that’s twice the size of the one in the previous iPhone. All in all, the base model’s screen is a close match for the Pro model’s screen for the first time in years. That’s good news for folks who prefer the vertically oriented rear camera bar, but it now stands in stark contrast to the iPhone 17 Pro and Air models, which are sporting a horizontal camera bar that stretches across the back. ## More in: All the news from Apple’s iPhone 17 event.",
+      "score": 0.7644879,
+      "raw_content": null
+    },
+    {
+      "url": "https://www.theverge.com/tech/891164/apple-iphone-17e-review",
+      "title": "The iPhone 17E is good, but you probably shouldn't buy it - The Verge",
+      "content": "The iPhone 17E offers some significant upgrades over the 16E, but most people should just get the iPhone 17 for an extra $200.",
+      "score": 0.73207545,
+      "raw_content": null
+    },
+    {
+      "url": "https://www.theverge.com/news/775802/apple-iphone-17-deal-compare-pro",
+      "title": "The iPhone 17 is a shockingly great deal - The Verge",
+      "content": "Apple gave the iPhone 17 some major upgrades this year, and at $799, it seems like an excellent choice.",
+      "score": 0.71829855,
+      "raw_content": null
+    }
+  ],
+  "response_time": 0.85,
+  "request_id": "94fb8b66-28b2-46cb-af18-71407129d437"
+}

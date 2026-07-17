@@ -24,7 +24,7 @@ const FIXTURE_DIR = path.join(__dirname, 'fixtures', 'ollama');
 
 function resolveFixtureName(envFixture, optsFixture) {
   if (!envFixture) return null;
-  if (envFixture === '1') return optsFixture || 'tool_call';
+  if (envFixture === '1') return optsFixture || 'arch-a';
   return envFixture;
 }
 

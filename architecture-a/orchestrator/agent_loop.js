@@ -15,6 +15,7 @@ async function runAgentLoop(opts) {
   return baseRun({
     ...opts,
     emptyResponseNudge: 'Please provide a brief summary of what you found and what was stored.',
+    fixture:            opts.fixture ?? 'arch-a',
   });
 }
 
