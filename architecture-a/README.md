@@ -17,6 +17,56 @@ The GPC signal travels between layers via the MCP `_meta` envelope, which is att
 
 ---
 
+## Proposal: a dedicated opt-out field
+
+`_meta` is a generic bag, not a privacy field. MCP's `tools/call` request has no field meant for a signal like GPC: `_meta` is open-ended metadata attached to any call, for any purpose, with no spec guarantee about what it holds. The key `gpc: 1` used above is unnamespaced and easy to collide with some other extension using the same envelope. It also does not show up anywhere in a tool's schema or definition, so nothing about the protocol tells an implementer this signal exists or that it should be checked before a sensitive tool runs.
+
+`proposal-dedicated-field/` shows what enforcement looks like if MCP carried the signal in a dedicated, top-level field instead, a sibling of `name`, `arguments`, and `_meta`:
+
+```json
+{
+  "name": "save_to_profile",
+  "arguments": { "user_id": "user-42", "data": { "...": "..." } },
+  "privacySignals": { "gpc": true },
+  "_meta": {}
+}
+```
+
+It is a parallel implementation of just the enforcement-relevant slice of the pipeline (storage is the only place GPC blocking happens; `search_web` is not sensitive, so the retrieval agents are reused unchanged):
+
+- `privacy_signal_policy.js` — same interceptor pattern as `mcp-server/gpc_policy.js`, but reads `privacySignals.gpc` instead of `_meta.gpc`. Imports the sensitive-tool registry from `gpc_policy.js` rather than duplicating it.
+- `mcp_client.js` — same in-process client pattern as `orchestrator/mcp_client.js`, wired to the new interceptor.
+- `storage.js` — same fixed-order, double-guarded storage flow as `services/storage.js`, gated on `privacySignals.gpc` instead of `_meta.gpc`.
+- `orchestrator.js` — same pipeline as `orchestrator/orchestrator.js`, building a `privacySignals` object for Layer 2 instead of a `_meta` envelope.
+
+Run it:
+
+```bash
+npm run gpc:dedicated-field
+```
+
+**Why this cannot ship as-is.** The pipeline above only works because our in-process demo client skips real MCP wire validation. Put the same payload through the actual `@modelcontextprotocol/sdk` request schema and `privacySignals` disappears silently, while `_meta` survives:
+
+```js
+const { CallToolRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
+
+CallToolRequestSchema.parse({
+  method: 'tools/call',
+  params: {
+    name: 'save_to_profile',
+    arguments: { user_id: 'user-42' },
+    privacySignals: { gpc: true },
+    _meta: {},
+  },
+});
+// → parsed.params.privacySignals is undefined
+// → parsed.params._meta survives
+```
+
+`tests/schema_gap.test.js` runs this against the real installed SDK. MCP's `tools/call` params schema (`BaseRequestParamsSchema` → `CallToolRequestParamsSchema`) declares exactly three fields: `name`, `arguments`, `_meta`. Anything else placed alongside them is silently dropped, not rejected, not preserved. `_meta` is the only extension point the spec actually recognizes today. That is the gap this proposal argues MCP should close: a privacy opt-out signal is common and consequential enough across tool calls to deserve a first-class field of its own, the same way HTTP got `Sec-GPC` rather than everyone agreeing on a `X-Custom-Headers` convention.
+
+---
+
 ## Pipeline
 
 ```
@@ -59,14 +109,23 @@ architecture-a/
 │   ├── gpc_policy.js       withGpc() interceptor + sensitive-tool registry
 │   └── tool_handlers.js    Raw tool implementations (search, profile, log)
 │
+├── proposal-dedicated-field/   Proposal: signal via a dedicated field, not _meta
+│   ├── orchestrator.js         Builds privacySignals instead of _meta
+│   ├── mcp_client.js           In-process MCP client; applies withPrivacySignal()
+│   ├── storage.js              Storage gated on privacySignals.gpc
+│   └── privacy_signal_policy.js  withPrivacySignal() interceptor
+│
 ├── harness/
 │   ├── run_baseline.js     Demo run: GPC off, all tools execute
-│   ├── run_gpc.js          Demo run: GPC on, sensitive tools blocked
+│   ├── run_gpc.js          Demo run: GPC on, sensitive tools blocked (_meta)
+│   ├── run_gpc_dedicated_field.js  Demo run: GPC on, via privacySignals field
 │   ├── compare_results.js  Diff baseline vs GPC run, print report
 │   └── seed_demo.js        Seed user-42 profile and interaction log
 │
 ├── tests/
 │   ├── gpc_policy.test.js  withGpc() blocking, passthrough, signal formats
+│   ├── privacy_signal_policy.test.js  withPrivacySignal() blocking, passthrough
+│   ├── schema_gap.test.js  Proves the real MCP SDK strips privacySignals, keeps _meta
 │   ├── orchestrator.test.js  Full pipeline integration; LLM agents mocked
 │   └── agent_loop.test.js  LLM loop: tool_choice, nudge, arg parsing, errors
 │
