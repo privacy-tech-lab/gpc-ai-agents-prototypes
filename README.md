@@ -16,7 +16,7 @@ Experimental prototypes exploring how the Global Privacy Control (GPC) signal pr
 
 **What it does not prevent:** the agent from running or from returning an answer.
 
-See [architecture-a/README.md](architecture-a/README.md) for setup, demo, and test instructions.
+This scenario is implemented twice, once over MCP and once over the Agent2Agent (A2A) protocol, each comparing today's signal placement against a proposed dedicated field. See [architecture-a/README.md](architecture-a/README.md) for setup, demo, and test instructions.
 
 ---
 

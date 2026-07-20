@@ -6,8 +6,8 @@
  * a summary of what was found and stored).
  */
 
-const { runAgentLoop: baseRun } = require('../../core/agent_loop');
-const { DEFAULT_MODEL }         = require('../../core/ollama');
+const { runAgentLoop: baseRun } = require('../../../core/agent_loop');
+const { DEFAULT_MODEL }         = require('../../../core/ollama');
 
 const MODEL = DEFAULT_MODEL;
 

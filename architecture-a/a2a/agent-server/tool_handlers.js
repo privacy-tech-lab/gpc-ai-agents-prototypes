@@ -1,8 +1,8 @@
-require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '..', '.env') });
 
 const fs = require('fs');
 const path = require('path');
-const { searchPublisher } = require('../../core/tavily');
+const { searchPublisher } = require('../../../core/tavily');
 
 const OUTPUT_DIR   = path.join(__dirname, '..', 'output');
 const LOG_FILE     = path.join(OUTPUT_DIR, 'interaction_log.jsonl');
@@ -19,7 +19,7 @@ function saveProfiles(profiles) {
   fs.writeFileSync(PROFILE_FILE, JSON.stringify(profiles, null, 2));
 }
 
-// --- Tool implementations (raw, no GPC logic here) ---
+// --- Operation implementations (raw, no GPC logic here) ---
 
 async function user_profile_lookup({ user_id }) {
   const profiles = loadProfiles();

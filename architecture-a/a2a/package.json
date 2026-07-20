@@ -1,5 +1,5 @@
 {
-  "name": "architecture-a",
+  "name": "architecture-a-a2a",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -17,10 +17,9 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@a2a-js/sdk": "^1.0.0-beta.0",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3"
+    "express": "^5.2.1"
   },
   "devDependencies": {
     "jest": "^30.4.2"
