@@ -76,6 +76,20 @@ See [architecture-e/README.md](architecture-e/README.md) for setup, demo, and te
 
 ---
 
+### Category D: Persistence
+
+**Scenario:** a user talks to Aria, a memory-enabled assistant, across two sessions. Session 1 discloses a vegetarian diet and a tight budget while asking for recipes. Session 2 asks for restaurant suggestions. Afterward, the platform synthesizes a behavioral profile from the archive.
+
+**Enforcement:** a persistence gate at the three moments retention happens. D1 (session scope): the session-end boundary discards transcripts instead of archiving them, while same-session context still works for operational coherence. D2 (cross-session scope): the archive may exist for the user but returns nothing to a new session, so the restaurant answer starts from a clean slate. D3 (long-term profile scope): retained sessions stay inert transcripts instead of becoming a behavioral model. The subtypes form a hierarchy (D1 implies D2 and D3, D2 implies D3), and a bare GPC signal asserts the strictest scope.
+
+**What it prevents:** data outliving its moment: transcripts surviving the session, past sessions steering new ones, and history hardening into a durable model of the user.
+
+**What it does not prevent:** anything in Categories A, B, C, and E.
+
+See [category-d-persistence/README.md](category-d-persistence/README.md) for setup, demo, flowcharts, and test instructions.
+
+---
+
 ## Shared Infrastructure
 
 The `core/` directory holds modules used across multiple architectures:
