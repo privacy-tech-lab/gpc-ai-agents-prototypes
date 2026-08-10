@@ -35,6 +35,6 @@ These apply to issue bodies, PR descriptions, commit messages, code comments, an
 |--------------|---------------------------|
 | arch-A       | Shreya (skochar1)         |
 | arch-B       | Shreya (skochar1)         |
-| arch-C       | Ken (CapClark)            |
+| category-a-presence (formerly arch-C) | Ken (CapClark) |
 | arch-D       | Vidur (vidurgupta01)      |
 | arch-E       | Ken (CapClark)            |

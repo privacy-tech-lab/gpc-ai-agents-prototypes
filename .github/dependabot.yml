@@ -8,9 +8,9 @@ updates:
     directories:
       - /architecture-a
       - /architecture-b
-      - /architecture-c
       - /architecture-d
       - /architecture-e
+      - /category-a-presence
     schedule:
       interval: weekly
     open-pull-requests-limit: 10

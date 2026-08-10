@@ -1,0 +1,23 @@
+{
+  "name": "category-a-presence",
+  "version": "1.0.0",
+  "description": "Category A (Presence): opting out of AI being in your environment at all. A1 integration and A2 activation gates.",
+  "type": "commonjs",
+  "license": "MIT",
+  "scripts": {
+    "v1": "node run_v1.js",
+    "v2:silent": "node run_v2.js --mode=silent",
+    "v2:approve": "node run_v2.js --mode=approve",
+    "v2:decline": "node run_v2.js --mode=decline",
+    "v2:ambient": "node run_v2.js --mode=approve --ambient",
+    "v2:gpc": "node run_v2.js --mode=approve --gpc",
+    "demo": "node run_v1.js && node run_v2.js --mode=silent && node run_v2.js --mode=approve && node run_v2.js --mode=decline && node run_v2.js --mode=approve --ambient && node run_v2.js --mode=approve --gpc",
+    "agent": "node run_agent.js --mode=approve",
+    "agent:ambient": "node run_agent.js --mode=approve --ambient",
+    "agent:gpc": "node run_agent.js --mode=approve --gpc",
+    "test": "jest tests/ --runInBand"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
+  }
+}

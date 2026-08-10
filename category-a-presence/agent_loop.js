@@ -1,12 +1,14 @@
 /**
- * Architecture C turn loop.
+ * Category A turn loop.
  *
  * Thin wrapper around the shared core/agent_loop.js. Enforcement (the
- * consent check) lives in the caller's executeToolFn, not here.
+ * presence gate) lives in the caller's executeToolFn, not here.
  */
 
+'use strict';
+
 const { runAgentLoop: baseRun } = require('../core/agent_loop');
-const { DEFAULT_MODEL }         = require('../core/ollama');
+const { DEFAULT_MODEL } = require('../core/ollama');
 
 const MODEL = DEFAULT_MODEL;
 

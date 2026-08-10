@@ -4,6 +4,24 @@ Experimental prototypes exploring how the Global Privacy Control (GPC) signal pr
 
 ---
 
+## Opt-out category prototypes
+
+The repository is moving to prototypes organized by the opt-out typology categories (A: Presence, B: Collection, C: Use, D: Persistence, E: Delegation). Each category prototype targets one category and its subtypes exactly. The mechanism-labeled architectures below are being ported into this structure one PR at a time.
+
+### Category A: Presence
+
+**Scenario:** a user installs NoteFlow v1.0, a note-taking app with no AI features. The v2.0 update ships an on-demand AI summarizer and a passive ambient copilot.
+
+**Enforcement:** a presence gate checks every feature call. A1 (integration): AI features added by an update are off by default and need an explicit opt-in; under GPC they are auto-declined without prompting. A2 (activation): passive AI stays inactive unless the user explicitly enabled ambient mode, while user-initiated on-demand calls need no separate check. The two subtypes are independently assertable.
+
+**What it prevents:** AI entering the app silently through an update, and AI running passively without the user's active intent.
+
+**What it does not prevent:** anything downstream of presence (collection, use, retention, delegation). Those belong to Categories B through E.
+
+See [category-a-presence/README.md](category-a-presence/README.md) for setup, demo, flowcharts, and test instructions. This prototype replaces the former Architecture C.
+
+---
+
 ## Architectures
 
 ### Architecture A: Tool-Level Blocking via MCP Interceptor
@@ -31,20 +49,6 @@ See [architecture-a/README.md](architecture-a/README.md) for setup, demo, and te
 **What it does not prevent:** the primary task. The retrieval tool and the answer are never gated.
 
 See [architecture-b/README.md](architecture-b/README.md) for setup, demo, and test instructions.
-
----
-
-### Architecture C: Consent-Scoped Tool Registry
-
-**Scenario:** a user consents to file access and web search when signing up for an AI productivity platform. A later platform update silently adds an email sender and a behavior tracker to the MCP server.
-
-**Enforcement:** before the agent starts, the tool registry filters the available catalog based on the user's consent state and GPC signal. Tools the user has not consented to are removed from the catalog. The agent never sees them and cannot call them. With GPC active, expansion tools added after signup are quarantined even if the user previously approved the platform.
-
-**What it prevents:** the agent from accessing capabilities the user did not consent to, including tools added after initial consent.
-
-**What it does not prevent:** tools that were in scope at the time of consent.
-
-See [architecture-c/README.md](architecture-c/README.md) for setup, demo, and test instructions.
 
 ---
 

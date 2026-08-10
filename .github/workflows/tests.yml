@@ -20,9 +20,9 @@ jobs:
         # (see issue #38). Add it back here once its tests pass.
         architecture:
           - architecture-a
-          - architecture-c
           - architecture-d
           - architecture-e
+          - category-a-presence
     defaults:
       run:
         working-directory: ${{ matrix.architecture }}

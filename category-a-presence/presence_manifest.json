@@ -1,0 +1,7 @@
+{
+  "manifest_version": "v1.0",
+  "enabled_ai_features": [],
+  "declined_ai_features": [],
+  "ambient_enabled": false,
+  "decided_at": {}
+}
