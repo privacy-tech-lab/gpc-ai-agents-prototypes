@@ -20,17 +20,17 @@ See [architecture-a/README.md](architecture-a/README.md) for setup, demo, and te
 
 ---
 
-### Architecture B: Secondary Pipeline Gating After the Agent
+### Category C: Use
 
-**Scenario:** a patient asks a medical assistant what their blood pressure reading means. The same interaction also feeds an analytics log, a model-training dataset, and a pharma ad-targeting platform.
+**Scenario:** a patient asks HealthAssist what a 158/96 blood pressure reading means. Around the one answer, the platform attempts an insurance risk assessment, a personalization update, analytics, pharma ad targeting, and a training append, and the task's sub-agent chain runs two hops (a pharmacy price agent that needs only the medication name, and a wellness marketing vendor that wants the full health context).
 
-**Enforcement:** the agent runs to completion and the patient always gets an answer. After the agent finishes, the orchestrator fans out to secondary pipelines. A `withPurposeCheck` wrapper gates each pipeline against the GPC signal and the declared purpose of that pipeline. Full opt-out blocks all three; partial opt-out (via `gpc_scope`) lets the user block specific purposes while allowing others.
+**Enforcement:** a use gate on every downstream attempt. C1 blocks same-platform reuse beyond the task, C1a blocks personalization, C2 blocks analytics, C2a blocks targeting, C3 blocks the training append, and C4 minimizes the necessary chain hop to its required fields while refusing the unnecessary one. Bare GPC asserts all six; a scope list asserts any subset, with c1 implying c1a and c2 implying c2a. The answer is never gated.
 
-**What it prevents:** secondary uses of the agent's output (analytics, training, ad targeting).
+**What it prevents:** collected data leaving its task context, on the platform or along the agent chain.
 
-**What it does not prevent:** the primary task. The retrieval tool and the answer are never gated.
+**What it does not prevent:** the task itself, or anything in Categories A, B, D, and E.
 
-See [architecture-b/README.md](architecture-b/README.md) for setup, demo, and test instructions.
+See [category-c-use/README.md](category-c-use/README.md) for setup, demo, flowcharts, and test instructions. This prototype replaces the former Architectures B and D.
 
 ---
 
@@ -45,20 +45,6 @@ See [architecture-b/README.md](architecture-b/README.md) for setup, demo, and te
 **What it does not prevent:** tools that were in scope at the time of consent.
 
 See [architecture-c/README.md](architecture-c/README.md) for setup, demo, and test instructions.
-
----
-
-### Architecture D: Signal Propagation and the Provider Visibility Gap
-
-**Scenario:** a user asks an AI assistant to research the iPhone 17 across eight tech publishers simultaneously.
-
-**Enforcement:** the GPC signal travels in a W3C baggage header from the orchestrator through a provider middleware layer to each publisher. Sites with strict enforcement stop logging the visit. Sites with advisory enforcement stop writing to the visitor profile. Sites that do not support GPC track normally.
-
-**What it prevents:** tracking at individual publisher sites that honor the signal.
-
-**What it does not prevent:** the provider layer from observing every query. The provider sits between the user's agent and the publishers and records each fanout regardless of the GPC bit. This is the architecture's finding: the AI provider is a structural new privacy boundary that GPC as currently specified does not reach. The signal propagates downstream to sites, but the platform operating the agent sees everything.
-
-See [architecture-d/README.md](architecture-d/README.md) for setup, demo, and test instructions.
 
 ---
 
@@ -81,9 +67,9 @@ See [architecture-e/README.md](architecture-e/README.md) for setup, demo, and te
 The `core/` directory holds modules used across multiple architectures:
 
 - `ollama.js`: Ollama chat-completion caller with a fixture gate for offline testing (used by all architectures)
-- `tavily.js`: Tavily search caller with timeout and fixture support (used by arch-A and arch-D)
-- `agent_loop.js`: shared LLM turn loop with `requiredTools` enforcement (used by arch-A, arch-C, and arch-E as thin wrappers)
-- `gpc.js`: shared `buildPrivacyContext` helper that reads the GPC signal from an Express request (used by arch-B and arch-D)
+- `tavily.js`: Tavily search caller with timeout and fixture support (used by arch-A)
+- `agent_loop.js`: shared LLM turn loop with `requiredTools` enforcement (used as a thin wrapper by arch-A, arch-C, arch-E, and the category prototypes)
+- `gpc.js`: shared `buildPrivacyContext` helper that reads the GPC signal from an Express request
 
 ---
 

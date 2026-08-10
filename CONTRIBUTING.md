@@ -34,7 +34,6 @@ These apply to issue bodies, PR descriptions, commit messages, code comments, an
 | Architecture | Author / primary reviewer |
 |--------------|---------------------------|
 | arch-A       | Shreya (skochar1)         |
-| arch-B       | Shreya (skochar1)         |
 | arch-C       | Ken (CapClark)            |
-| arch-D       | Vidur (vidurgupta01)      |
+| category-c-use (formerly arch-B and arch-D) | Ken (CapClark), review: Shreya (skochar1), Vidur (vidurgupta01) |
 | arch-E       | Ken (CapClark)            |

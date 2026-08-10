@@ -7,10 +7,9 @@ updates:
   - package-ecosystem: npm
     directories:
       - /architecture-a
-      - /architecture-b
       - /architecture-c
-      - /architecture-d
       - /architecture-e
+      - /category-c-use
     schedule:
       interval: weekly
     open-pull-requests-limit: 10

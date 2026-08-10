@@ -1,0 +1,25 @@
+{
+  "name": "category-c-use",
+  "version": "1.0.0",
+  "description": "Category C (Use): opting out of what collected data is used for. C1 primary use, C1a personalization, C2 secondary use, C2a targeting, C3 repurposing, and C4 sharing gates.",
+  "type": "commonjs",
+  "license": "MIT",
+  "scripts": {
+    "baseline": "node run_baseline.js",
+    "optout:full": "node run_optout.js --gpc",
+    "optout:c1": "node run_optout.js --scope=c1",
+    "optout:c1a": "node run_optout.js --scope=c1a",
+    "optout:c2": "node run_optout.js --scope=c2",
+    "optout:c2a": "node run_optout.js --scope=c2a",
+    "optout:c3": "node run_optout.js --scope=c3",
+    "optout:c4": "node run_optout.js --scope=c4",
+    "demo": "node run_baseline.js && node run_optout.js --gpc && node run_optout.js --scope=c1 && node run_optout.js --scope=c2a && node run_optout.js --scope=c3 && node run_optout.js --scope=c4",
+    "agent": "node run_agent.js",
+    "agent:gpc": "node run_agent.js --gpc",
+    "agent:c4": "node run_agent.js --scope=c4",
+    "test": "jest tests/ --runInBand"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
+  }
+}
