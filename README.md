@@ -76,6 +76,24 @@ See [architecture-e/README.md](architecture-e/README.md) for setup, demo, and te
 
 ---
 
+## Category prototypes
+
+The architectures above are each organized around one enforcement mechanism. These prototypes are organized the other way, by the opt-out typology: one prototype per category, covering that category's subtypes exactly. They complement the architectures rather than replacing them.
+
+### Category B: Collection
+
+**Scenario:** a user asks an AI writing assistant to polish one email to their manager about a raise. While composing, they deleted a sentence about treatment costs before submitting, paused 42 seconds over the salary line, and rewrote the opening three times.
+
+**Enforcement:** a collection gate at three boundaries. B1 (input): the submission completes the task and is then discarded instead of logged. B2 (behavioral): passively generated telemetry is suppressed. B3 (derived): the inference firewall blocks profile writes, with each attribute labeled by whether it came from submitted input or from behavior. A bare GPC signal asserts all three; a scope list asserts any subset.
+
+**What it prevents:** the platform retaining what the user submitted, recording what they unknowingly produced, and writing inferences derived from either. Two of the four inferred attributes come from a sentence the user chose not to send.
+
+**What it does not prevent:** the task. The polished email is returned identically in every mode.
+
+See [category-b-collection/README.md](category-b-collection/README.md) for setup, demo, flowchart, and test instructions.
+
+---
+
 ## Shared Infrastructure
 
 The `core/` directory holds modules used across multiple architectures:

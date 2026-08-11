@@ -23,6 +23,7 @@ jobs:
           - architecture-c
           - architecture-d
           - architecture-e
+          - category-b-collection
     defaults:
       run:
         working-directory: ${{ matrix.architecture }}
