@@ -14,6 +14,7 @@
  */
 
 const orchestrator = require('./orchestrator');
+const { closeClient } = require('./mcp_client');
 
 async function main() {
   console.log('=== Architecture E — Inference Firewall | B3: ON ===');
@@ -39,6 +40,8 @@ async function main() {
   console.log(`Inference attempts blocked: ${output.inference_blocked_count}`);
   console.log('\n[✓] With B3 on, zero attributes were written to the profile.');
   console.log('    All 8 queries were answered. Inference was suppressed, not the answer.');
+
+  await closeClient();
 }
 
-main().catch(console.error);
+main().catch(async (err) => { console.error(err); await closeClient(); process.exit(1); });

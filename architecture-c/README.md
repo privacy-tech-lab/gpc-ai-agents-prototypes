@@ -25,6 +25,29 @@ The gate can be driven two ways. The **deterministic core** (`orchestrator.js`) 
 
 Architecture C implements **Category A (Presence)** from the opt-out typology. `run_v2.js --mode=silent` vs `--mode=approve` shows **A1 (integration opt-out)**: a new tool becomes callable the instant it ships under silent mode, versus only `after_consent` under the gated modes. `behavior_tracker` — ambient analytics fired by the platform, not the agent — is **A2 (activation opt-out)**: holding or GPC-declining it is a control over unsolicited background AI specifically.
 
+```mermaid
+flowchart TD
+    T["Tool call attempt\n(file_read / web_search / email_sender / behavior_tracker)"] --> WC["consent_gate.js\nwithConsentCheck()"]
+    WC --> M{"mode = silent?"}
+    M -- "yes" --> EX["execute via real MCP\n(no enforcement)"]
+    M -- "no" --> DEC{"category already\ndeclined?"}
+    DEC -- "yes" --> BLK["blocked: previously_declined"]
+    DEC -- "no" --> GPC{"GPC on and\nnon-primary category?"}
+    GPC -- "yes" --> AUTO["auto-decline, no prompt\nreason: gpc_auto_decline"]
+    GPC -- "no" --> FRESH{"requires fresh\nconsent?"}
+    FRESH -- "yes" --> Q["quarantine: emit consent_request\nevent_bus.js / consent_prompt.js"]
+    Q -- "approved" --> EX
+    Q -- "declined" --> QB["quarantined: user_declined"]
+    FRESH -- "no (already approved)" --> EX
+    EX -- "MCP tools/call" --> SRV["mcp-server/server.js\n(real MCP, no policy)"]
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    class M,AUTO category
+    class DEC,Q,QB category
+    A1["Category A1 — Integration opt-out:\nnew capability off until consent resolves"]:::category -.-> M
+    A2["Category A2 — Activation opt-out:\nambient behavior_tracker held/declined"]:::category -.-> AUTO
+```
+
 ---
 
 ## Protocol compliance

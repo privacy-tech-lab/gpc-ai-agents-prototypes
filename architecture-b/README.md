@@ -23,6 +23,35 @@ Architecture B adds purpose-level enforcement over Architecture A's tool-level b
 
 Architecture B implements **Category C (Use)** from the opt-out typology. `get_medical_records` is never gated, which is **C1 (primary use restriction)** in practice: data stays bound to the task it was collected for. Of the three secondary pipelines, `analytics` is **C2 (secondary use restriction)**, `ad_targeting` is **C2a (targeting)**, and `model_training` is **C3 (data repurposing restriction)** — each independently opt-outable via `gpc_scope`.
 
+```mermaid
+flowchart TD
+    U["Patient request\nSec-GPC / body.gpc / gpc_scope"] --> O["orchestrator.js\nbuildPrivacyContext()"]
+    O --> MA["Medical Agent (LLM)\ntool: get_medical_records"]
+    MA -- "real MCP tools/call" --> MR["get_medical_records\nnever gated"]
+    MR -.-> C1["Category C1 — Primary use:\nalways proceeds"]
+    MR --> ANS["Answer delivered to patient\n(always, regardless of GPC)"]
+    ANS --> FO["fanOutSecondaryPurposes()"]
+
+    FO --> AN{"withPurposeCheck\npurpose = analytics"}
+    FO --> AD{"evaluatePurpose @ ad platform\npurpose = ad_targeting"}
+    FO --> TR{"withPurposeCheck\npurpose = model_training"}
+
+    AN -- "in gpc_scope?" --> ANB["blocked"]
+    AN -- "not in scope" --> ANO["ok: analytics_log.json"]
+    AD -- "in gpc_scope?" --> ADB["blocked"]
+    AD -- "not in scope" --> ADO["ok: ad_vector_store.json"]
+    TR -- "in gpc_scope?" --> TRB["blocked"]
+    TR -- "not in scope" --> TRO["ok: training_dataset.jsonl"]
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    class AN,ANB,ANO category
+    class AD,ADB,ADO category
+    class TR,TRB,TRO category
+    C2["Category C2 — Secondary use"]:::category -.-> AN
+    C2a["Category C2a — Targeting"]:::category -.-> AD
+    C3["Category C3 — Repurposing"]:::category -.-> TR
+```
+
 ---
 
 ## Protocol compliance

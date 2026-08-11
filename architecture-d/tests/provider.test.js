@@ -1,11 +1,16 @@
 'use strict';
 
 const { createProvider } = require('../provider/provider');
+const { closeClient } = require('../provider/mcp_client');
 
 describe('provider middleware', () => {
   const original_key = process.env.TAVILY_API_KEY;
   beforeAll(() => { delete process.env.TAVILY_API_KEY; });
-  afterAll(()  => { if (original_key !== undefined) process.env.TAVILY_API_KEY = original_key; });
+  afterAll(async () => {
+    if (original_key !== undefined) process.env.TAVILY_API_KEY = original_key;
+    // fanout() spawns a real MCP child process (mcp-server/server.js); close it.
+    await closeClient();
+  });
 
   test('logs every fanout call', async () => {
     const p = createProvider();
@@ -138,12 +143,15 @@ describe('provider middleware', () => {
   test('a throwing site is isolated as an error result; other sites complete', async () => {
     let r;
     await jest.isolateModulesAsync(async () => {
-      jest.doMock('../services/site_handlers', () => ({
-        querySite: async (siteId) => {
+      // provider.js now reaches sites through mcp_client.js (a real MCP
+      // client); mock that module instead of services/site_handlers to
+      // simulate one call failing at the transport layer.
+      jest.doMock('../provider/mcp_client', () => ({
+        callTool: async (siteId) => {
           if (siteId === 'BOOM') throw new Error('site crashed');
           return { status: 'ok', site: siteId, tracking_decision: { logged: false, profile_write: false, reason: 'mocked' } };
         },
-        decideTracking: () => ({ logged: false, profile_write: false, reason: 'mocked' }),
+        closeClient: async () => {},
       }));
       const { createProvider: cp2 } = require('../provider/provider');
       const p = cp2();

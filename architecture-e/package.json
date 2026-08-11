@@ -12,6 +12,9 @@
     "agent:b3": "node run_agent.js --b3",
     "test": "jest tests/ --runInBand"
   },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  },
   "devDependencies": {
     "jest": "^30.4.2"
   }

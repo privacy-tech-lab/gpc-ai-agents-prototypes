@@ -20,7 +20,7 @@
  * the provider can derive across calls and across users.
  */
 
-const { querySite } = require('../services/site_handlers');
+const mcpClient = require('./mcp_client');
 const { classifyTopic } = require('./topic_classifier');
 
 /**
@@ -85,7 +85,7 @@ function createProvider(opts = {}) {
     // Each site call is isolated: a throwing publisher is reported as
     // an error result rather than crashing the whole fanout.
     const site_results = await Promise.all(
-      site_ids.map((id) => querySite(id, query, observation.meta_forwarded).catch((err) => ({
+      site_ids.map((id) => mcpClient.callTool(id, query, observation.meta_forwarded).catch((err) => ({
         status: 'error',
         site:   id,
         reason: 'site_handler_threw',

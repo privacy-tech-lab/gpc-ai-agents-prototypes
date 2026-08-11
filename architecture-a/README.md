@@ -21,6 +21,27 @@ The GPC signal travels between layers via the MCP `_meta` envelope, which is att
 
 Architecture A implements **Category D (Persistence)** from the opt-out typology, specifically **D1 (session scope)**. Blocking `save_to_profile`, `log_interaction`, and `user_profile_lookup` means nothing survives past the immediate interaction and no prior storage is read back, while the same-session task (search, synthesis, the answer itself) runs unaffected.
 
+```mermaid
+flowchart TD
+    U["User request\nSec-GPC: 1 header"] --> O["orchestrator.js\nreads Sec-GPC, builds _meta.gpc"]
+    O -- "A2A Message.metadata.gpc" --> SA["Search Agent\n(tool: search_web)"]
+    SA -- "MCP _meta.gpc" --> TS["search_web\n(not sensitive)"]
+    TS --> SA
+    SA -- "A2A" --> O
+    O -- "A2A Message.metadata.gpc + rawResults" --> SY["Synthesis Agent\n(no tools)"]
+    SY -- "A2A" --> O
+    O --> ST["storage.js"]
+    ST -- "MCP _meta.gpc" --> G{"gpc = 1?"}
+    G -- "no" --> W["save_to_profile\nlog_interaction\nuser_profile_lookup\nstatus: ok"]
+    G -- "yes" --> B["withGpc() interceptor blocks\nstatus: blocked"]
+    W --> R["Answer returned to user\n(identical either way)"]
+    B --> R
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    class B category
+    D1["Category D — Persistence, D1 (session scope):\nnothing written survives past this interaction"]:::category -.-> B
+```
+
 ---
 
 ## Protocol compliance

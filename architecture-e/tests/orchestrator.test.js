@@ -17,6 +17,12 @@
  */
 
 const orchestrator = require('../orchestrator');
+const { closeClient } = require('../mcp_client');
+
+// orchestrator.run() classifies over a real MCP connection; close it after all tests.
+afterAll(async () => {
+  await closeClient();
+});
 
 // ─── Baseline (B3 off) ───────────────────────────────────────────────────────
 
