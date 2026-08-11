@@ -5,7 +5,7 @@
 
 const fs   = require('fs');
 const path = require('path');
-const { handleRequest } = require('../orchestrator/orchestrator.js');
+const { handleRequest, shutdown } = require('../orchestrator/orchestrator.js');
 
 const OUTPUT = path.join(__dirname, '..', 'output', 'baseline_result.json');
 
@@ -33,6 +33,10 @@ async function main() {
   console.log('  blocked:', result.storageResult.blocked.join(', ') || '(none)');
   console.log('\n[Answer]\n', result.answer);
   console.log('\nOutput written to:', OUTPUT);
+
+  // handleRequest() started real A2A agent servers and an MCP child process;
+  // close them so this script exits instead of hanging open.
+  await shutdown();
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch(async (err) => { console.error(err); await shutdown(); process.exit(1); });
