@@ -76,6 +76,24 @@ See [architecture-e/README.md](architecture-e/README.md) for setup, demo, and te
 
 ---
 
+## Category prototypes
+
+The architectures above are each organized around one enforcement mechanism. These prototypes are organized the other way, by the opt-out typology: one prototype per category, covering that category's subtypes exactly. They complement the architectures rather than replacing them.
+
+### Category E: Delegation
+
+**Scenario:** a user asks a travel agent to book a weekend trip. The job needs flight searches, a hotel hold, a non-refundable booking charged to a card, and a passport transfer to the airline. The platform also wants to enable fare tracking and a newsletter signup around the session.
+
+**Enforcement:** a delegation gate resolves each action's effective tier. The user's explicit assignments win: searches and holds run autonomously, while the booking and the passport transfer must be surfaced first, overriding the vendor's proposal to run everything alone. Where the user is silent the vendor default applies, unless GPC voids it. Anything nobody tiered falls to the most restrictive treatment, and a surfaced decision with no user available is declined rather than assumed. Execution reaches the MCP server only after the gate has decided.
+
+**What it prevents:** the agent resolving privacy-affecting decisions it was never given standing to resolve, including the two actions a real system would quietly accumulate authority over by never asking at all.
+
+**What it does not prevent:** the task. Everything the user granted still runs.
+
+See [category-e-delegation/README.md](category-e-delegation/README.md) for setup, demo, flowchart, and test instructions.
+
+---
+
 ## Shared Infrastructure
 
 The `core/` directory holds modules used across multiple architectures:

@@ -38,3 +38,4 @@ These apply to issue bodies, PR descriptions, commit messages, code comments, an
 | arch-C       | Ken (CapClark)            |
 | arch-D       | Vidur (vidurgupta01)      |
 | arch-E       | Ken (CapClark)            |
+| category-e-delegation | Ken (CapClark)   |

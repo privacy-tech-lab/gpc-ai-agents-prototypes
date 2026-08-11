@@ -11,6 +11,7 @@ updates:
       - /architecture-c
       - /architecture-d
       - /architecture-e
+      - /category-e-delegation
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
