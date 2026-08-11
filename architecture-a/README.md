@@ -9,61 +9,47 @@ The assistant searches the web, synthesises an itinerary, and (in a non-GPC worl
 | Layer | Mechanism | Enforcement point |
 |---|---|---|
 | **1. Transport** | `Sec-GPC: 1` HTTP header | The orchestrator reads the header once and propagates the signal to every downstream call |
-| **2. Data layer** | `withGpc()` policy interceptor | Wraps all tool handlers in the MCP client. A sensitive-tool registry (`gpc_policy.js`) defines which tools touch personal data: `user_profile_lookup`, `save_to_profile`, and `log_interaction`. If `gpc=1` is present in `_meta` and the tool is in the registry, the interceptor returns `status: blocked` without executing. `search_web` is not in the registry and always executes. |
+| **2. Data layer** | `withGpc()` policy interceptor | Wraps all tool handlers behind the MCP server. A sensitive-tool registry (`gpc_policy.js`) defines which tools touch personal data: `user_profile_lookup`, `save_to_profile`, and `log_interaction`. If `gpc=1` is present in `_meta` and the tool is in the registry, the interceptor returns `status: blocked` without executing. `search_web` is not in the registry and always executes. |
 
-The GPC signal travels between layers via the MCP `_meta` envelope, which is attached to every tool call.
+The GPC signal travels between layers via the MCP `_meta` envelope, which is attached to every tool call, and via the A2A `Message.metadata` envelope, which is attached to every inter-agent call.
 
 **Result:** the user gets an equally good itinerary whether GPC is on or off. With GPC on, nothing is stored: no profile update, no interaction log entry.
 
 ---
 
-## Proposal: a dedicated opt-out field
+## GPC categories depicted
 
-`_meta` is a generic bag, not a privacy field. MCP's `tools/call` request has no field meant for a signal like GPC: `_meta` is open-ended metadata attached to any call, for any purpose, with no spec guarantee about what it holds. The key `gpc: 1` used above is unnamespaced and easy to collide with some other extension using the same envelope. It also does not show up anywhere in a tool's schema or definition, so nothing about the protocol tells an implementer this signal exists or that it should be checked before a sensitive tool runs.
+Architecture A implements **Category D (Persistence)** from the opt-out typology, specifically **D1 (session scope)**. Blocking `save_to_profile`, `log_interaction`, and `user_profile_lookup` means nothing survives past the immediate interaction and no prior storage is read back, while the same-session task (search, synthesis, the answer itself) runs unaffected.
 
-`proposal-dedicated-field/` shows what enforcement looks like if MCP carried the signal in a dedicated, top-level field instead, a sibling of `name`, `arguments`, and `_meta`:
+```mermaid
+flowchart TD
+    U["User request\nSec-GPC: 1 header"] --> O["orchestrator.js\nreads Sec-GPC, builds _meta.gpc"]
+    O -- "A2A Message.metadata.gpc" --> SA["Search Agent\n(tool: search_web)"]
+    SA -- "MCP _meta.gpc" --> TS["search_web\n(not sensitive)"]
+    TS --> SA
+    SA -- "A2A" --> O
+    O -- "A2A Message.metadata.gpc + rawResults" --> SY["Synthesis Agent\n(no tools)"]
+    SY -- "A2A" --> O
+    O --> ST["storage.js"]
+    ST -- "MCP _meta.gpc" --> G{"gpc = 1?"}
+    G -- "no" --> W["save_to_profile\nlog_interaction\nuser_profile_lookup\nstatus: ok"]
+    G -- "yes" --> B["withGpc() interceptor blocks\nstatus: blocked"]
+    W --> R["Answer returned to user\n(identical either way)"]
+    B --> R
 
-```json
-{
-  "name": "save_to_profile",
-  "arguments": { "user_id": "user-42", "data": { "...": "..." } },
-  "privacySignals": { "gpc": true },
-  "_meta": {}
-}
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    class B category
+    D1["Category D — Persistence, D1 (session scope):\nnothing written survives past this interaction"]:::category -.-> B
 ```
 
-It is a parallel implementation of just the enforcement-relevant slice of the pipeline (storage is the only place GPC blocking happens; `search_web` is not sensitive, so the retrieval agents are reused unchanged):
+---
 
-- `privacy_signal_policy.js` — same interceptor pattern as `mcp-server/gpc_policy.js`, but reads `privacySignals.gpc` instead of `_meta.gpc`. Imports the sensitive-tool registry from `gpc_policy.js` rather than duplicating it.
-- `mcp_client.js` — same in-process client pattern as `orchestrator/mcp_client.js`, wired to the new interceptor.
-- `storage.js` — same fixed-order, double-guarded storage flow as `services/storage.js`, gated on `privacySignals.gpc` instead of `_meta.gpc`.
-- `orchestrator.js` — same pipeline as `orchestrator/orchestrator.js`, building a `privacySignals` object for Layer 2 instead of a `_meta` envelope.
+## Protocol compliance
 
-Run it:
+Both enforcement points sit on real, spec-compliant transports rather than in-process shortcuts:
 
-```bash
-npm run gpc:dedicated-field
-```
-
-**Why this cannot ship as-is.** The pipeline above only works because our in-process demo client skips real MCP wire validation. Put the same payload through the actual `@modelcontextprotocol/sdk` request schema and `privacySignals` disappears silently, while `_meta` survives:
-
-```js
-const { CallToolRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
-
-CallToolRequestSchema.parse({
-  method: 'tools/call',
-  params: {
-    name: 'save_to_profile',
-    arguments: { user_id: 'user-42' },
-    privacySignals: { gpc: true },
-    _meta: {},
-  },
-});
-// → parsed.params.privacySignals is undefined
-// → parsed.params._meta survives
-```
-
-`tests/schema_gap.test.js` runs this against the real installed SDK. MCP's `tools/call` params schema (`BaseRequestParamsSchema` → `CallToolRequestParamsSchema`) declares exactly three fields: `name`, `arguments`, `_meta`. Anything else placed alongside them is silently dropped, not rejected, not preserved. `_meta` is the only extension point the spec actually recognizes today. That is the gap this proposal argues MCP should close: a privacy opt-out signal is common and consequential enough across tool calls to deserve a first-class field of its own, the same way HTTP got `Sec-GPC` rather than everyone agreeing on a `X-Custom-Headers` convention.
+- **MCP.** `mcp-server/server.js` is a real `@modelcontextprotocol/sdk` `Server` over stdio. `orchestrator/mcp_client.js` is a real `Client` that spawns it as a child process and calls `tools/call` over the actual wire protocol; the GPC signal rides in `params._meta.gpc`, same as before.
+- **A2A.** The search and synthesis agents are each served behind a real `@a2a-js/sdk` `DefaultRequestHandler`, wired into Express via the SDK's own JSON-RPC handler and agent-card handler. `orchestrator/a2a_client.js` reaches them with the SDK's `ClientFactory`. The GPC signal rides in `Message.metadata.gpc` — A2A's equivalent of MCP's `_meta`.
 
 ---
 
@@ -71,61 +57,60 @@ CallToolRequestSchema.parse({
 
 ```
 HTTP Request (Sec-GPC: 1)
-  → orchestrator.js         (reads Sec-GPC, builds _meta envelope)
-      → search_agent.js     (LLM loop — decides how many searches to run)
-      → synthesis_agent.js  (LLM — reasons over raw results, calls no tools)
-      → storage.js          (plain code — enforces GPC before writing)
+  → orchestrator.js               (reads Sec-GPC, builds _meta / A2A metadata envelope)
+      → a2a_client.js  ⇄ JSON-RPC ⇄  search_agent_server.js     (LLM loop — decides how many searches to run)
+      → a2a_client.js  ⇄ JSON-RPC ⇄  synthesis_agent_server.js  (LLM — reasons over raw results, calls no tools)
+      → storage.js                (plain code — enforces GPC before writing)
+          → mcp_client.js  ⇄ stdio ⇄  mcp-server/server.js       (tools/call — GPC-gated at the MCP layer)
   → HTTP Response
 ```
 
+Each agent server and the MCP server start lazily on first request and are memoized for the life of the process; `orchestrator.shutdown()` closes them (used by tests and, if a caller wants a clean exit, by harness scripts).
+
 ### Agent roles
 
-**Search agent** (`agents/search_agent.js`): An LLM loop with one tool (`search_web`). The model decides how many searches to make and when it has enough raw material. The GPC `_meta` envelope is forwarded on every call, but `search_web` is not sensitive so the `withGpc()` interceptor always passes it through. Retrieval is never blocked, only storage is.
+**Search agent** (`agents/search_agent.js`, served over A2A by `agents/search_agent_server.js`): An LLM loop with one tool (`search_web`). The model decides how many searches to make and when it has enough raw material. The GPC signal is forwarded on the A2A message (as `Message.metadata.gpc`) and again on every MCP tool call (as `_meta.gpc`), but `search_web` is not sensitive so the `withGpc()` interceptor always passes it through. Retrieval is never blocked, only storage is.
 
-**Synthesis agent** (`agents/synthesis_agent.js`): Receives raw search results from the search agent and synthesises them into a structured itinerary. It calls no tools, so there is nothing for GPC to block here.
+**Synthesis agent** (`agents/synthesis_agent.js`, served over A2A by `agents/synthesis_agent_server.js`): Receives raw search results from the search agent (forwarded by the orchestrator as A2A message metadata) and synthesises them into a structured itinerary. It calls no tools, so there is nothing for GPC to block here.
 
 ### Supporting services
 
-**Storage** (`services/storage.js`): Calls three storage operations in fixed order. MCP-sensitive writes are double-guarded: explicit code check plus `withGpc()` interceptor at the MCP layer.
+**Storage** (`services/storage.js`): Calls three storage operations in fixed order over the real MCP client. MCP-sensitive writes are double-guarded: explicit code check plus `withGpc()` interceptor at the MCP layer.
 
 ## File map
 
 ```
 architecture-a/
 ├── orchestrator/
-│   ├── orchestrator.js     Entry point: reads Sec-GPC, builds _meta, dispatches agents
+│   ├── orchestrator.js     Entry point: reads Sec-GPC, builds _meta, starts/calls agent servers
 │   ├── agent_loop.js       Shared LLM turn loop (tool_choice, nudge, required-tool tracking)
-│   └── mcp_client.js       In-process MCP client; applies withGpc() at each call
+│   ├── mcp_client.js       Real MCP client (stdio) — spawns mcp-server/server.js, applies _meta.gpc
+│   └── a2a_client.js       Real A2A client (JSON-RPC) — sends Message.metadata.gpc to agent servers
 │
 ├── agents/
-│   ├── search_agent.js     LLM search agent (tool: search_web)
-│   └── synthesis_agent.js  LLM synthesis agent (no tools)
+│   ├── search_agent.js              LLM search agent (tool: search_web)
+│   ├── search_agent_executor.js     A2A AgentExecutor wrapping search_agent.js
+│   ├── search_agent_server.js       A2A server (Express + DefaultRequestHandler) for the search agent
+│   ├── synthesis_agent.js           LLM synthesis agent (no tools)
+│   ├── synthesis_agent_executor.js  A2A AgentExecutor wrapping synthesis_agent.js
+│   └── synthesis_agent_server.js    A2A server (Express + DefaultRequestHandler) for the synthesis agent
 │
 ├── services/
 │   └── storage.js          Storage: profile, log — GPC-gated via code + MCP
 │
 ├── mcp-server/
-│   ├── server.js           MCP server entry point
+│   ├── server.js           MCP server entry point (real @modelcontextprotocol/sdk Server, stdio)
 │   ├── gpc_policy.js       withGpc() interceptor + sensitive-tool registry
 │   └── tool_handlers.js    Raw tool implementations (search, profile, log)
-│
-├── proposal-dedicated-field/   Proposal: signal via a dedicated field, not _meta
-│   ├── orchestrator.js         Builds privacySignals instead of _meta
-│   ├── mcp_client.js           In-process MCP client; applies withPrivacySignal()
-│   ├── storage.js              Storage gated on privacySignals.gpc
-│   └── privacy_signal_policy.js  withPrivacySignal() interceptor
 │
 ├── harness/
 │   ├── run_baseline.js     Demo run: GPC off, all tools execute
 │   ├── run_gpc.js          Demo run: GPC on, sensitive tools blocked (_meta)
-│   ├── run_gpc_dedicated_field.js  Demo run: GPC on, via privacySignals field
 │   ├── compare_results.js  Diff baseline vs GPC run, print report
 │   └── seed_demo.js        Seed user-42 profile and interaction log
 │
 ├── tests/
 │   ├── gpc_policy.test.js  withGpc() blocking, passthrough, signal formats
-│   ├── privacy_signal_policy.test.js  withPrivacySignal() blocking, passthrough
-│   ├── schema_gap.test.js  Proves the real MCP SDK strips privacySignals, keeps _meta
 │   ├── orchestrator.test.js  Full pipeline integration; LLM agents mocked
 │   └── agent_loop.test.js  LLM loop: tool_choice, nudge, arg parsing, errors
 │
@@ -155,7 +140,7 @@ npm install
 npm test
 ```
 
-39 tests across three files. LLM agents are mocked in `orchestrator.test.js` so no Ollama instance is needed.
+LLM agents are mocked in `orchestrator.test.js` so no Ollama instance is needed. The A2A agent servers still start for real (in-process), and the MCP server still starts for real (a short-lived child process, closed in `afterAll`) — only the LLM calls inside the agents are mocked, so tool-call and message-passing behavior over the real transports is exercised as-is.
 
 | Test file | What it covers |
 |---|---|

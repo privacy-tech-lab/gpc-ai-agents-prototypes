@@ -11,6 +11,7 @@ const fs   = require('fs');
 const path = require('path');
 const { handleAgentRequest } = require('../orchestrator/orchestrator');
 const { encodeBaggage }      = require('../orchestrator/baggage');
+const { closeClient }        = require('../provider/mcp_client');
 const {
   gpcAdoptionRate, topicDistribution, publisherReach, inferUserInterests,
 } = require('../provider/aggregation');
@@ -58,10 +59,13 @@ async function main() {
   }
   console.log('\n[Summary]\n', out.user_facing_summary);
   console.log('\nOutput written to:', OUTPUT);
+
+  await closeClient();
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error('ai-baseline failed:', err.message);
   console.error('Is Ollama running? Try: ollama serve && ollama pull qwen2.5:14b');
+  await closeClient();
   process.exit(1);
 });

@@ -1,5 +1,5 @@
 /**
- * Unit tests for mcp_server.js — the withConsentCheck() interceptor.
+ * Unit tests for consent_gate.js — the withConsentCheck() interceptor.
  *
  * Covers:
  *  - Silent mode bypasses all consent checks
@@ -13,13 +13,19 @@
  *  - Unknown tool names throw
  */
 
-const server = require('../mcp_server');
+const server = require('../consent_gate');
 const manifest = require('../consent_manifest');
 const bus = require('../event_bus');
+const { closeClient } = require('../mcp_client');
 
 beforeEach(() => {
   manifest.reset();
   bus.removeAllListeners();
+});
+
+// Allowed tool calls spawn a real MCP child process; close it so Jest exits cleanly.
+afterAll(async () => {
+  await closeClient();
 });
 
 describe('silent mode — no consent enforcement', () => {

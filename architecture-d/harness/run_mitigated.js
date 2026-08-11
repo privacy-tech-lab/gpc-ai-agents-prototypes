@@ -12,6 +12,7 @@ const path = require('path');
 const { handleRequest }                              = require('../orchestrator/orchestrator');
 const { encodeBaggage }                              = require('../orchestrator/baggage');
 const { createProvider }                             = require('../provider/provider');
+const { closeClient }                                = require('../provider/mcp_client');
 const { noTrainCommitment, kAnonymity, dpNoise, chain } = require('../provider/mitigations');
 const {
   gpcAdoptionRate, topicDistribution, publisherReach,
@@ -63,6 +64,8 @@ async function main() {
   console.log('  k_anon_suppressed:', providerView[0].k_anon_suppressed);
   console.log('  cohort_size      :', providerView[0].cohort_size);
   console.log('\nOutput written to:', OUTPUT);
+
+  await closeClient();
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch(async (err) => { console.error(err); await closeClient(); process.exit(1); });

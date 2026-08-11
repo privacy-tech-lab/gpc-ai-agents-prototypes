@@ -8,12 +8,17 @@
 const { createProvider } = require('../provider/provider');
 const { fanoutAll, fanoutSelected, app, buildPrivacyContext } = require('../orchestrator/orchestrator');
 const { listPublisherIds } = require('../services/tool_registry');
+const { closeClient } = require('../provider/mcp_client');
 
 // Test isolation: prevent live Tavily fetches during the whole file
 // regardless of which describe is running.
 const ORIGINAL_TAVILY_KEY = process.env.TAVILY_API_KEY;
 beforeAll(() => { delete process.env.TAVILY_API_KEY; });
-afterAll(()  => { if (ORIGINAL_TAVILY_KEY !== undefined) process.env.TAVILY_API_KEY = ORIGINAL_TAVILY_KEY; });
+afterAll(async () => {
+  if (ORIGINAL_TAVILY_KEY !== undefined) process.env.TAVILY_API_KEY = ORIGINAL_TAVILY_KEY;
+  // fanout() spawns a real MCP child process (mcp-server/server.js); close it.
+  await closeClient();
+});
 
 
 ////////////////////////////////////////////////////////////////////////////////

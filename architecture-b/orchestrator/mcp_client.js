@@ -3,8 +3,7 @@
  *
  * Spawns the server as a child process and talks the actual MCP wire
  * protocol (initialize, tools/call) via @modelcontextprotocol/sdk, rather
- * than importing the tool handlers in-process. The GPC signal travels in
- * params._meta.gpc on every tools/call request, exactly as server.js reads it.
+ * than calling get_medical_records in-process.
  */
 
 const path = require('path');
@@ -17,7 +16,7 @@ let clientPromise = null;
 
 function getClient() {
   if (!clientPromise) {
-    const client = new Client({ name: 'architecture-a-orchestrator', version: '1.0.0' });
+    const client = new Client({ name: 'architecture-b-medical-agent', version: '1.0.0' });
     const transport = new StdioClientTransport({ command: 'node', args: [SERVER_PATH] });
     clientPromise = client.connect(transport).then(() => client);
   }
@@ -32,27 +31,14 @@ async function closeClient() {
 }
 
 /**
- * Simulate an MCP tools/call request over the real stdio transport.
- *
- * @param {string}  toolName           — maps to params.name
- * @param {object}  args               — maps to params.arguments
- * @param {object}  [_meta]            — maps to params._meta; set _meta.gpc=1 to opt out
- * @param {Array}   [timing]
+ * @param {string} toolName
+ * @param {object} args
  */
-async function callTool(toolName, args, _meta = {}, timing = null) {
+async function callTool(toolName, args) {
   const client = await getClient();
-  const start = Date.now();
-
-  const response = await client.callTool({ name: toolName, arguments: args, _meta });
+  const response = await client.callTool({ name: toolName, arguments: args });
   const [content] = response.content ?? [];
-  const result = content?.type === 'text' ? JSON.parse(content.text) : response;
-
-  const elapsed = Date.now() - start;
-  if (timing) {
-    timing.push({ tool: toolName, durationMs: elapsed, status: result.status });
-  }
-
-  return result;
+  return content?.type === 'text' ? JSON.parse(content.text) : response;
 }
 
 module.exports = { callTool, closeClient };

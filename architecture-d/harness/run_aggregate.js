@@ -11,6 +11,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.e
 const fs   = require('fs');
 const path = require('path');
 const { createProvider }   = require('../provider/provider');
+const { closeClient }      = require('../provider/mcp_client');
 const { fanoutAll }        = require('../orchestrator/orchestrator');
 const {
   gpcAdoptionRate, topicDistribution, publisherReach, topicByGpcMatrix,
@@ -85,6 +86,8 @@ async function main() {
   console.log('  measured_gpc_adoption_rate:', out.derivations.measured_gpc_adoption_rate);
   console.log('  topics                    :', Object.keys(out.derivations.topic_distribution).join(', '));
   console.log('\nOutput written to:', OUTPUT);
+
+  await closeClient();
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch(async (err) => { console.error(err); await closeClient(); process.exit(1); });

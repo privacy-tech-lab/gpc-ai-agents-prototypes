@@ -6,7 +6,6 @@
   "scripts": {
     "baseline": "node harness/run_baseline.js",
     "gpc": "node harness/run_gpc.js",
-    "gpc:dedicated-field": "node harness/run_gpc_dedicated_field.js",
     "compare": "node harness/compare_results.js",
     "demo": "node harness/seed_demo.js && node harness/run_baseline.js && node harness/run_gpc.js && node harness/compare_results.js",
     "seed": "node harness/seed_demo.js",
@@ -17,12 +16,18 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@a2a-js/sdk": "1.0.0-beta.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3"
+    "express": "^5.2.1"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.29.7",
     "jest": "^30.4.2"
+  },
+  "jest": {
+    "transformIgnorePatterns": [
+      "node_modules/(?!(jose)/)"
+    ]
   }
 }
