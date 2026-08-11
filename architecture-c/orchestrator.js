@@ -1,6 +1,6 @@
 'use strict';
 
-const server = require('./mcp_server');
+const server = require('./consent_gate');
 const registry = require('./tool_registry');
 
 const TOOL_SEQUENCE = [

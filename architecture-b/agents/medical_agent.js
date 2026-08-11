@@ -1,5 +1,5 @@
 const { runAgentLoop } = require('../orchestrator/agent_loop.js');
-const { get_medical_records } = require('../services/medicalRecords.js');
+const { callTool } = require('../orchestrator/mcp_client.js');
 const { PRIMARY_PURPOSE } = require('../lib/purposeRegistry.js');
 
 const TOOL_DEFINITIONS = [
@@ -23,7 +23,7 @@ question clearly and accurately using that data. Always retrieve records before 
 
 async function executeToolFn(name, input) {
   switch (name) {
-    case 'get_medical_records': return get_medical_records(input);
+    case 'get_medical_records': return callTool('get_medical_records', input);
     default: return { error: 'unknown_tool', name };
   }
 }

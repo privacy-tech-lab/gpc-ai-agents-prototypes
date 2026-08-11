@@ -19,12 +19,26 @@ Architecture B adds purpose-level enforcement over Architecture A's tool-level b
 
 ---
 
+## GPC categories depicted
+
+Architecture B implements **Category C (Use)** from the opt-out typology. `get_medical_records` is never gated, which is **C1 (primary use restriction)** in practice: data stays bound to the task it was collected for. Of the three secondary pipelines, `analytics` is **C2 (secondary use restriction)**, `ad_targeting` is **C2a (targeting)**, and `model_training` is **C3 (data repurposing restriction)** — each independently opt-outable via `gpc_scope`.
+
+---
+
+## Protocol compliance
+
+- **MCP.** `get_medical_records` is served by `mcp-server/server.js`, a real `@modelcontextprotocol/sdk` `Server` over stdio, and reached by `orchestrator/mcp_client.js`, a real `Client` that spawns it as a child process. There's no policy interceptor at this layer — that's the point of Architecture B: the primary tool call is never GPC-gated, only the secondary uses of its output are (see `withPurposeCheck()` below).
+- **A2A.** Not applicable here. Architecture B has a single agent (the medical assistant); the three secondary pipelines are deterministic backend services, not autonomous agents making their own decisions, so modeling them as A2A peers would misrepresent what they are. The ad platform's HTTP boundary (`services/adPlatform.js`) is a plain REST call, not an agent protocol, by design — it's a stand-in for a third-party vendor endpoint.
+
+---
+
 ## Pipeline
 
 ```
 POST /ask  { patient_id, query, gpc, gpc_scope }
   → orchestrator.js              (plain code: reads Sec-GPC/body gpc, builds privacyContext)
-      → medical_agent.js         (LLM loop: calls get_medical_records, composes answer)
+      → medical_agent.js         (LLM loop: composes answer)
+          → mcp_client.js  ⇄ stdio ⇄  mcp-server/server.js   (get_medical_records — never GPC-gated)
       → fanOutSecondaryPurposes() (plain code: fans out to secondary pipelines)
           → analytics.js         (withPurposeCheck: purpose=analytics)
           → trainingDataset.js   (withPurposeCheck: purpose=model_training)
@@ -32,9 +46,11 @@ POST /ask  { patient_id, query, gpc, gpc_scope }
   → HTTP Response
 ```
 
+The demo harness (`npm run demo`, below) intentionally bypasses the LLM and calls `get_medical_records` directly with a hardcoded response, so it can run without Ollama. The MCP path is real and used whenever `medical_agent.js` actually runs (via the live `/ask` endpoint, or `tests/mcp_client.test.js`), it's just not on the fast demo path.
+
 ### Agent roles
 
-**Medical assistant agent** (`agents/medical_agent.js`): An LLM loop with one tool (`get_medical_records`). The model retrieves the patient's records and composes the final clinical answer. `get_medical_records` is not in the restrictable-purpose registry, so it always executes regardless of GPC state. The primary answer is never blocked.
+**Medical assistant agent** (`agents/medical_agent.js`): An LLM loop with one tool (`get_medical_records`), reached over a real MCP stdio connection (`orchestrator/mcp_client.js` ⇄ `mcp-server/server.js`). The model retrieves the patient's records and composes the final clinical answer. `get_medical_records` is not in the restrictable-purpose registry, so it always executes regardless of GPC state. The primary answer is never blocked.
 
 ### Supporting services (no LLM)
 
@@ -50,10 +66,15 @@ POST /ask  { patient_id, query, gpc, gpc_scope }
 architecture-b/
 ├── orchestrator/
 │   ├── orchestrator.js          Entry point: reads Sec-GPC/body gpc, dispatches agent, fans out
-│   └── agent_loop.js            Shared LLM turn loop (tool_choice, nudge, required-tool tracking)
+│   ├── agent_loop.js            Shared LLM turn loop (tool_choice, nudge, required-tool tracking)
+│   └── mcp_client.js            Real MCP client (stdio) — spawns mcp-server/server.js
 │
 ├── agents/                      LLM agents only
-│   └── medical_agent.js         LLM medical agent (runAgentLoop, tool: get_medical_records)
+│   └── medical_agent.js         LLM medical agent (runAgentLoop, tool: get_medical_records over MCP)
+│
+├── mcp-server/
+│   └── server.js                MCP server entry point (real @modelcontextprotocol/sdk Server, stdio);
+│                                 serves get_medical_records, no policy wrapping (never GPC-gated)
 │
 ├── services/                    Deterministic supporting infrastructure (no LLM)
 │   ├── medicalRecords.js        get_medical_records: primary tool, never GPC-gated
@@ -73,7 +94,8 @@ architecture-b/
 │
 ├── tests/
 │   ├── withPurposeCheck.test.js Unit tests: evaluatePurpose and wrapper (pure, no I/O)
-│   └── fanOut.test.js           Integration tests: all three scenarios, real services
+│   ├── fanOut.test.js           Integration tests: all three scenarios, real services
+│   └── mcp_client.test.js       Real MCP round trip for get_medical_records
 │
 └── output/                      Runtime; gitignored
     ├── analytics_log.json
@@ -100,12 +122,13 @@ npm install
 npm test
 ```
 
-33 tests across two files. No Ollama needed.
+No Ollama needed — `medical_agent.js`'s LLM loop isn't exercised by this suite (see `mcp_client.test.js` below, which tests the real MCP transport it depends on directly, without needing a model).
 
 | Test file | What it covers |
 |---|---|
 | `withPurposeCheck.test.js` | `evaluatePurpose()`: all GPC states, partial opt-out, missing purpose, primary purpose passthrough; `withPurposeCheck()` wrapper: ok/blocked envelopes, fn call gating |
 | `fanOut.test.js` | `fanOutSecondaryPurposes()`: all three scenarios end-to-end with real services and a live ad platform; file assertions confirming writes are blocked or allowed correctly |
+| `mcp_client.test.js` | `get_medical_records` over the real MCP stdio client/server round trip: known patient, unknown patient |
 
 ### Demo (no model required)
 

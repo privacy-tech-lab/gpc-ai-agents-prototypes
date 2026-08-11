@@ -24,7 +24,7 @@
  */
 
 const { runAgentLoop } = require('./agent_loop');
-const server   = require('./mcp_server');
+const server   = require('./consent_gate');
 const manifest = require('./consent_manifest');
 const prompt   = require('./consent_prompt');
 
@@ -91,7 +91,7 @@ team@example.com. Use the tools directly; do not ask the user for confirmation.`
 // the model fabricates a tool name (e.g. behavior_tracker, which is
 // platform-fired and intentionally absent from the agent's view),
 // the executor refuses it. Without this guard, the model could call
-// any tool registered in mcp_server and bypass the intended surface.
+// any tool registered in consent_gate and bypass the intended surface.
 const AGENT_TOOLS = new Set(TOOL_DEFINITIONS.map((t) => t.function.name));
 
 function makeExecutor(mode, gpc) {

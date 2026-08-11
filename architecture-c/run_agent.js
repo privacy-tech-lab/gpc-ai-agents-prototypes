@@ -18,6 +18,7 @@
  */
 
 const agent = require('./agent');
+const { closeClient } = require('./mcp_client');
 
 const VALID_MODES = ['silent', 'approve', 'decline', 'interactive'];
 
@@ -65,10 +66,13 @@ async function main() {
 
   console.log('\n--- Manifest (final) ---');
   console.log(JSON.stringify(manifest_final, null, 2));
+
+  await closeClient();
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error(`\n[run_agent] ${err.message}`);
   console.error('If this is a connection error, start Ollama first: `ollama serve` and `ollama pull qwen2.5:14b`.');
+  await closeClient();
   process.exit(1);
 });

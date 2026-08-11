@@ -2,6 +2,7 @@
 
 const manifest = require('./consent_manifest');
 const orchestrator = require('./orchestrator');
+const { closeClient } = require('./mcp_client');
 
 const PLATFORM_VERSION = 'v1.0';
 
@@ -21,6 +22,8 @@ async function main() {
   };
 
   console.log(JSON.stringify(output, null, 2));
+
+  await closeClient();
 }
 
-main().catch(console.error);
+main().catch(async (err) => { console.error(err); await closeClient(); process.exit(1); });
