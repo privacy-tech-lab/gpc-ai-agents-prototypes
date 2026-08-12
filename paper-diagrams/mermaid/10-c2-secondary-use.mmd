@@ -1,0 +1,30 @@
+---
+title: "C2: secondary use restriction, with C2a targeting"
+---
+flowchart TD
+    ex["The health exchange exists\non the platform"]
+    q{"Commercial or analytical use\noutside the user task?"}
+    an["Analytics aggregation (C2)"]
+    ad["Pharma ad segment (C2a)"]
+    g1{"C2 asserted?"}
+    g2{"C2 or C2a asserted?"}
+    log["Query joins the analytics log"]
+    bl1["Blocked"]
+    targ["User added to the\nhypertension_candidates segment"]
+    bl2["Blocked: data does not decide\nwhat the user is shown"]
+
+    ex --> q
+    q -- "analytics" --> an
+    q -- "targeting" --> ad
+    an --> g1
+    ad --> g2
+    g1 -- "no" --> log
+    g1 -- "yes" --> bl1
+    g2 -- "no" --> targ
+    g2 -- "yes" --> bl2
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class bl1,bl2 category
+    note1_bl2["C2 secondary use restriction. C2a targeting is its sub-subtype: asserting C2 asserts C2a"]:::category -.-> bl2

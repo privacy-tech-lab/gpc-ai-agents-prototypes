@@ -1,0 +1,42 @@
+---
+title: "Category D (Persistence): opting out of how long data survives"
+---
+flowchart TD
+    s1["Session 1: user mentions\nvegetarian, tight budget"]
+    within["Same-session context used\nin the next turn:\nalways permitted"]
+    n_end["Session 1 ends"]
+    d1q{"D1 asserted?"}
+    arch["Transcript archived"]
+    disc["Everything discarded"]
+    s2["Session 2:\nrestaurant question"]
+    d2q{"D2 asserted?"}
+    recall["Archive recalled:\ntailored answer"]
+    fresh["Nothing recalled:\nclean-slate answer"]
+    syn["Profile synthesis attempted"]
+    d3q{"D3 asserted?"}
+    model["Behavioral model written"]
+    inert["Sessions stay\ninert transcripts"]
+
+    s1 --> within
+    s1 --> n_end
+    n_end --> d1q
+    d1q -- "no" --> arch
+    d1q -- "yes" --> disc
+    arch --> s2
+    disc --> s2
+    s2 --> d2q
+    d2q -- "no" --> recall
+    d2q -- "yes" --> fresh
+    recall --> syn
+    fresh --> syn
+    syn --> d3q
+    d3q -- "no" --> model
+    d3q -- "yes" --> inert
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class disc,fresh,inert category
+    class within respected
+    note1_disc["The three form a hierarchy: asserting D1 implies D2 and D3, and asserting D2 implies D3"]:::category -.-> disc
+    note2_inert["D3 long-term profile scope: retention permitted, synthesis into a durable model refused"]:::category -.-> inert

@@ -1,0 +1,21 @@
+---
+title: "D3: long-term profile scope. Remembered, never modeled"
+---
+flowchart TD
+    arch["Two retained sessions"]
+    q{"D3 asserted?"}
+    model["Synthesized into a behavioral model:\nvegetarian, price sensitive,\nplans weekly"]
+    inert["Sessions stay as\ninert transcripts"]
+    rem["Prior interactions remembered,\nnever synthesized into a profile"]
+
+    arch --> q
+    q -- "no" --> model
+    q -- "yes" --> inert
+    inert --> rem
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class inert category
+    class rem respected
+    note1_inert["D3 long-term profile scope: session and cross-session retention permitted, the durable user model is not"]:::category -.-> inert

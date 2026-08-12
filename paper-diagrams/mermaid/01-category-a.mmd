@@ -1,0 +1,30 @@
+---
+title: "Category A (Presence): opting out of AI being in your environment at all"
+---
+flowchart TD
+    install["User installs NoteFlow v1.0\nno AI features"]
+    update["v2.0 update ships an AI summarizer\nand an ambient copilot"]
+    a1q{"A1: has the user affirmatively\nenabled this AI feature?"}
+    a1off["Feature stays off,\nacross later updates too"]
+    a2q{"A2: is this invocation\npassive?"}
+    ondemand["User invoked it:\nintent already expressed"]
+    ambq{"Ambient mode\nexplicitly enabled?"}
+    ambon["Ambient AI runs"]
+    amboff["Integrated but inactive"]
+
+    install --> update
+    update --> a1q
+    a1q -- "no" --> a1off
+    a1q -- "yes" --> a2q
+    a2q -- "no, on demand" --> ondemand
+    a2q -- "yes, passive" --> ambq
+    ambq -- "yes" --> ambon
+    ambq -- "no" --> amboff
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class a1off,amboff category
+    class ondemand,ambon respected
+    note1_a1off["A1 integration opt-out: AI added by an update is off until the user affirmatively enables it"]:::category -.-> a1off
+    note2_amboff["A2 activation opt-out: passive AI needs its own grant, separate from A1"]:::category -.-> amboff

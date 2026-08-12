@@ -1,0 +1,32 @@
+---
+title: "A2: activation opt-out. Whether AI is present without your active intent"
+---
+flowchart TD
+    device["App has AI features"]
+    how{"How is the AI invoked?"}
+    fg["User presses a button\nor gives a command"]
+    fgok["Foreground, on-demand use:\nno separate opt-out needed"]
+    passive["AI listens or acts\npassively in the background"]
+    ambq{"Did the user explicitly\nenable ambient mode?"}
+    ambok["Ambient AI runs,\nA2 respected"]
+    blocked["Blocked: integrated\nbut inactive"]
+    anyway["Ambient AI runs anyway"]
+    viol["A2 violated:\npresence without intent"]
+
+    device --> how
+    how -- "explicit command" --> fg
+    fg --> fgok
+    how -- "passive or ambient" --> passive
+    passive --> ambq
+    ambq -- "yes" --> ambok
+    ambq -- "no, enforced" --> blocked
+    ambq -- "no, unenforced" --> anyway
+    anyway --> viol
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class blocked category
+    class fgok,ambok respected
+    class viol violated
+    note1_blocked["A2 activation opt-out: governs unsolicited or ambient AI only, never foreground on-demand use"]:::category -.-> blocked

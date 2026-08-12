@@ -1,0 +1,42 @@
+---
+title: "Category B (Collection): opting out of what gets gathered about you"
+---
+flowchart TD
+    submit["User submits a draft email\nand an instruction"]
+    b1q{"B1 asserted?"}
+    b1keep["Raw draft retained\nin the input log"]
+    b1drop["Used for the task,\nthen discarded"]
+    tele["Platform observes composition:\ndeleted sentence, 42s pause,\n3 rewrites"]
+    b2q{"B2 asserted?"}
+    b2keep["Telemetry recorded"]
+    b2drop["Events suppressed"]
+    cls["Classifier derives 4 attributes"]
+    b3q{"B3 asserted?"}
+    b3keep["Attributes written,\n2 of them from behavior"]
+    b3drop["Inference firewall\nblocks the write"]
+    ans["Polished email returned,\nidentical in every mode"]
+
+    submit --> b1q
+    b1q -- "no" --> b1keep
+    b1q -- "yes" --> b1drop
+    b1keep --> tele
+    b1drop --> tele
+    tele --> b2q
+    b2q -- "no" --> b2keep
+    b2q -- "yes" --> b2drop
+    b2keep --> cls
+    b2drop --> cls
+    cls --> b3q
+    b3q -- "no" --> b3keep
+    b3q -- "yes" --> b3drop
+    b3keep --> ans
+    b3drop --> ans
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class b1drop,b2drop,b3drop category
+    class ans respected
+    note1_b1drop["B1: what the user knowingly submits"]:::category -.-> b1drop
+    note2_b2drop["B2: what the user unknowingly generates"]:::category -.-> b2drop
+    note3_b3drop["B3: what the system concludes on its own. Possible only because B1 or B2 happened first"]:::category -.-> b3drop

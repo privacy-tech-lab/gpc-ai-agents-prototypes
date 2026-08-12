@@ -1,0 +1,34 @@
+---
+title: "Category E (Delegation): opting out of the agent resolving choices on your behalf"
+---
+flowchart TD
+    req["User asks the agent\nto book a trip"]
+    enc["Agent encounters six actions,\nfrom a flight search to\na passport transfer"]
+    ua{"User assigned a tier?"}
+    userwins["User assignment applies:\nsearch runs alone,\nbooking asks first"]
+    vd{"Vendor proposed a tier?"}
+    gpcq{"GPC active?"}
+    vdauto["Vendor default stands:\nfare tracking runs unasked"]
+    voided["Vendor default voided:\nfare tracking asks first"]
+    none["No tier anywhere:\ndeclined, not assumed"]
+    out["Trip booked in every mode.\nOnly the unasked actions differ"]
+
+    req --> enc
+    enc --> ua
+    ua -- "yes" --> userwins
+    ua -- "no" --> vd
+    vd -- "yes" --> gpcq
+    vd -- "no" --> none
+    gpcq -- "yes" --> voided
+    gpcq -- "no" --> vdauto
+    userwins --> out
+    voided --> out
+    vdauto --> out
+    none --> out
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class voided,none category
+    class out respected
+    note1_none["The user assignment overrides the vendor proposal. GPC voids vendor defaults. Unassigned falls to the most restrictive treatment"]:::category -.-> none

@@ -1,0 +1,25 @@
+---
+title: "D1: session scope. Nothing persists once the interaction ends"
+---
+flowchart TD
+    within["During the session, the assistant\nuses what the user said earlier"]
+    coh["Always allowed:\noperational coherence"]
+    ends["Session ends"]
+    q{"D1 asserted?"}
+    arch["Transcript and disclosed\nfacts archived"]
+    disc["Everything discarded"]
+    clean["Next interaction starts\nfrom a clean slate"]
+
+    within --> coh
+    within --> ends
+    ends --> q
+    q -- "no" --> arch
+    q -- "yes" --> disc
+    disc --> clean
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class disc category
+    class coh,clean respected
+    note1_disc["D1 session scope, the strictest: implies D2 and D3. Within-session use stays permitted"]:::category -.-> disc

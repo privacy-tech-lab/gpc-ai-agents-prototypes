@@ -1,0 +1,23 @@
+---
+title: "D2: cross-session scope. Past interactions may not inform future ones"
+---
+flowchart TD
+    new["Session 2 starts:\nrestaurant question"]
+    q{"D2 asserted?"}
+    rec["Archive recalled:\nvegetarian, tight budget"]
+    tail["Tailored answer:\na vegetarian restaurant"]
+    fresh["Archive exists for the user\nbut returns nothing\nto the system"]
+    gen["Clean-slate answer:\nthe assistant asks preferences"]
+
+    new --> q
+    q -- "no" --> rec
+    rec --> tail
+    q -- "yes" --> fresh
+    fresh --> gen
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class fresh category
+    class gen respected
+    note1_fresh["D2 cross-session scope: the user keeps their history, the system may not use it for continuity. Implies D3"]:::category -.-> fresh

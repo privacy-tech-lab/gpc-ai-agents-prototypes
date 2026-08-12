@@ -1,0 +1,23 @@
+---
+title: "B2: behavioral collection opt-out. What you unknowingly generate"
+---
+flowchart TD
+    compose["User composes the draft"]
+    observe["Platform observes:\ndeleted sentence, 42s pause,\n3 rewrites"]
+    q{"B2 asserted?"}
+    rec["Telemetry written to the\nbehavior log, including text\nthe user chose to delete"]
+    sup["Events suppressed"]
+    empty["Behavior log stays empty"]
+
+    compose --> observe
+    observe --> q
+    q -- "no" --> rec
+    q -- "yes" --> sup
+    sup --> empty
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class sup category
+    class empty respected
+    note1_sup["B2 behavioral collection opt-out: hovers, hesitations, deletions, and corrections are not recorded"]:::category -.-> sup

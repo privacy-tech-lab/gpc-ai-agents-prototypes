@@ -11,8 +11,10 @@ The standard is enforced by [generate.js](generate.js) rather than by discipline
 | `diagrams.js` | The 18 diagram specs. Content lives here. |
 | `generate.js` | Styles, layout, and draw.io XML emitter. Appearance lives here. |
 | `export-png.sh` | Renders every page to `png/` at print resolution. |
+| `mermaid.js` | Emits the same figures as Mermaid source. |
 | `opt-out-typology.drawio` | Generated. One file, 18 pages, one page per figure. |
 | `png/` | Generated. One PNG per figure, numbered in tab order. |
+| `mermaid/`, `MERMAID.md` | Generated. The same figures as Mermaid, one file each and all together. |
 
 ```bash
 cd paper-diagrams
@@ -50,6 +52,28 @@ One scenario per category, carried across all of that category's pages, so a rea
 | C | HealthAssist, one blood pressure question |
 | D | Aria, a memory-enabled assistant across two sessions |
 | E | TripPilot, booking a weekend trip |
+
+## Mermaid
+
+Every figure is also emitted as Mermaid, in the idiom the architecture READMEs already use:
+
+```bash
+cd paper-diagrams && node mermaid.js
+```
+
+To put one into a draw.io page: Extras > Insert > Advanced > Mermaid, paste the block, and pick Image rather than Diagram. The blocks also render as is in a README or on GitHub.
+
+The idiom, matching `architecture-a/README.md` and `architecture-b/README.md`:
+
+- `flowchart TD`, quoted labels, `\n` for line breaks
+- `A -- "label" --> B` for a labeled edge, `A --> B` for a plain one
+- `{"..."}` for a decision, `["..."]` for everything else
+- `classDef category fill:#5b8def,stroke:#2f5fce,color:#fff` for the nodes the opt-out acts on
+- an annotation is a node carrying `:::category` with a dashed link to its target
+
+Two extra class definitions cover end states, `respected` in green and `violated` in red, matching the draw.io figures. Nodes with no class keep the Mermaid default, so color always means something.
+
+Mermaid keywords cannot be node ids. `end` is the one that comes up, since Category D has a node for a session ending, and `mermaid.js` renames it.
 
 ## Node roles
 

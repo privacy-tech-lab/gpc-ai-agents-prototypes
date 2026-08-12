@@ -1,0 +1,28 @@
+---
+title: "C4: sharing restriction. How far data travels along the task chain"
+---
+flowchart TD
+    del["Task delegates to sub-agents"]
+    h1["Pharmacy price agent:\nneeds the medication name"]
+    h2["Wellness marketing vendor:\nno task reason to receive data"]
+    q1{"C4 asserted?"}
+    q2{"C4 asserted?"}
+    f1["Receives the full\nhealth payload"]
+    m1["Receives the medication\nfield only"]
+    f2["Receives the full\nhealth payload"]
+    r2["Refused: the chain ends\nwhere necessity ends"]
+
+    del --> h1
+    del --> h2
+    h1 --> q1
+    h2 --> q2
+    q1 -- "no" --> f1
+    q1 -- "yes" --> m1
+    q2 -- "no" --> f2
+    q2 -- "yes" --> r2
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class m1,r2 category
+    note1_m1["C4 sharing restriction: a transfer is appropriate only if the receiving system operates in the same context"]:::category -.-> m1

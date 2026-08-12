@@ -1,0 +1,32 @@
+---
+title: "A1: integration opt-out. How AI enters a system"
+---
+flowchart TD
+    install["User installs an app\nwith no AI features"]
+    update["Update ships a\nnew AI capability"]
+    q{"Is the AI feature\noff by default?"}
+    active["AI runs without consent"]
+    viol["A1 violated:\ninherited, not chosen"]
+    inactive["Feature stays inactive"]
+    prompt["User sees an opt-in prompt"]
+    optin{"User actively opts in?"}
+    on["AI feature activates"]
+    off["AI stays off indefinitely"]
+
+    install --> update
+    update --> q
+    q -- "no, shipped active" --> active
+    active --> viol
+    q -- "yes, default off" --> inactive
+    inactive --> prompt
+    prompt --> optin
+    optin -- "yes" --> on
+    optin -- "no, or GPC declines" --> off
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class off category
+    class on respected
+    class viol violated
+    note1_off["A1 integration opt-out: the decision persists through later platform updates until the user reverses it"]:::category -.-> off

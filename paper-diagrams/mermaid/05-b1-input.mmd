@@ -1,0 +1,23 @@
+---
+title: "B1: input collection opt-out. What you knowingly submit"
+---
+flowchart TD
+    submit["User submits a draft\nand an instruction"]
+    task["Task runs:\nthe email is polished"]
+    q{"B1 asserted?"}
+    log["Raw draft and instruction\nwritten to the input log"]
+    drop["Used to complete the task,\nthen discarded"]
+    empty["Input log stays empty"]
+
+    submit --> task
+    submit --> q
+    q -- "no" --> log
+    q -- "yes" --> drop
+    drop --> empty
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class drop category
+    class empty respected
+    note1_drop["B1 input collection opt-out: material completes the task and is not logged, stored, or retained beyond it"]:::category -.-> drop

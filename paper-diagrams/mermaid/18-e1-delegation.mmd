@@ -1,0 +1,29 @@
+---
+title: "E1: selective delegation opt-out. Which decisions the agent may resolve alone"
+---
+flowchart TD
+    act["Agent encounters an action,\ntiered by reversibility,\nsensitivity, and consequence"]
+    tier{"Effective tier?"}
+    auto["User granted autonomy\n(search, reversible hold)"]
+    exec["Executes"]
+    p{"User available?"}
+    appr{"User approves?"}
+    ok["Executed after approval"]
+    no["Declined by the user"]
+    dec["Declined rather than assumed:\ndefault_restrictive_no_user"]
+
+    act --> tier
+    tier -- "autonomous" --> auto
+    auto --> exec
+    tier -- "ask user" --> p
+    p -- "yes" --> appr
+    appr -- "yes" --> ok
+    appr -- "no" --> no
+    p -- "no user available" --> dec
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class no,dec category
+    class exec,ok respected
+    note1_dec["E1 selective delegation: where no tier was assigned, or no user is present, the agent declines rather than proceeds"]:::category -.-> dec

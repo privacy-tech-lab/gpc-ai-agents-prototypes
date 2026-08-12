@@ -1,0 +1,25 @@
+---
+title: "C1: primary use restriction, with C1a personalization"
+---
+flowchart TD
+    data["Reading collected to answer\nthe patient question"]
+    q{"Use beyond that task, even\nby the same platform?"}
+    within["Within scope:\nthe answer itself"]
+    beyond["Beyond scope:\ninsurance risk model (C1),\npersonalization profile (C1a)"]
+    gate{"C1 or C1a asserted?"}
+    reuse["Reading reused for underwriting;\nresponses tailored from\ninferred preferences"]
+    blocked["Blocked: data stays bound\nto the task context"]
+
+    data --> q
+    q -- "no" --> within
+    q -- "yes" --> beyond
+    beyond --> gate
+    gate -- "no" --> reuse
+    gate -- "yes" --> blocked
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class blocked category
+    class within respected
+    note1_blocked["C1 primary use restriction. C1a personalization is its sub-subtype: asserting C1 asserts C1a"]:::category -.-> blocked

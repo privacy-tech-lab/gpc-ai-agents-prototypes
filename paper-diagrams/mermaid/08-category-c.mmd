@@ -1,0 +1,36 @@
+---
+title: "Category C (Use): opting out of what collected data is used for"
+---
+flowchart TD
+    ask["Patient asks what a\n158/96 reading means"]
+    ans["Answer delivered,\nnever gated"]
+    scope{"Is this use within the task\nthe user invoked?"}
+    inscope["Permitted:\nanswering the question"]
+    out["Outside the task context:\ninsurance (C1), personalization (C1a),\nanalytics (C2), ad targeting (C2a),\ntraining (C3)"]
+    gate{"Corresponding subtype\nasserted?"}
+    runs["Use proceeds"]
+    blocked["Blocked,\nwould_have_written recorded"]
+    chain["Task delegates along\na sub-agent chain"]
+    c4q{"C4 asserted?"}
+    full["Every hop receives\nthe full payload"]
+    min["Necessary hop minimized,\nunnecessary hop refused"]
+
+    ask --> ans
+    ask --> scope
+    scope -- "yes" --> inscope
+    scope -- "no" --> out
+    out --> gate
+    gate -- "no" --> runs
+    gate -- "yes" --> blocked
+    ask --> chain
+    chain --> c4q
+    c4q -- "no" --> full
+    c4q -- "yes" --> min
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class blocked,min category
+    class ans,inscope respected
+    note1_blocked["C1, C1a, C2, C2a, C3: the boundary is context. Asserting C1 asserts C1a, asserting C2 asserts C2a"]:::category -.-> blocked
+    note2_min["C4 sharing restriction: how far data travels along the chain the task itself created"]:::category -.-> min

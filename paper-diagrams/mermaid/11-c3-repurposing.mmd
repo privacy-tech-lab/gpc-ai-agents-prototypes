@@ -1,0 +1,21 @@
+---
+title: "C3: data repurposing restriction. Training, fine-tuning, evaluation"
+---
+flowchart TD
+    pair["Question and answer pair"]
+    q{"C3 asserted?"}
+    train["Appended to the training set:\nasking a question became\ntraining material"]
+    blocked["Blocked before the append"]
+    ok["Interacting with a system\nis not consent to improve it"]
+
+    pair --> q
+    q -- "no" --> train
+    q -- "yes" --> blocked
+    blocked --> ok
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class blocked category
+    class ok respected
+    note1_blocked["C3 data repurposing restriction: inputs may not be used to build or improve AI systems"]:::category -.-> blocked

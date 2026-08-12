@@ -1,0 +1,23 @@
+---
+title: "B3: derived collection opt-out. What the system concludes about you"
+---
+flowchart TD
+    mat["Collected material:\ndraft text (B1) and\ntelemetry (B2)"]
+    cls["Classifier derives 4 attributes"]
+    q{"B3 asserted?"}
+    write["Attributes written to the profile,\n2 of them from behavior\nthe user never shared"]
+    fw["Inference firewall\nblocks the write"]
+    audit["Profile stays empty,\nwould_have_written recorded"]
+
+    mat --> cls
+    cls --> q
+    q -- "no" --> write
+    q -- "yes" --> fw
+    fw --> audit
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    classDef respected fill:#d5e8d4,stroke:#82b366,color:#000
+    classDef violated fill:#f8cecc,stroke:#b85450,color:#000
+    class fw category
+    class audit respected
+    note1_fw["B3 derived collection opt-out: enforced at the storage boundary, so the inference is computed but never kept"]:::category -.-> fw
