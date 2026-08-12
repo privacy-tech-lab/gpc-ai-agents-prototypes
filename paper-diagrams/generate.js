@@ -50,6 +50,9 @@ const GAP_X = 46;
 const GAP_Y = 66;
 const TITLE_Y = 20;
 const TOP = 90;
+const LEFT = 40;
+// Width reserved in a row for a long edge passing through it.
+const LANE_W = 30;
 
 const roleOf = n => n.role || (n.decision ? 'decision' : 'step');
 const widthOf = n => (n.decision ? W.decision : W.step);
@@ -85,48 +88,138 @@ function rankNodes(nodes, edges) {
 function layout(spec) {
   const rank = rankNodes(spec.nodes, spec.edges);
 
-  const rows = new Map();
-  for (const n of spec.nodes) {
-    const r = rank.get(n.id);
-    if (!rows.has(r)) rows.set(r, []);
-    rows.get(r).push(n);
-  }
+  // Expand the graph so no edge skips a row. An edge spanning several ranks
+  // gets an invisible placeholder in each row it crosses, which reserves a
+  // lane for it. Without that reservation, draw.io routes the long edge
+  // straight over whatever box happens to sit in the way and drops the edge
+  // label on top of that box's text.
+  const items = spec.nodes.map(n => ({ id: n.id, node: n, rank: rank.get(n.id) }));
+  const routes = new Map();
+  spec.edges.forEach((e, i) => {
+    if (rank.get(e.to) - rank.get(e.from) <= 1) return;
+    const chain = [];
+    for (let r = rank.get(e.from) + 1; r < rank.get(e.to); r++) {
+      const id = `__lane${i}_${r}`;
+      items.push({ id, dummy: true, rank: r });
+      chain.push(id);
+    }
+    routes.set(i, chain);
+  });
 
-  // Every row is centered on the same axis, set by the widest row.
-  const rowWidth = r => r.reduce((sum, n) => sum + widthOf(n), 0) + GAP_X * (r.length - 1);
+  const wOf = it => (it.dummy ? LANE_W : widthOf(it.node));
+  const hOf = it => (it.dummy ? 0 : heightOf(it.node));
+
+  // Parent lists over the expanded graph, so a placeholder inherits the
+  // horizontal pull of whatever it is carrying.
+  const parents = new Map(items.map(it => [it.id, []]));
+  spec.edges.forEach((e, i) => {
+    const chain = routes.get(i);
+    if (!chain) {
+      parents.get(e.to).push(e.from);
+      return;
+    }
+    let prev = e.from;
+    for (const d of chain) {
+      parents.get(d).push(prev);
+      prev = d;
+    }
+    parents.get(e.to).push(prev);
+  });
+
+  const rows = new Map();
+  for (const it of items) {
+    if (!rows.has(it.rank)) rows.set(it.rank, []);
+    rows.get(it.rank).push(it);
+  }
+  const ranks = [...rows.keys()].sort((a, b) => a - b);
+
+  const rowWidth = r => r.reduce((sum, it) => sum + wOf(it), 0) + GAP_X * (r.length - 1);
   const widest = Math.max(...[...rows.values()].map(rowWidth));
+  const axis = LEFT + widest / 2;
 
   const pos = new Map();
+  const center = new Map();
+  const rowTop = new Map();
   let y = TOP;
-  for (const r of [...rows.keys()].sort((a, b) => a - b)) {
+
+  for (const r of ranks) {
     const row = rows.get(r);
-    let x = 40 + (widest - rowWidth(row)) / 2;
-    const rowHeight = Math.max(...row.map(heightOf));
-    for (const n of row) {
-      pos.set(n.id, {
-        x,
-        y: y + (rowHeight - heightOf(n)) / 2,
-        w: widthOf(n),
-        h: heightOf(n),
+    const rowHeight = Math.max(...row.map(hOf));
+    rowTop.set(r, y);
+
+    // Each item wants to sit under the average of its parents. Ties and
+    // overlaps are broken by sliding right, then the whole row slides back
+    // so it stays balanced on the parents rather than drifting rightward.
+    const want = row.map(it => {
+      const ps = parents.get(it.id).filter(p => center.has(p));
+      const c = ps.length ? ps.reduce((s, p) => s + center.get(p), 0) / ps.length : axis;
+      return { it, c };
+    });
+    want.sort((a, b) => a.c - b.c);
+
+    let cursor = -Infinity;
+    for (const w of want) {
+      w.x = Math.max(w.c - wOf(w.it) / 2, cursor);
+      cursor = w.x + wOf(w.it) + GAP_X;
+    }
+    const drift =
+      want.reduce((s, w) => s + (w.x + wOf(w.it) / 2 - w.c), 0) / want.length;
+    for (const w of want) w.x -= drift;
+
+    const spill = LEFT - Math.min(...want.map(w => w.x));
+    if (spill > 0) for (const w of want) w.x += spill;
+
+    for (const w of want) {
+      pos.set(w.it.id, {
+        x: w.x,
+        y: y + (rowHeight - hOf(w.it)) / 2,
+        w: wOf(w.it),
+        h: hOf(w.it),
       });
-      x += widthOf(n) + GAP_X;
+      center.set(w.it.id, w.x + wOf(w.it) / 2);
     }
     y += rowHeight + GAP_Y;
   }
 
-  // Annotations sit to the right of the widest row, beside their target.
-  const noteX = 40 + widest + 70;
+  // Waypoints for the long edges, one per row they cross. The turn sits in
+  // the empty band above the row, so the sideways move never happens at the
+  // height of a box.
+  const waypoints = new Map();
+  for (const [i, chain] of routes) {
+    const first = rank.get(spec.edges[i].from) + 1;
+    waypoints.set(
+      i,
+      chain.map((id, j) => ({
+        x: Math.round(pos.get(id).x + pos.get(id).w / 2),
+        y: Math.round(rowTop.get(first + j) - GAP_Y / 2),
+      }))
+    );
+  }
+
+  // Annotations sit beside their target, on whichever side of the flow that
+  // target is nearer to, so the dashed line does not cross the diagram.
+  const flowLeft = Math.min(...spec.nodes.map(n => pos.get(n.id).x));
+  const flowRight = Math.max(...spec.nodes.map(n => pos.get(n.id).x + pos.get(n.id).w));
+  const mid = (flowLeft + flowRight) / 2;
   (spec.notes || []).forEach((note, i) => {
     const t = pos.get(note.target);
     pos.set(`note_${note.target}_${i}`, {
-      x: noteX,
+      x: t && t.x + t.w / 2 < mid ? flowLeft - 70 - W.note : flowRight + 70,
       y: t ? t.y + t.h / 2 - H.note / 2 : TOP + i * (H.note + 20),
       w: W.note,
       h: H.note,
     });
   });
 
-  return { pos, canvasWidth: noteX + W.note + 40, canvasHeight: y + 40 };
+  // A note on the left can run past the margin, so slide the page back.
+  const spillLeft = LEFT - Math.min(...[...pos.values()].map(p => p.x));
+  if (spillLeft > 0) {
+    for (const p of pos.values()) p.x += spillLeft;
+    for (const via of waypoints.values()) for (const pt of via) pt.x += spillLeft;
+  }
+
+  const right = Math.max(...[...pos.values()].map(p => p.x + p.w));
+  return { pos, waypoints, canvasWidth: right + LEFT, canvasHeight: y + 40 };
 }
 
 const esc = s =>
@@ -138,7 +231,7 @@ const esc = s =>
     .replace(/\n/g, '&#10;');
 
 function cellsFor(spec) {
-  const { pos, canvasWidth, canvasHeight } = layout(spec);
+  const { pos, waypoints, canvasWidth, canvasHeight } = layout(spec);
   const out = [];
 
   out.push(
@@ -168,9 +261,15 @@ function cellsFor(spec) {
   });
 
   spec.edges.forEach((e, i) => {
+    const via = waypoints.get(i);
+    const geometry = via
+      ? `<mxGeometry relative="1" as="geometry"><Array as="points">` +
+        via.map(p => `<mxPoint x="${p.x}" y="${p.y}"/>`).join('') +
+        `</Array></mxGeometry>`
+      : `<mxGeometry relative="1" as="geometry"/>`;
     out.push(
       `        <mxCell id="e${i}" value="${esc(e.label || '')}" style="${EDGE}" edge="1" parent="1" source="${e.from}" target="${e.to}">` +
-        `<mxGeometry relative="1" as="geometry"/></mxCell>`
+        `${geometry}</mxCell>`
     );
   });
 

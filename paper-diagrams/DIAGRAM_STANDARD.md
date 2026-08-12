@@ -10,7 +10,9 @@ The standard is enforced by [generate.js](generate.js) rather than by discipline
 |---|---|
 | `diagrams.js` | The 18 diagram specs. Content lives here. |
 | `generate.js` | Styles, layout, and draw.io XML emitter. Appearance lives here. |
+| `export-png.sh` | Renders every page to `png/` at print resolution. |
 | `opt-out-typology.drawio` | Generated. One file, 18 pages, one page per figure. |
+| `png/` | Generated. One PNG per figure, numbered in tab order. |
 
 ```bash
 cd paper-diagrams
@@ -18,6 +20,14 @@ node generate.js
 ```
 
 Open `opt-out-typology.drawio` in draw.io. It edits like any hand-drawn file. Regenerating overwrites manual edits, so change `diagrams.js` and regenerate rather than editing the output directly.
+
+For the figures themselves, run the export script. It regenerates first, so the PNGs never lag behind `diagrams.js`:
+
+```bash
+cd paper-diagrams && ./export-png.sh
+```
+
+It uses the draw.io desktop app (`brew install --cask drawio`), which is the same renderer the editor uses, so the images match what you see on screen. Default is 3x, which is roughly 300 DPI at the sizes below. Override with `SCALE=4 ./export-png.sh`, or point `DRAWIO` at a different copy of the app.
 
 ## The 18 figures
 
@@ -76,9 +86,17 @@ No em dashes anywhere, per [CONTRIBUTING.md](../CONTRIBUTING.md). Use a colon or
 
 ## Layout
 
-Top to bottom. Nodes are ranked by longest path from the entry node, so an arrow always points at a strictly lower row and the figure reads downward. Rows are centered on a shared axis. Annotations sit in a right-hand column, vertically aligned to their target.
+Top to bottom. Nodes are ranked by longest path from the entry node, so an arrow always points at a strictly lower row and the figure reads downward.
 
-Sizes are fixed so figures scale consistently in print: 210 by 60 for steps, 190 by 90 for decisions, 250 by 78 for annotations, 46 horizontal gap, 66 vertical gap.
+Within a row, each node sits under the average position of its parents, then slides right to clear its neighbors, then the whole row slides back so it stays balanced under those parents rather than drifting. A single child ends up directly below its parent and a pair straddles it evenly.
+
+An edge that skips a row gets a reserved lane in every row it crosses, and turns in the gap above each row rather than at the height of a box. Without those lanes, long edges get routed straight over whatever box is in the way, and draw.io drops the edge label on top of that box's text.
+
+Annotations sit beside their target, on whichever side of the flow the target is nearer to, so the dashed line does not cross the figure.
+
+Sizes are fixed so figures scale consistently in print: 210 by 60 for steps, 190 by 90 for decisions, 250 by 78 for annotations, 30 for a reserved lane, 46 horizontal gap, 66 vertical gap.
+
+Keep a figure's converging paths at the bottom. Three edges arriving at one node from three different rows is what forces long lateral routing, and it reads worse than giving each branch its own terminal. The Category E overview was rewritten for this reason.
 
 ## Adding or changing a figure
 
