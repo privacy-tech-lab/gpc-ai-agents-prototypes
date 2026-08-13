@@ -21,7 +21,7 @@ The firewall can be driven two ways. The **deterministic core** (`orchestrator.j
 
 ## GPC category depicted
 
-Architecture E implements **B3 — Derived-collection opt-out** from **Category B (Collection)** of the opt-out typology: opting out of what a system concludes about a user, as distinct from what the user submits (B1) or what they passively generate (B2).
+Architecture E implements **B3 (derived-collection opt-out)** from **Category B (Collection)** of the opt-out typology: opting out of what a system concludes about a user, as distinct from what the user submits (B1) or what they passively generate (B2). One scope note: the typology defines B3 as opting out of the *production* of inferences, but the firewall here enforces at the storage boundary instead — the classifier still runs and the inference is still computed (`would_have_written` reports it) — so this is the weaker, more practical reading of B3, not a strict block on computation itself.
 
 | | B3 off (baseline) | B3 on (enforced) |
 |---|---|---|
@@ -30,7 +30,31 @@ Architecture E implements **B3 — Derived-collection opt-out** from **Category 
 | Shadow profile at session end | 11 attributes | 0 attributes |
 | Inference attempts blocked | 0 | 8 |
 
-A note on scope. The typology defines B3 as opting out of the *production* of inferences — "inferences, scores, and behavioral profiles ... may not be produced." Architecture E enforces B3 at the storage boundary instead: the classifier still runs and the inference is still computed — the firewall even reports `would_have_written` — but nothing reaches the profile. This is the weaker, more practical reading: derivation is suppressed at the point it would be retained, not at the point it would be computed. A strict B3 would have to block the classifier itself. The typology's own assumptions section names this tension directly — a model "processes your input ... simultaneously collecting, using, and potentially influencing in a single forward pass" — so the gap is acknowledged, not hidden.
+```mermaid
+flowchart TD
+    Q["Search query"] --> MC["mcp_client.js ⇄ stdio ⇄\nmcp-server/server.js\nclassify_query(query)"]
+    MC --> CL["{ inferred_attributes, answer }"]
+    CL --> B3{"B3 signal on?"}
+    B3 -- "no (baseline)" --> ENG["inference_engine.derive()"]
+    ENG --> WR["profile_store.write()\nshadow profile grows"]
+    WR --> R1["{ status: derived, attributes, answer }"]
+    B3 -- "yes (enforced)" --> FW["inference_firewall.block()"]
+    FW --> NW["profile_store NOT written\nblocked_count++\nwould_have_written recorded"]
+    NW --> R2["{ status: blocked, reason: b3_inference_firewall,\nwould_have_written, answer }"]
+    R1 --> ANS["Answer returned to user\n(identical in both modes)"]
+    R2 --> ANS
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    class FW,NW category
+    B3cat["Category B3 — Derived-collection opt-out:\ninference computed but suppressed at the storage boundary"]:::category -.-> FW
+```
+
+---
+
+## Protocol compliance
+
+- **MCP.** `query_classifier.js`'s classify step is served by `mcp-server/server.js`, a real `@modelcontextprotocol/sdk` `Server` over stdio, reached by `mcp_client.js`, a real `Client` that spawns it as a child process. The firewall/engine decision and the profile store stay client-side in `orchestrator.js` / `agent.js`, unchanged: that decision accumulates state across a whole session (8 queries sharing one store), and the existing unit tests exercise that state directly — moving it server-side would mean redesigning session identity instead of adding real protocol compliance for no added demonstration value. Classification is the one piece that's stateless and is genuinely "a tool the platform calls."
+- **A2A.** Not applicable. There's a single agent here; the firewall and profile store are internal platform mechanics, not a second agent to hand off to.
 
 ---
 
@@ -57,7 +81,7 @@ No single query asks the user to disclose anything. Together they describe healt
 
 ```
 query
-  → query_classifier.classify()   { inferred_attributes, answer }
+  → mcp_client.js ⇄ stdio ⇄ mcp-server/server.js: classify_query(query)   { inferred_attributes, answer }
       → inference_engine.derive()  writes attributes to the store
           → profile_store.write()  shadow profile grows
   → { status: 'derived', attributes, answer }
@@ -67,7 +91,7 @@ query
 
 ```
 query
-  → query_classifier.classify()   { inferred_attributes, answer }
+  → mcp_client.js ⇄ stdio ⇄ mcp-server/server.js: classify_query(query)   { inferred_attributes, answer }
       → inference_firewall.block()  intercepts here
           → profile_store.write() is NOT called
           → blocked_count incremented
@@ -81,9 +105,14 @@ The classifier runs in both modes because it produces the answer as well as the 
 ```
 architecture-e/
 ├── query_classifier.js    Maps 8 queries to inferred attributes + a canned answer
+├── mcp_client.js          Real MCP client (stdio) — spawns mcp-server/server.js
 ├── profile_store.js       createProfileStore(); tracks attributes and blocked_count
 ├── inference_engine.js    derive(): writes classified attributes to the store (B3 off)
 ├── inference_firewall.js  block(): records would_have_written, never writes (B3 on)
+│
+├── mcp-server/
+│   └── server.js          MCP server entry point (real @modelcontextprotocol/sdk Server, stdio);
+│                          exposes classify_query, thin wrapper around query_classifier.js
 │
 │  Deterministic core (no model — what the tests run):
 ├── orchestrator.js        run(b3): processes all 8 queries in sequence
@@ -108,7 +137,7 @@ architecture-e/
 
 ## Setup
 
-No external dependencies, no API keys — the classifier is a static table and the pipeline is deterministic. Node.js 18+.
+No API keys — the classifier is a static table and the pipeline is deterministic. Node.js 18+.
 
 ```bash
 cd architecture-e

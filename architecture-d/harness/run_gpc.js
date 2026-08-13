@@ -11,6 +11,7 @@ const fs   = require('fs');
 const path = require('path');
 const { handleRequest } = require('../orchestrator/orchestrator');
 const { encodeBaggage } = require('../orchestrator/baggage');
+const { closeClient }   = require('../provider/mcp_client');
 const {
   gpcAdoptionRate, topicDistribution, publisherReach,
   inferUserInterests, siteLevelView,
@@ -60,6 +61,8 @@ async function main() {
   console.log('  query_topic  :', providerView[0].query_topic);
   console.log('  meta_received:', JSON.stringify(providerView[0].meta_received));
   console.log('\nOutput written to:', OUTPUT);
+
+  await closeClient();
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch(async (err) => { console.error(err); await closeClient(); process.exit(1); });

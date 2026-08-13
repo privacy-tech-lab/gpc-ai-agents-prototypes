@@ -3,6 +3,7 @@
 const manifest = require('./consent_manifest');
 const orchestrator = require('./orchestrator');
 const prompt = require('./consent_prompt');
+const { closeClient } = require('./mcp_client');
 
 const PLATFORM_VERSION = 'v2.0';
 const VALID_MODES = ['silent', 'approve', 'decline', 'interactive'];
@@ -55,6 +56,8 @@ async function main() {
   if (mode === 'decline' || gpc) {
     printPersistenceCheck();
   }
+
+  await closeClient();
 }
 
 function buildTimeline(results) {
@@ -83,4 +86,4 @@ function printPersistenceCheck() {
   console.log('further platform updates until the user actively reverses the decision.');
 }
 
-main().catch(console.error);
+main().catch(async (err) => { console.error(err); await closeClient(); process.exit(1); });

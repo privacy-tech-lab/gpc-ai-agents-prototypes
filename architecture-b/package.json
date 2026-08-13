@@ -2,7 +2,7 @@
   "name": "architecture-b",
   "version": "1.0.0",
   "description": "Purpose-scoped GPC enforcement across a multi-stage AI data pipeline",
-  "main": "demo.js",
+  "main": "orchestrator/orchestrator.js",
   "scripts": {
     "baseline": "node harness/run_baseline.js",
     "gpc":      "node harness/run_gpc.js",
@@ -17,6 +17,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "express": "^5.2.1"
   },
   "devDependencies": {

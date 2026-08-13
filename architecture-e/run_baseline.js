@@ -14,6 +14,7 @@
  */
 
 const orchestrator = require('./orchestrator');
+const { closeClient } = require('./mcp_client');
 
 async function main() {
   console.log('=== Architecture E — Inference Firewall | B3: OFF (baseline) ===');
@@ -41,6 +42,8 @@ async function main() {
   console.log(JSON.stringify(profileSnapshot.attributes, null, 2));
   console.log('\n[!] With B3 off, the system has built a detailed user profile from');
   console.log('    search queries alone — no explicit user disclosure required.');
+
+  await closeClient();
 }
 
-main().catch(console.error);
+main().catch(async (err) => { console.error(err); await closeClient(); process.exit(1); });

@@ -1,9 +1,20 @@
 'use strict';
 
+/**
+ * consent_gate.js — the withConsentCheck() interceptor (formerly mcp_server.js).
+ *
+ * Renamed to avoid colliding with the real MCP server now in mcp-server/,
+ * added so tool execution itself travels over a real MCP stdio connection
+ * (mcp_client.js). The consent decision-making here stays client-side —
+ * see mcp-server/server.js for why (the quarantine pause needs interactive
+ * stdin, which the MCP transport itself occupies once a tool call reaches
+ * the server).
+ */
+
 const registry = require('./tool_registry');
 const manifest = require('./consent_manifest');
 const bus = require('./event_bus');
-const handlers = require('./tool_handlers');
+const mcpClient = require('./mcp_client');
 
 // Categories the user explicitly consented to at signup.
 // GPC auto-decline applies only to categories outside this set.
@@ -15,7 +26,7 @@ async function withConsentCheck(toolName, args, mode, gpc = false) {
 
   // Silent mode: no registry enforcement — tools are immediately available
   if (mode === 'silent') {
-    return { status: 'executed', tool: toolName, ...handlers[toolName](args) };
+    return { status: 'executed', tool: toolName, ...(await mcpClient.callTool(toolName, args)) };
   }
 
   const mf = manifest.load();
@@ -64,11 +75,11 @@ async function withConsentCheck(toolName, args, mode, gpc = false) {
       consent_required: true,
       tool: toolName,
       prompt_text: consentResult.promptText,
-      ...handlers[toolName](args),
+      ...(await mcpClient.callTool(toolName, args)),
     };
   }
 
-  return { status: 'executed', tool: toolName, ...handlers[toolName](args) };
+  return { status: 'executed', tool: toolName, ...(await mcpClient.callTool(toolName, args)) };
 }
 
 async function invokeTool(toolName, args, mode, gpc = false) {

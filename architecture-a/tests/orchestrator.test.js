@@ -18,7 +18,7 @@ jest.mock('../agents/synthesis_agent.js', () => ({
   run: jest.fn().mockResolvedValue({ answer: 'mock synthesized answer' }),
 }));
 
-const { handleRequest } = require('../orchestrator/orchestrator.js');
+const { handleRequest, shutdown } = require('../orchestrator/orchestrator.js');
 const { store }         = require('../services/storage.js');
 const fs   = require('fs');
 const path = require('path');
@@ -30,6 +30,12 @@ beforeAll(() => {
   [LOG_FILE, PROFILE_FILE].forEach((f) => {
     if (fs.existsSync(f)) fs.unlinkSync(f);
   });
+});
+
+// handleRequest() now starts real A2A agent servers and a real MCP stdio
+// child process on first call; close them so Jest can exit cleanly.
+afterAll(async () => {
+  await shutdown();
 });
 
 // ── Layer 1: Sec-GPC header ───────────────────────────────────────────────────

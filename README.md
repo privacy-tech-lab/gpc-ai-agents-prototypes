@@ -76,17 +76,21 @@ See [architecture-e/README.md](architecture-e/README.md) for setup, demo, and te
 
 ---
 
-### Category D: Persistence
+## Category prototypes
 
-**Scenario:** a user talks to Aria, a memory-enabled assistant, across two sessions. Session 1 discloses a vegetarian diet and a tight budget while asking for recipes. Session 2 asks for restaurant suggestions. Afterward, the platform synthesizes a behavioral profile from the archive.
+The architectures above are each organized around one enforcement mechanism. These prototypes are organized the other way, by the opt-out typology: one prototype per category, covering that category's subtypes exactly. They complement the architectures rather than replacing them.
 
-**Enforcement:** a persistence gate at the three moments retention happens. D1 (session scope): the session-end boundary discards transcripts instead of archiving them, while same-session context still works for operational coherence. D2 (cross-session scope): the archive may exist for the user but returns nothing to a new session, so the restaurant answer starts from a clean slate. D3 (long-term profile scope): retained sessions stay inert transcripts instead of becoming a behavioral model. The subtypes form a hierarchy (D1 implies D2 and D3, D2 implies D3), and a bare GPC signal asserts the strictest scope.
+### Category B: Collection
 
-**What it prevents:** data outliving its moment: transcripts surviving the session, past sessions steering new ones, and history hardening into a durable model of the user.
+**Scenario:** a user asks an AI writing assistant to polish one email to their manager about a raise. While composing, they deleted a sentence about treatment costs before submitting, paused 42 seconds over the salary line, and rewrote the opening three times.
 
-**What it does not prevent:** anything in Categories A, B, C, and E.
+**Enforcement:** a collection gate at three boundaries. B1 (input): the submission completes the task and is then discarded instead of logged. B2 (behavioral): passively generated telemetry is suppressed. B3 (derived): the inference firewall blocks profile writes, with each attribute labeled by whether it came from submitted input or from behavior. A bare GPC signal asserts all three; a scope list asserts any subset.
 
-See [category-d-persistence/README.md](category-d-persistence/README.md) for setup, demo, flowcharts, and test instructions.
+**What it prevents:** the platform retaining what the user submitted, recording what they unknowingly produced, and writing inferences derived from either. Two of the four inferred attributes come from a sentence the user chose not to send.
+
+**What it does not prevent:** the task. The polished email is returned identically in every mode.
+
+See [category-b-collection/README.md](category-b-collection/README.md) for setup, demo, flowchart, and test instructions.
 
 ---
 
