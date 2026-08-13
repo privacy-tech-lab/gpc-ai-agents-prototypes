@@ -6,7 +6,7 @@
  * Layer 4 — demonstrating that GPC opt-out does not degrade answer quality,
  * only storage behaviour.
  *
- * The meta envelope is passed in for traceability but is not used here since
+ * The _meta envelope is passed in for traceability but is not used here since
  * no tool calls cross the agent boundary.
  */
 
@@ -20,11 +20,11 @@ Base your answer strictly on the provided results. Structure it clearly by day. 
  * @param {object}  task
  * @param {string}  task.query
  * @param {Array}   task.rawResults  — all raw search results from the search agent
- * @param {object}  [task.meta]
+ * @param {object}  [task._meta]
  * @param {Array}   [task.timing]
  * @returns {{ answer: string }}
  */
-async function run({ query, rawResults, meta = {}, timing = null }) {
+async function run({ query, rawResults, _meta = {}, timing = null }) {
   const { finalResponse } = await runAgentLoop({
     systemPrompt:    SYSTEM_PROMPT,
     userMessage:     `Query: ${query}\n\nRaw search results:\n${JSON.stringify(rawResults, null, 2)}`,

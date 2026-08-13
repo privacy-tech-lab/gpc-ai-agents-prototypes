@@ -18,6 +18,7 @@
 
 const { runAgentLoop } = require('./agent_loop');
 const classifier = require('./query_classifier');
+const mcpClient  = require('./mcp_client');
 const engine     = require('./inference_engine');
 const firewall   = require('./inference_firewall');
 const { createProfileStore } = require('./profile_store');
@@ -57,12 +58,12 @@ the answer. Pass the user's question to the search tool exactly as they asked it
  * @param {{query: string}} input
  * @param {object} store   profile store for this session
  * @param {boolean} b3     whether the B3 firewall is active
- * @returns {{ answer: string }}
+ * @returns {Promise<{ answer: string }>}
  */
-function executeSearch({ query }, store, b3) {
+async function executeSearch({ query }, store, b3) {
   let classified;
   try {
-    classified = classifier.classify(query);
+    classified = await mcpClient.classify(query);
   } catch {
     return { answer: "I couldn't find specific information on that question." };
   }

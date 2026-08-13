@@ -8,12 +8,17 @@
 const { createProvider } = require('../provider/provider');
 const { fanoutAll, fanoutSelected, app, buildPrivacyContext } = require('../orchestrator/orchestrator');
 const { listPublisherIds } = require('../services/tool_registry');
+const { closeClient } = require('../provider/mcp_client');
 
 // Test isolation: prevent live Tavily fetches during the whole file
 // regardless of which describe is running.
 const ORIGINAL_TAVILY_KEY = process.env.TAVILY_API_KEY;
 beforeAll(() => { delete process.env.TAVILY_API_KEY; });
-afterAll(()  => { if (ORIGINAL_TAVILY_KEY !== undefined) process.env.TAVILY_API_KEY = ORIGINAL_TAVILY_KEY; });
+afterAll(async () => {
+  if (ORIGINAL_TAVILY_KEY !== undefined) process.env.TAVILY_API_KEY = ORIGINAL_TAVILY_KEY;
+  // fanout() spawns a real MCP child process (mcp-server/server.js); close it.
+  await closeClient();
+});
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -25,7 +30,7 @@ afterAll(()  => { if (ORIGINAL_TAVILY_KEY !== undefined) process.env.TAVILY_API_
 describe('fanout helpers', () => {
   test('fanoutAll hits every publisher in the registry', async () => {
     const p = createProvider();
-    const r = await fanoutAll(p, 'u1', 'iPhone 17', { gpc: 0 });
+    const r = await fanoutAll(p, 'u1', 'iPhone 17', {});
     expect(r.site_results.length).toBe(listPublisherIds().length);
   });
 
@@ -38,7 +43,7 @@ describe('fanout helpers', () => {
 
   test('fanoutSelected with empty siteIds yields one observation, no site results', async () => {
     const p = createProvider();
-    const r = await fanoutSelected(p, 'u1', 'iPhone 17', [], { gpc: 0 });
+    const r = await fanoutSelected(p, 'u1', 'iPhone 17', [], {});
     expect(r.site_results.length).toBe(0);
     // The provider still records the request — visibility is structural.
     expect(p.getProviderView().length).toBe(1);
@@ -47,7 +52,7 @@ describe('fanout helpers', () => {
 
   test('fanoutSelected with an unknown publisher returns an error result', async () => {
     const p = createProvider();
-    const r = await fanoutSelected(p, 'u1', 'iPhone 17', ['NOT_A_REAL_SITE'], { gpc: 0 });
+    const r = await fanoutSelected(p, 'u1', 'iPhone 17', ['NOT_A_REAL_SITE'], {});
     expect(r.site_results.length).toBe(1);
     expect(r.site_results[0].status).toBe('error');
     expect(r.site_results[0].reason).toBe('unknown_site');
@@ -87,7 +92,7 @@ describe('fanout helpers', () => {
     for (const bad of [null, undefined, { malformed: true }, 42, true]) {
       const r = await handleRequest({ user_id: 'u1', query: 'iPhone 17 review summary', baggageHeader: bad });
       expect(r.gpc_active).toBe(false);
-      expect(r.meta_envelope.gpc).toBe(0);
+      expect('gpc' in r.meta_envelope).toBe(false);
     }
   });
 });
@@ -100,7 +105,7 @@ describe('fanout helpers', () => {
 ////////////////////////////////////////////////////////////////////////////////
 
 describe('buildPrivacyContext', () => {
-  test('Sec-GPC header takes precedence over body.gpc', () => {
+  test('Sec-GPC: 1 sets gpc=1 regardless of body.gpc', () => {
     const ctx = buildPrivacyContext({ headers: { 'sec-gpc': '1' }, body: { gpc: 0 } });
     expect(ctx.gpc).toBe(1);
   });
@@ -122,13 +127,13 @@ describe('buildPrivacyContext', () => {
     expect(buildPrivacyContext({ headers: {}, body: { gpc: '1' } }).gpc).toBe(1);
   });
 
-  test('normalizes body.gpc string "0" to numeric 0', () => {
-    expect(buildPrivacyContext({ headers: {}, body: { gpc: '0' } }).gpc).toBe(0);
+  test('body.gpc="0" is treated as absent (gpc undefined)', () => {
+    expect(buildPrivacyContext({ headers: {}, body: { gpc: '0' } }).gpc).toBeUndefined();
   });
 
-  test('normalizes body.gpc boolean true to 1 and false to 0', () => {
+  test('body.gpc=true sets gpc=1; body.gpc=false is treated as absent', () => {
     expect(buildPrivacyContext({ headers: {}, body: { gpc: true  } }).gpc).toBe(1);
-    expect(buildPrivacyContext({ headers: {}, body: { gpc: false } }).gpc).toBe(0);
+    expect(buildPrivacyContext({ headers: {}, body: { gpc: false } }).gpc).toBeUndefined();
   });
 
   test('leaves gpc undefined when body.gpc is an unrecognised value', () => {
@@ -136,31 +141,29 @@ describe('buildPrivacyContext', () => {
     expect(buildPrivacyContext({ headers: {}, body: { gpc: null  } }).gpc).toBeUndefined();
   });
 
-  // Regression: Sec-GPC=0 used to fall through to body.gpc, so a
-  // request with Sec-GPC: 0 and body { gpc: 1 } would resolve to 1.
-  test('Sec-GPC: 0 overrides body.gpc=1', () => {
-    expect(buildPrivacyContext({ headers: { 'sec-gpc': '0' }, body: { gpc: 1 } }).gpc).toBe(0);
+  // Sec-GPC: 0 is not a valid signal per spec and is treated as absent.
+  test('Sec-GPC: 0 is treated as absent; falls through to body.gpc=1', () => {
+    expect(buildPrivacyContext({ headers: { 'sec-gpc': '0' }, body: { gpc: 1 } }).gpc).toBe(1);
   });
 
-  test('Sec-GPC: 0 with no body resolves to 0', () => {
-    expect(buildPrivacyContext({ headers: { 'sec-gpc': '0' }, body: {} }).gpc).toBe(0);
+  test('Sec-GPC: 0 with no body leaves gpc absent', () => {
+    expect(buildPrivacyContext({ headers: { 'sec-gpc': '0' }, body: {} }).gpc).toBeUndefined();
   });
 
   test('unrecognized Sec-GPC value (e.g. "true") falls through to body', () => {
     expect(buildPrivacyContext({ headers: { 'sec-gpc': 'true' }, body: { gpc: 1 } }).gpc).toBe(1);
   });
 
-  // Regression: Node concatenates duplicate request headers into a
-  // comma-separated string. A duplicated Sec-GPC: 1 arrives as "1, 1";
-  // a mixed pair arrives as "1, 0". A strict === '1' check missed both.
-  test('any "1" value in a comma-joined Sec-GPC sets gpc=1 (most restrictive wins)', () => {
+  // Node concatenates duplicate request headers into a comma-separated string.
+  // Any "1" in that string means the signal is present.
+  test('any "1" in a comma-joined Sec-GPC sets gpc=1', () => {
     expect(buildPrivacyContext({ headers: { 'sec-gpc': '1, 0' }, body: {} }).gpc).toBe(1);
     expect(buildPrivacyContext({ headers: { 'sec-gpc': '0, 1' }, body: {} }).gpc).toBe(1);
     expect(buildPrivacyContext({ headers: { 'sec-gpc': '1, 1' }, body: {} }).gpc).toBe(1);
   });
 
-  test('all-zero comma-joined Sec-GPC sets gpc=0 and still overrides body.gpc=1', () => {
-    expect(buildPrivacyContext({ headers: { 'sec-gpc': '0, 0' }, body: { gpc: 1 } }).gpc).toBe(0);
+  test('all-zero comma-joined Sec-GPC is treated as absent; falls through to body.gpc=1', () => {
+    expect(buildPrivacyContext({ headers: { 'sec-gpc': '0, 0' }, body: { gpc: 1 } }).gpc).toBe(1);
   });
 });
 

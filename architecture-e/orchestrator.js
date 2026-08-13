@@ -24,6 +24,7 @@
  */
 
 const classifier  = require('./query_classifier');
+const mcpClient   = require('./mcp_client');
 const engine      = require('./inference_engine');
 const firewall    = require('./inference_firewall');
 const { createProfileStore } = require('./profile_store');
@@ -34,7 +35,7 @@ async function run(b3 = false) {
   const results = [];
 
   for (const query of queries) {
-    const classified = classifier.classify(query);
+    const classified = await mcpClient.classify(query);
 
     let engineResult;
     if (b3) {

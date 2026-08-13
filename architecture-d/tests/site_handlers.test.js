@@ -63,7 +63,7 @@ describe('querySite', () => {
 
     for (const bad of ['-1', '0', 'NaN', 'abc']) {
       process.env.TAVILY_TIMEOUT_MS = bad;
-      const r = await querySite('the-verge', 'iPhone 17', { gpc: 0 });
+      const r = await querySite('the-verge', 'iPhone 17', {});
       expect(r.status).toBe('ok');
       expect(signalAbortedAtCall).toBe(false);
     }

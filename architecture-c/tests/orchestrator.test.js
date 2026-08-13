@@ -13,11 +13,18 @@
 const orchestrator = require('../orchestrator');
 const manifest = require('../consent_manifest');
 const bus = require('../event_bus');
-const server = require('../mcp_server');
+const server = require('../consent_gate');
+const { closeClient } = require('../mcp_client');
 
 beforeEach(() => {
   manifest.reset();
   bus.removeAllListeners();
+});
+
+// Allowed tool calls spawn a real MCP child process (mcp-server/server.js);
+// close it so Jest can exit cleanly.
+afterAll(async () => {
+  await closeClient();
 });
 
 describe('v1.0 run — baseline', () => {

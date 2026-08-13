@@ -2,15 +2,16 @@
  * AI baseline: Ollama drives the fanout with GPC off.
  * The model receives the user query, decides which publishers to call
  * and what sub-query to send each. Requires a running Ollama instance
- * with the configured model loaded (default qwen2.5:7b).
+ * with the configured model loaded (default qwen2.5:14b).
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
 
 const fs   = require('fs');
 const path = require('path');
 const { handleAgentRequest } = require('../orchestrator/orchestrator');
 const { encodeBaggage }      = require('../orchestrator/baggage');
+const { closeClient }        = require('../provider/mcp_client');
 const {
   gpcAdoptionRate, topicDistribution, publisherReach, inferUserInterests,
 } = require('../provider/aggregation');
@@ -26,7 +27,7 @@ async function main() {
   const result = await handleAgentRequest({
     user_id:       userId,
     query,
-    baggageHeader: encodeBaggage({ gpc: '0' }),
+    baggageHeader: '',
   });
 
   const providerView = result.provider_view;
@@ -58,10 +59,13 @@ async function main() {
   }
   console.log('\n[Summary]\n', out.user_facing_summary);
   console.log('\nOutput written to:', OUTPUT);
+
+  await closeClient();
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error('ai-baseline failed:', err.message);
-  console.error('Is Ollama running? Try: ollama serve && ollama pull qwen2.5:7b');
+  console.error('Is Ollama running? Try: ollama serve && ollama pull qwen2.5:14b');
+  await closeClient();
   process.exit(1);
 });

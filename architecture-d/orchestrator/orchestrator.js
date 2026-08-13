@@ -16,40 +16,7 @@ const { createProvider }                 = require('../provider/provider');
 const { listPublisherIds }               = require('../services/tool_registry');
 const { readGpcFromBaggage, encodeBaggage } = require('./baggage');
 const researchAgent                      = require('../agents/research_agent');
-
-/**
- * Build the privacy context from an Express request (Sec-GPC or body).
- *
- * The returned `gpc` is normalized to `1`, `0`, or `undefined`.
- *
- * Precedence:
- *   1. `Sec-GPC` header wins when set to `"1"` or `"0"`.
- *   2. Otherwise `body.gpc` (any of `1` / `"1"` / `true` / `0` / `"0"` / `false`).
- *   3. Otherwise `undefined`.
- *
- * An explicit `Sec-GPC: 0` is honored even when the body sets gpc=1.
- * Anything in the header other than `"1"` / `"0"` is ignored and the
- * body is consulted.
- */
-function buildPrivacyContext(req) {
-  // Node merges duplicate request headers into a comma-separated string,
-  // so `Sec-GPC: 1, 0` (or two Sec-GPC headers) arrives as "1, 0". Split
-  // and apply the most-restrictive-wins rule: any '1' present means the
-  // user is opting out; only an explicit all-zero header reads as 0;
-  // anything else falls through to body.gpc.
-  const raw    = req.headers?.['sec-gpc'];
-  const values = typeof raw === 'string'
-    ? raw.split(',').map((s) => s.trim()).filter(Boolean)
-    : [];
-  if (values.includes('1'))                                  return { gpc: 1 };
-  if (values.length > 0 && values.every((v) => v === '0'))   return { gpc: 0 };
-
-  const bodyGpc = req.body?.gpc;
-  let gpc;
-  if (bodyGpc === 1 || bodyGpc === '1' || bodyGpc === true)      gpc = 1;
-  else if (bodyGpc === 0 || bodyGpc === '0' || bodyGpc === false) gpc = 0;
-  return { gpc };
-}
+const { buildPrivacyContext }            = require('../../core/gpc');
 
 /**
  * Fan a query to every publisher in the registry via the provider.
@@ -79,7 +46,8 @@ async function handleRequest({ user_id, query, baggageHeader = '', provider }) {
   const gpcActive = readGpcFromBaggage(baggageHeader);
 
   // Layer 2: assemble the `_meta` envelope carried into the provider.
-  const meta = { gpc: gpcActive ? 1 : 0 };
+  // gpc key is present only when the signal is active; absence means no signal.
+  const meta = gpcActive ? { gpc: 1 } : {};
 
   // Layer 3: hand the fanout to the provider middleware.
   const p            = provider ?? createProvider();
@@ -87,7 +55,7 @@ async function handleRequest({ user_id, query, baggageHeader = '', provider }) {
 
   return {
     gpc_active:    gpcActive,
-    meta_envelope: { gpc: meta.gpc },
+    meta_envelope: meta,
     fanout:        fanoutResult,
     provider_view: p.getProviderView(),
   };
@@ -99,14 +67,14 @@ async function handleRequest({ user_id, query, baggageHeader = '', provider }) {
  */
 async function handleAgentRequest({ user_id, query, baggageHeader = '', provider }) {
   const gpcActive = readGpcFromBaggage(baggageHeader);
-  const meta      = { gpc: gpcActive ? 1 : 0 };
+  const meta      = gpcActive ? { gpc: 1 } : {};
   const p         = provider ?? createProvider();
 
   const agentResult = await researchAgent.run({ provider: p, user_id, query, meta });
 
   return {
     gpc_active:    gpcActive,
-    meta_envelope: { gpc: meta.gpc },
+    meta_envelope: meta,
     agent:         agentResult,
     provider_view: p.getProviderView(),
   };
@@ -138,7 +106,7 @@ app.post('/ask', async (req, res) => {
   // Lift the privacy context back onto a W3C baggage header so the
   // function-level entries (handleRequest / handleAgentRequest) have a
   // single canonical input shape.
-  const baggageHeader = encodeBaggage({ gpc: privacyContext.gpc === 1 ? '1' : '0' });
+  const baggageHeader = privacyContext.gpc === 1 ? encodeBaggage({ gpc: '1' }) : '';
 
   try {
     const result = mode === 'agent'

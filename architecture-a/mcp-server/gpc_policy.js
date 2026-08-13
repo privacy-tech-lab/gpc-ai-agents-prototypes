@@ -10,13 +10,16 @@ const SENSITIVE_TOOLS = new Set([
 /**
  * Wrap a tool handler with GPC enforcement (Layer 4).
  *
+ * Reads the GPC signal from _meta.gpc, which is the MCP params._meta field
+ * forwarded by every agent on each tool call.
+ *
  * @param {string} toolName
  * @param {Function} handler  async (args) => result
- * @returns {Function}        async (args, meta) => result | blocked-response
+ * @returns {Function}        async (args, _meta) => result | blocked-response
  */
 function withGpc(toolName, handler) {
-  return async function gpcInterceptor(args, meta = {}) {
-    const gpcSignal = meta?.gpc === true || meta?.gpc === 1 || meta?.gpc === '1';
+  return async function gpcInterceptor(args, _meta = {}) {
+    const gpcSignal = _meta?.gpc === true || _meta?.gpc === 1 || _meta?.gpc === '1';
 
     if (gpcSignal && SENSITIVE_TOOLS.has(toolName)) {
       return {
@@ -28,7 +31,7 @@ function withGpc(toolName, handler) {
     }
 
     const start = Date.now();
-    const result = await handler(args, meta);
+    const result = await handler(args, _meta);
     const durationMs = Date.now() - start;
 
     return { status: 'ok', tool: toolName, result, durationMs };

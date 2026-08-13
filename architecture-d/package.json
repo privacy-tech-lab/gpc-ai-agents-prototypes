@@ -1,7 +1,7 @@
 {
   "name": "architecture-d",
   "version": "1.0.0",
-  "description": "Fanout and aggregation surface — Pattern 2 / Category E. The LLM provider as a structural new privacy boundary.",
+  "description": "Fanout and provider aggregation surface. The LLM provider as a structural new privacy boundary.",
   "main": "orchestrator/orchestrator.js",
   "type": "commonjs",
   "license": "ISC",
@@ -20,6 +20,7 @@
     "test":        "jest tests/ --runInBand"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "dotenv":  "^17.4.2",
     "express": "^5.2.1"
   },

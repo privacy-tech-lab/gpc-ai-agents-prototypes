@@ -1,38 +1,53 @@
 /**
- * Lightweight in-process MCP client that calls tools on the shared server.
+ * Real MCP client — connects to mcp-server/server.js over stdio.
  *
- * Rather than spawning a real stdio subprocess (which adds significant test
- * complexity), this module imports the tool handlers directly and applies the
- * same gpc_policy.js interceptors.  The observable behaviour — tool call
- * results including blocked responses — is identical.
- *
- * Layer 2: the `meta` argument maps to the MCP params._meta field, which is
- * how the GPC signal travels inside task envelopes between agents.
+ * Spawns the server as a child process and talks the actual MCP wire
+ * protocol (initialize, tools/call) via @modelcontextprotocol/sdk, rather
+ * than importing the tool handlers in-process. The GPC signal travels in
+ * params._meta.gpc on every tools/call request, exactly as server.js reads it.
  */
 
-const { withGpc } = require('../mcp-server/gpc_policy.js');
-const handlers = require('../mcp-server/tool_handlers.js');
+const path = require('path');
+const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
+const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
 
-const wrappedHandlers = {
-  user_profile_lookup: withGpc('user_profile_lookup', handlers.user_profile_lookup),
-  save_to_profile: withGpc('save_to_profile', handlers.save_to_profile),
-  log_interaction: withGpc('log_interaction', handlers.log_interaction),
-  search_web: withGpc('search_web', handlers.search_web),
-};
+const SERVER_PATH = path.join(__dirname, '..', 'mcp-server', 'server.js');
+
+let clientPromise = null;
+
+function getClient() {
+  if (!clientPromise) {
+    const client = new Client({ name: 'architecture-a-orchestrator', version: '1.0.0' });
+    const transport = new StdioClientTransport({ command: 'node', args: [SERVER_PATH] });
+    clientPromise = client.connect(transport).then(() => client);
+  }
+  return clientPromise;
+}
+
+async function closeClient() {
+  if (!clientPromise) return;
+  const client = await clientPromise;
+  clientPromise = null;
+  await client.close();
+}
 
 /**
- * Call a tool, embedding the GPC signal in the MCP metadata envelope.
+ * Simulate an MCP tools/call request over the real stdio transport.
  *
- * @param {string}  toolName
- * @param {object}  args      — tool-specific arguments
- * @param {object}  meta      — MCP _meta field; set meta.gpc=1 to opt out
- * @param {object}  [timing]  — optional array to push timing records into
+ * @param {string}  toolName           — maps to params.name
+ * @param {object}  args               — maps to params.arguments
+ * @param {object}  [_meta]            — maps to params._meta; set _meta.gpc=1 to opt out
+ * @param {Array}   [timing]
  */
-async function callTool(toolName, args, meta = {}, timing = null) {
+async function callTool(toolName, args, _meta = {}, timing = null) {
+  const client = await getClient();
   const start = Date.now();
-  const result = await wrappedHandlers[toolName](args, meta);
-  const elapsed = Date.now() - start;
 
+  const response = await client.callTool({ name: toolName, arguments: args, _meta });
+  const [content] = response.content ?? [];
+  const result = content?.type === 'text' ? JSON.parse(content.text) : response;
+
+  const elapsed = Date.now() - start;
   if (timing) {
     timing.push({ tool: toolName, durationMs: elapsed, status: result.status });
   }
@@ -40,4 +55,4 @@ async function callTool(toolName, args, meta = {}, timing = null) {
   return result;
 }
 
-module.exports = { callTool };
+module.exports = { callTool, closeClient };

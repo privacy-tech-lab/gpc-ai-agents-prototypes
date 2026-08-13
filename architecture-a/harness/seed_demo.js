@@ -16,7 +16,6 @@ if (!fs.existsSync(OUTPUT)) fs.mkdirSync(OUTPUT, { recursive: true });
 
 const PROFILES_FILE = path.join(OUTPUT, 'profiles.json');
 const LOG_FILE      = path.join(OUTPUT, 'interaction_log.jsonl');
-const VECTOR_FILE   = path.join(OUTPUT, 'vector_store.json');
 
 // ── Existing profile for user-42 ─────────────────────────────────────────────
 const profiles = {
@@ -64,35 +63,9 @@ const interactions = [
   },
 ];
 
-// ── Past vector store entries ─────────────────────────────────────────────────
-const vectorStore = [
-  {
-    user_id:  'user-42',
-    content:  'User is interested in Southeast Asian street food and travel. Based in San Francisco. Prefers evening markets, local food over tourist restaurants.',
-    storedAt: '2026-03-12T14:20:00.000Z',
-  },
-  {
-    user_id:  'user-42',
-    content:  'User planning a multi-country Southeast Asia trip. Prefers dry season travel (Nov–Feb). Likely visiting Thailand and Vietnam on same trip.',
-    storedAt: '2026-03-28T11:00:00.000Z',
-  },
-  {
-    user_id:  'user-42',
-    content:  'User has been researching Japan trip logistics — specifically Tokyo transit. Familiar with IC cards and JR system basics. Likely planning Japan visit.',
-    storedAt: '2026-04-10T16:30:00.000Z',
-  },
-  {
-    user_id:  'user-42',
-    content:  'User specifically researching Kyoto ryokan — budget-conscious, interested in traditional accommodation. Japan trip appears imminent (Kyoto is a key stop).',
-    storedAt: '2026-05-01T09:45:00.000Z',
-  },
-];
-
 fs.writeFileSync(PROFILES_FILE, JSON.stringify(profiles, null, 2));
-fs.writeFileSync(VECTOR_FILE,   JSON.stringify(vectorStore, null, 2));
 fs.writeFileSync(LOG_FILE,      interactions.map((e) => JSON.stringify(e)).join('\n') + '\n');
 
 console.log('Demo data seeded for user-42 (travel enthusiast, SF-based):');
 console.log('  profiles.json          — profile with Asia travel history and preferences');
 console.log('  interaction_log.jsonl  — 4 past travel research interactions');
-console.log('  vector_store.json      — 4 past vendor-side personalization entries');

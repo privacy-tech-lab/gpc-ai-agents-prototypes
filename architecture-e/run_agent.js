@@ -15,6 +15,7 @@
  */
 
 const agent = require('./agent');
+const { closeClient } = require('./mcp_client');
 
 async function main() {
   const b3 = process.argv.includes('--b3');
@@ -41,10 +42,13 @@ async function main() {
   } else {
     console.log('\n[!] The model answered every question — and a profile was built from them.');
   }
+
+  await closeClient();
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error(`\n[run_agent] ${err.message}`);
   console.error('If this is a connection error, start Ollama first: `ollama serve` and `ollama pull qwen2.5:14b`.');
+  await closeClient();
   process.exit(1);
 });

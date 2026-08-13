@@ -8,13 +8,14 @@
  * here is the provider, not a sub-agent in the chain.
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
 
 const fs   = require('fs');
 const path = require('path');
 const { handleRequest }    = require('../orchestrator/orchestrator');
 const { encodeBaggage }    = require('../orchestrator/baggage');
 const { createProvider }   = require('../provider/provider');
+const { closeClient }      = require('../provider/mcp_client');
 const { siteLevelView }    = require('../provider/aggregation');
 
 const OUTPUT = path.join(__dirname, '..', 'output', 'signal_drop_result.json');
@@ -57,6 +58,8 @@ async function main() {
     console.log(`  ${v.site.padEnd(20)} -> ${v.tracking_decision.reason}`);
   }
   console.log('\nOutput written to:', OUTPUT);
+
+  await closeClient();
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch(async (err) => { console.error(err); await closeClient(); process.exit(1); });

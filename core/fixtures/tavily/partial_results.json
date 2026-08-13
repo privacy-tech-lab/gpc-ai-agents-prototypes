@@ -1,0 +1,9 @@
+{
+  "_note": "Placeholder fixture with a result missing the `content` field, to test null-guards in callers.",
+  "results": [
+    {
+      "title": "Partial result",
+      "url":   "https://example.com/partial"
+    }
+  ]
+}

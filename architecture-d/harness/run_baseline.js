@@ -1,15 +1,16 @@
 /**
- * Baseline run: gpc=0.
+ * Baseline run: no GPC signal.
  * Fanout to every publisher in the registry; every site applies its
  * default tracking policy. Reference for the GPC run to compare against.
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
 
 const fs   = require('fs');
 const path = require('path');
 const { handleRequest }                                  = require('../orchestrator/orchestrator');
 const { encodeBaggage }                                  = require('../orchestrator/baggage');
+const { closeClient }                                    = require('../provider/mcp_client');
 const {
   gpcAdoptionRate, topicDistribution, publisherReach,
   inferUserInterests, siteLevelView,
@@ -26,7 +27,7 @@ async function main() {
   const result = await handleRequest({
     user_id:       userId,
     query,
-    baggageHeader: encodeBaggage({ gpc: '0' }),
+    baggageHeader: '',
   });
 
   const providerView = result.provider_view;
@@ -58,6 +59,8 @@ async function main() {
   console.log('  query_topic  :', providerView[0].query_topic);
   console.log('  meta_received:', JSON.stringify(providerView[0].meta_received));
   console.log('\nOutput written to:', OUTPUT);
+
+  await closeClient();
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch(async (err) => { console.error(err); await closeClient(); process.exit(1); });

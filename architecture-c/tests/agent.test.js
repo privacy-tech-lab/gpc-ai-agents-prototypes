@@ -8,13 +8,19 @@
  *
  * Only paths that need no consent prompt are exercised here (silent, primary
  * category, GPC auto-decline), so nothing waits on the event bus. The prompt-driven
- * quarantine/resume path is already covered by mcp_server.test.js.
+ * quarantine/resume path is already covered by consent_gate.test.js.
  */
 
 const agent = require('../agent');
 const manifest = require('../consent_manifest');
+const { closeClient } = require('../mcp_client');
 
 beforeEach(() => manifest.reset());
+
+// Allowed tool calls spawn a real MCP child process; close it so Jest exits cleanly.
+afterAll(async () => {
+  await closeClient();
+});
 
 describe('tool definitions', () => {
   test('exposes only the user-facing tools — behavior_tracker is platform-fired', () => {
