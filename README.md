@@ -80,17 +80,17 @@ See [architecture-e/README.md](architecture-e/README.md) for setup, demo, and te
 
 The architectures above are each organized around one enforcement mechanism. These prototypes are organized the other way, by the opt-out typology: one prototype per category, covering that category's subtypes exactly. They complement the architectures rather than replacing them.
 
-### Category E: Delegation
+### Category B: Collection
 
-**Scenario:** a user asks a travel agent to book a weekend trip. The job needs flight searches, a hotel hold, a non-refundable booking charged to a card, and a passport transfer to the airline. The platform also wants to enable fare tracking and a newsletter signup around the session.
+**Scenario:** a user asks an AI writing assistant to polish one email to their manager about a raise. While composing, they deleted a sentence about treatment costs before submitting, paused 42 seconds over the salary line, and rewrote the opening three times.
 
-**Enforcement:** a delegation gate resolves each action's effective tier. The user's explicit assignments win: searches and holds run autonomously, while the booking and the passport transfer must be surfaced first, overriding the vendor's proposal to run everything alone. Where the user is silent the vendor default applies, unless GPC voids it. Anything nobody tiered falls to the most restrictive treatment, and a surfaced decision with no user available is declined rather than assumed. Execution reaches the MCP server only after the gate has decided.
+**Enforcement:** a collection gate at three boundaries. B1 (input): the submission completes the task and is then discarded instead of logged. B2 (behavioral): passively generated telemetry is suppressed. B3 (derived): the inference firewall blocks profile writes, with each attribute labeled by whether it came from submitted input or from behavior. A bare GPC signal asserts all three; a scope list asserts any subset.
 
-**What it prevents:** the agent resolving privacy-affecting decisions it was never given standing to resolve, including the two actions a real system would quietly accumulate authority over by never asking at all.
+**What it prevents:** the platform retaining what the user submitted, recording what they unknowingly produced, and writing inferences derived from either. Two of the four inferred attributes come from a sentence the user chose not to send.
 
-**What it does not prevent:** the task. Everything the user granted still runs.
+**What it does not prevent:** the task. The polished email is returned identically in every mode.
 
-See [category-e-delegation/README.md](category-e-delegation/README.md) for setup, demo, flowchart, and test instructions.
+See [category-b-collection/README.md](category-b-collection/README.md) for setup, demo, flowchart, and test instructions.
 
 ---
 
