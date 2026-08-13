@@ -1,0 +1,22 @@
+{
+  "name": "category-d-persistence",
+  "version": "1.0.0",
+  "description": "Category D (Persistence): opting out of how long data survives. D1 session, D2 cross-session, and D3 long-term profile scopes, hierarchical.",
+  "type": "commonjs",
+  "license": "MIT",
+  "scripts": {
+    "baseline": "node run_baseline.js",
+    "optout:full": "node run_optout.js --gpc",
+    "optout:d1": "node run_optout.js --scope=d1",
+    "optout:d2": "node run_optout.js --scope=d2",
+    "optout:d3": "node run_optout.js --scope=d3",
+    "demo": "node run_baseline.js && node run_optout.js --scope=d1 && node run_optout.js --scope=d2 && node run_optout.js --scope=d3",
+    "agent": "node run_agent.js",
+    "agent:d1": "node run_agent.js --scope=d1",
+    "agent:d2": "node run_agent.js --scope=d2",
+    "test": "jest tests/ --runInBand"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
+  }
+}
