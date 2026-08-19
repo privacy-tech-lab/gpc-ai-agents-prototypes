@@ -1,4 +1,5 @@
 const storage = require('../services/storage.js');
+const { buildPersonalizationContext } = require('../services/personalization.js');
 const { MODEL } = require('./agent_loop.js');
 const { callAgent } = require('./a2a_client.js');
 const { closeClient } = require('./mcp_client.js');
@@ -39,22 +40,27 @@ async function shutdown() {
  * @param {object} options
  * @param {string}  options.query
  * @param {string}  options.user_id
- * @param {string}  [options.secGpc]   — value of the Sec-GPC request header ('1' or absent)
+ * @param {string}  [options.secGpc]           — value of the Sec-GPC request header ('1' or absent)
+ * @param {string}  [options.persistenceScope] — Category D tier ('d1' | 'd2' | 'd3'), only meaningful when secGpc is '1'
  * @param {Array}   [options.timing]
  */
-async function handleRequest({ query, user_id, secGpc = '', timing = [] }) {
+async function handleRequest({ query, user_id, secGpc = '', persistenceScope, timing = [] }) {
   // Layer 1: read GPC from Sec-GPC header (W3C GPC spec §3.3)
   const gpc = secGpc === '1';
 
   // Layer 2: metadata envelope carried on every downstream call —
   // MCP's params._meta on tool calls, A2A's Message.metadata on agent calls.
   // gpc key is present only when the signal is active; absence means no signal
-  const _meta = gpc ? { gpc: 1 } : {};
+  const _meta = gpc ? { gpc: 1, ...(persistenceScope ? { persistence_scope: persistenceScope } : {}) } : {};
 
   const { search, synthesis } = await getRuntime();
 
-  // Agent 1: retrieval — reached over A2A; the LLM decides how many searches to run
-  const searchReply = await callAgent({ baseUrl: search.url, text: query, metadata: _meta });
+  // Agent 1: retrieval — reached over A2A; the LLM decides how many searches to run.
+  // Personalization consultation (Category D tiers) runs alongside it, before synthesis.
+  const [searchReply, personalization] = await Promise.all([
+    callAgent({ baseUrl: search.url, text: query, metadata: _meta }),
+    buildPersonalizationContext({ user_id, _meta, timing }),
+  ]);
   const rawResults = searchReply.metadata.rawResults ?? [];
   const searchCalls = searchReply.metadata.toolCalls ?? [];
   if (Array.isArray(searchReply.metadata.timing)) timing.push(...searchReply.metadata.timing);
@@ -83,6 +89,7 @@ async function handleRequest({ query, user_id, secGpc = '', timing = [] }) {
     rawResults,
     searchCalls,
     storageResult,
+    personalization,
     timing,
   };
 }
