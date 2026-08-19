@@ -40,6 +40,16 @@ async function log_interaction({ user_id, query, response_summary }) {
   return { logged: true, entry };
 }
 
+async function get_interaction_history({ user_id }) {
+  if (!fs.existsSync(LOG_FILE)) return { user_id, interactions: [] };
+  const interactions = fs.readFileSync(LOG_FILE, 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line))
+    .filter((entry) => entry.user_id === user_id);
+  return { user_id, interactions };
+}
+
 async function search_web({ query }) {
   const live = await searchPublisher(query, {
     maxResults: 5,
@@ -85,4 +95,4 @@ async function search_web({ query }) {
   return { query, results, source: 'local' };
 }
 
-module.exports = { user_profile_lookup, save_to_profile, log_interaction, search_web };
+module.exports = { user_profile_lookup, save_to_profile, log_interaction, get_interaction_history, search_web };

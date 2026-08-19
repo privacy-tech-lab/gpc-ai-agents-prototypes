@@ -50,6 +50,15 @@ const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'get_interaction_history',
+    description: 'Read raw past interactions for a user. Category D, needs persistence_scope d3 or better.',
+    inputSchema: {
+      type: 'object',
+      properties: { user_id: { type: 'string' } },
+      required: ['user_id'],
+    },
+  },
+  {
     name: 'search_web',
     description: 'Run a web search. Not GPC-sensitive.',
     inputSchema: {
@@ -65,6 +74,7 @@ const wrappedHandlers = {
   user_profile_lookup: withGpc('user_profile_lookup', handlers.user_profile_lookup),
   save_to_profile: withGpc('save_to_profile', handlers.save_to_profile),
   log_interaction: withGpc('log_interaction', handlers.log_interaction),
+  get_interaction_history: withGpc('get_interaction_history', handlers.get_interaction_history),
   search_web: withGpc('search_web', handlers.search_web),
 };
 
