@@ -29,13 +29,13 @@ These apply to issue bodies, PR descriptions, commit messages, code comments, an
 - Do not write "Generated with Claude Code" or `Co-Authored-By: Claude` in commits, PRs, READMEs, or any other output.
 - American English spellings (normalize, summarize, behavior).
 
-## Architecture ownership
+## Prototype ownership
 
-| Architecture | Author / primary reviewer |
-|--------------|---------------------------|
-| arch-A       | Shreya (skochar1)         |
-| arch-B       | Shreya (skochar1)         |
-| arch-C       | Ken (CapClark)            |
-| arch-D       | Vidur (vidurgupta01)      |
-| arch-E       | Ken (CapClark)            |
-| category-d-persistence | Ken (CapClark)  |
+| Prototype  | Author / primary reviewer |
+|------------|----------------------------|
+| prototype-1 | Shreya (skochar1)         |
+| prototype-2 | Shreya (skochar1)         |
+| prototype-3 | Ken (CapClark)            |
+| prototype-4 | Vidur (vidurgupta01)      |
+| prototype-5 | Ken (CapClark)            |
+| prototype-7 | Ken (CapClark)            |

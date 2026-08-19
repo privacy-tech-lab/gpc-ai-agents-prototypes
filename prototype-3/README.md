@@ -109,7 +109,7 @@ run_v2.js --mode=approve [--gpc]
 ## File map
 
 ```
-architecture-c/
+prototype-3/
 ├── tool_registry.js       Tool catalog — name, capability_category, added_at, description
 ├── consent_manifest.js    Read/write consent_manifest.json; isDeclined, requiresFreshConsent,
 │                          approve, decline, reset
@@ -153,7 +153,7 @@ architecture-c/
 ## Setup
 
 ```bash
-cd architecture-c
+cd prototype-3
 npm install
 ```
 

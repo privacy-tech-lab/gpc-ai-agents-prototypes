@@ -35,7 +35,7 @@ const TOOL_DEFINITIONS = [
 
 async function main() {
   const server = new Server(
-    { name: 'architecture-d-publisher-server', version: '1.0.0' },
+    { name: 'prototype-4-publisher-server', version: '1.0.0' },
     { capabilities: { tools: {} } }
   );
 

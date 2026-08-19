@@ -1,5 +1,5 @@
 {
-  "name": "architecture-b",
+  "name": "prototype-2",
   "version": "1.0.0",
   "description": "Purpose-scoped GPC enforcement across a multi-stage AI data pipeline",
   "main": "orchestrator/orchestrator.js",

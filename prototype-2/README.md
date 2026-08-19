@@ -92,7 +92,7 @@ The demo harness (`npm run demo`, below) intentionally bypasses the LLM and call
 ## File map
 
 ```
-architecture-b/
+prototype-2/
 ├── orchestrator/
 │   ├── orchestrator.js          Entry point: reads Sec-GPC/body gpc, dispatches agent, fans out
 │   ├── agent_loop.js            Shared LLM turn loop (tool_choice, nudge, required-tool tracking)
@@ -137,7 +137,7 @@ architecture-b/
 ## Setup
 
 ```bash
-cd architecture-b
+cd prototype-2
 npm install
 ```
 

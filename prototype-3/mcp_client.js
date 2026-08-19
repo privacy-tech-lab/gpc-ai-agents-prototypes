@@ -18,7 +18,7 @@ let clientPromise = null;
 
 function getClient() {
   if (!clientPromise) {
-    const client = new Client({ name: 'architecture-c-consent-gate', version: '1.0.0' });
+    const client = new Client({ name: 'prototype-3-consent-gate', version: '1.0.0' });
     const transport = new StdioClientTransport({ command: 'node', args: [SERVER_PATH] });
     clientPromise = client.connect(transport).then(() => client);
   }

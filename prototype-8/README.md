@@ -115,7 +115,7 @@ The gate always runs before the transport. An action the user did not grant stan
 ## File map
 
 ```
-category-e-delegation/
+prototype-8/
 ├── trip_fixture.js          Six actions with reversibility / sensitivity / consequence
 ├── delegation_manifest.js   VENDOR_PROPOSAL, USER_ASSIGNMENTS, effectiveTier()
 ├── action_handlers.js       The six simulated action implementations
@@ -150,7 +150,7 @@ category-e-delegation/
 No API keys. The actions are simulated and the pipeline is deterministic. Node.js 18+.
 
 ```bash
-cd category-e-delegation
+cd prototype-8
 npm install
 ```
 

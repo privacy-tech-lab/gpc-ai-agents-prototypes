@@ -297,7 +297,7 @@ provider can derive aggregates | yes         | yes         | yes (DP)    | yes
 ## File map
 
 ```
-architecture-d/
+prototype-4/
 ├── orchestrator/
 │   ├── orchestrator.js     Reads baggage / Sec-GPC, builds _meta, hands the fanout to the provider
 │   ├── agent_loop.js       Ollama tool-use loop with required→auto tool_choice switching
@@ -351,7 +351,7 @@ architecture-d/
 Requires Node.js 18+.
 
 ```bash
-cd architecture-d
+cd prototype-4
 npm install
 cp ../.env.example ../.env  # optional; only needed to pin defaults or set TAVILY_API_KEY
 ```

@@ -103,7 +103,7 @@ The classifier runs in both modes because it produces the answer as well as the 
 ## File map
 
 ```
-architecture-e/
+prototype-5/
 ├── query_classifier.js    Maps 8 queries to inferred attributes + a canned answer
 ├── mcp_client.js          Real MCP client (stdio) — spawns mcp-server/server.js
 ├── profile_store.js       createProfileStore(); tracks attributes and blocked_count
@@ -140,7 +140,7 @@ architecture-e/
 No API keys — the classifier is a static table and the pipeline is deterministic. Node.js 18+.
 
 ```bash
-cd architecture-e
+cd prototype-5
 npm install
 ```
 

@@ -1,5 +1,5 @@
 {
-  "name": "architecture-d",
+  "name": "prototype-4",
   "version": "1.0.0",
   "description": "Fanout and provider aggregation surface. The LLM provider as a structural new privacy boundary.",
   "main": "orchestrator/orchestrator.js",

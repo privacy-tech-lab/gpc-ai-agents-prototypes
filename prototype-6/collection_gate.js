@@ -14,7 +14,7 @@
  *  hesitation, rewrites) is not recorded with B2 asserted.
  *
  *  B3 deriveProfile: inferences built from B1 or B2 material are not written
- *  to the profile with B3 asserted. Ported from architecture-e's inference
+ *  to the profile with B3 asserted. Ported from prototype-5's inference
  *  firewall: the run records what would have been written.
  *
  * Subtypes are independently assertable: resolveOptouts() turns the GPC
@@ -29,7 +29,7 @@ const VALID_SUBTYPES = ['b1', 'b2', 'b3'];
  *
  * A bare GPC signal asserts the whole category. A scope list (with or
  * without the GPC flag) asserts exactly that subset, mirroring
- * architecture-b's gpc_scope semantics.
+ * prototype-2's gpc_scope semantics.
  */
 function resolveOptouts({ gpc = false, scope = [] } = {}) {
   const cleaned = scope.filter(s => VALID_SUBTYPES.includes(s));

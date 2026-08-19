@@ -80,7 +80,7 @@ Each agent server and the MCP server start lazily on first request and are memoi
 ## File map
 
 ```
-architecture-a/
+prototype-1/
 ├── orchestrator/
 │   ├── orchestrator.js     Entry point: reads Sec-GPC, builds _meta, starts/calls agent servers
 │   ├── agent_loop.js       Shared LLM turn loop (tool_choice, nudge, required-tool tracking)
@@ -126,7 +126,7 @@ architecture-a/
 ## Setup
 
 ```bash
-cd architecture-a
+cd prototype-1
 npm install
 ```
 

@@ -16,7 +16,7 @@ let clientPromise = null;
 
 function getClient() {
   if (!clientPromise) {
-    const client = new Client({ name: 'architecture-b-medical-agent', version: '1.0.0' });
+    const client = new Client({ name: 'prototype-2-medical-agent', version: '1.0.0' });
     const transport = new StdioClientTransport({ command: 'node', args: [SERVER_PATH] });
     clientPromise = client.connect(transport).then(() => client);
   }

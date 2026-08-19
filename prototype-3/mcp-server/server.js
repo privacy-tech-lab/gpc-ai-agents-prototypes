@@ -65,7 +65,7 @@ const TOOL_DEFINITIONS = [
 
 async function main() {
   const server = new Server(
-    { name: 'architecture-c-tool-server', version: '1.0.0' },
+    { name: 'prototype-3-tool-server', version: '1.0.0' },
     { capabilities: { tools: {} } }
   );
 

@@ -1,5 +1,5 @@
 {
-  "name": "category-d-persistence",
+  "name": "prototype-7",
   "version": "1.0.0",
   "description": "Category D (Persistence): opting out of how long data survives. D1 session, D2 cross-session, and D3 long-term profile scopes, hierarchical.",
   "type": "commonjs",

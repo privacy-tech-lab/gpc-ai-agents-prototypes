@@ -17,7 +17,7 @@ let clientPromise = null;
 
 function getClient() {
   if (!clientPromise) {
-    const client = new Client({ name: 'architecture-a-orchestrator', version: '1.0.0' });
+    const client = new Client({ name: 'prototype-1-orchestrator', version: '1.0.0' });
     const transport = new StdioClientTransport({ command: 'node', args: [SERVER_PATH] });
     clientPromise = client.connect(transport).then(() => client);
   }

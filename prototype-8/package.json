@@ -1,5 +1,5 @@
 {
-  "name": "category-e-delegation",
+  "name": "prototype-8",
   "version": "1.0.0",
   "description": "Category E (Delegation): opting out of the agent resolving choices on your behalf. E1 selective delegation with user-asserted action tiers.",
   "type": "commonjs",

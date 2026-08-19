@@ -30,7 +30,7 @@ const HANDLERS = { get_medical_records };
 
 async function main() {
   const server = new Server(
-    { name: 'architecture-b-medical-server', version: '1.0.0' },
+    { name: 'prototype-2-medical-server', version: '1.0.0' },
     { capabilities: { tools: {} } }
   );
 

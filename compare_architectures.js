@@ -15,8 +15,8 @@ const fs            = require('fs');
 const path          = require('path');
 
 const ROOT  = __dirname;
-const ARCH_A = path.join(ROOT, 'architecture-a');
-const ARCH_B = path.join(ROOT, 'architecture-b');
+const ARCH_A = path.join(ROOT, 'prototype-1');
+const ARCH_B = path.join(ROOT, 'prototype-2');
 const RUN    = process.argv.includes('--run');
 
 // ── Sub-process helpers ───────────────────────────────────────────────────────

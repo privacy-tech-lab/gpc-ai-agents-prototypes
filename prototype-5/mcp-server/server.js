@@ -32,7 +32,7 @@ const TOOL_DEFINITIONS = [
 
 async function main() {
   const server = new Server(
-    { name: 'architecture-e-classifier-server', version: '1.0.0' },
+    { name: 'prototype-5-classifier-server', version: '1.0.0' },
     { capabilities: { tools: {} } }
   );
 

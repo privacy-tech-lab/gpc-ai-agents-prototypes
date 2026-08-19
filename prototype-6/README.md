@@ -110,7 +110,7 @@ The classifier runs in both modes because it produces the task output as well as
 ## File map
 
 ```
-category-b-collection/
+prototype-6/
 ├── session_fixture.js       One session: instruction, draft, 3 telemetry events
 ├── inference_classifier.js  Draft → polished_email + inferred_attributes + attribute_sources
 ├── mcp_client.js            Real MCP client (stdio) — spawns mcp-server/server.js
@@ -147,7 +147,7 @@ category-b-collection/
 No API keys. The classifier is a static table and the pipeline is deterministic. Node.js 18+.
 
 ```bash
-cd category-b-collection
+cd prototype-6
 npm install
 ```
 
