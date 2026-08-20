@@ -1,0 +1,26 @@
+{
+  "name": "prototype-8",
+  "version": "1.0.0",
+  "description": "Category E (Delegation): opting out of the agent resolving choices on your behalf. E1 selective delegation with user-asserted action tiers.",
+  "type": "commonjs",
+  "license": "MIT",
+  "scripts": {
+    "baseline": "node run_baseline.js",
+    "optout": "node run_optout.js",
+    "optout:decline": "node run_optout.js --respond=decline",
+    "optout:unattended": "node run_optout.js --unattended",
+    "optout:gpc": "node run_optout.js --gpc",
+    "optout:strict": "node run_optout.js --gpc --unattended",
+    "demo": "node run_baseline.js && node run_optout.js && node run_optout.js --unattended && node run_optout.js --gpc",
+    "agent": "node run_agent.js",
+    "agent:unattended": "node run_agent.js --unattended",
+    "agent:gpc": "node run_agent.js --gpc",
+    "test": "jest tests/ --runInBand"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
+  }
+}

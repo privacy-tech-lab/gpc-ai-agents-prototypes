@@ -5,12 +5,12 @@
   "scripts": {
     "compare":        "node compare_architectures.js",
     "compare-run":    "node compare_architectures.js --run",
-    "demo-a":         "npm run demo --prefix architecture-a",
-    "demo-b":         "npm run demo --prefix architecture-b",
-    "signal-drop-a":  "npm run signal-drop --prefix architecture-a",
-    "signal-drop-b":  "npm run signal-drop --prefix architecture-b",
-    "test-a":         "npm test --prefix architecture-a",
-    "test-b":         "npm test --prefix architecture-b"
+    "demo-a":         "npm run demo --prefix prototype-1",
+    "demo-b":         "npm run demo --prefix prototype-2",
+    "signal-drop-a":  "npm run signal-drop --prefix prototype-1",
+    "signal-drop-b":  "npm run signal-drop --prefix prototype-2",
+    "test-a":         "npm test --prefix prototype-1",
+    "test-b":         "npm test --prefix prototype-2"
   },
   "license": "ISC"
 }

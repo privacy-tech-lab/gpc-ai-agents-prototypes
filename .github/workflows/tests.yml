@@ -15,15 +15,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # architecture-b is intentionally excluded until its missing
+        # prototype-2 is intentionally excluded until its missing
         # lib/withPurposeCheck.js and lib/purposeRegistry.js are restored
         # (see issue #38). Add it back here once its tests pass.
         architecture:
-          - architecture-a
-          - architecture-c
-          - architecture-d
-          - architecture-e
-          - category-b-collection
+          - prototype-1
+          - prototype-3
+          - prototype-4
+          - prototype-5
+          - prototype-6
     defaults:
       run:
         working-directory: ${{ matrix.architecture }}

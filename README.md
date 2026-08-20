@@ -16,7 +16,7 @@ Experimental prototypes exploring how the Global Privacy Control (GPC) signal pr
 
 **What it does not prevent:** the agent from running or from returning an answer.
 
-See [architecture-a/README.md](architecture-a/README.md) for setup, demo, and test instructions.
+See [prototype-1/README.md](prototype-1/README.md) for setup, demo, and test instructions.
 
 ---
 
@@ -30,7 +30,7 @@ See [architecture-a/README.md](architecture-a/README.md) for setup, demo, and te
 
 **What it does not prevent:** the primary task. The retrieval tool and the answer are never gated.
 
-See [architecture-b/README.md](architecture-b/README.md) for setup, demo, and test instructions.
+See [prototype-2/README.md](prototype-2/README.md) for setup, demo, and test instructions.
 
 ---
 
@@ -44,7 +44,7 @@ See [architecture-b/README.md](architecture-b/README.md) for setup, demo, and te
 
 **What it does not prevent:** tools that were in scope at the time of consent.
 
-See [architecture-c/README.md](architecture-c/README.md) for setup, demo, and test instructions.
+See [prototype-3/README.md](prototype-3/README.md) for setup, demo, and test instructions.
 
 ---
 
@@ -58,7 +58,7 @@ See [architecture-c/README.md](architecture-c/README.md) for setup, demo, and te
 
 **What it does not prevent:** the provider layer from observing every query. The provider sits between the user's agent and the publishers and records each fanout regardless of the GPC bit. This is the architecture's finding: the AI provider is a structural new privacy boundary that GPC as currently specified does not reach. The signal propagates downstream to sites, but the platform operating the agent sees everything.
 
-See [architecture-d/README.md](architecture-d/README.md) for setup, demo, and test instructions.
+See [prototype-4/README.md](prototype-4/README.md) for setup, demo, and test instructions.
 
 ---
 
@@ -72,7 +72,7 @@ See [architecture-d/README.md](architecture-d/README.md) for setup, demo, and te
 
 **What it does not prevent:** the queries from reaching external sources, or the platform from observing the queries themselves.
 
-See [architecture-e/README.md](architecture-e/README.md) for setup, demo, and test instructions.
+See [prototype-5/README.md](prototype-5/README.md) for setup, demo, and test instructions.
 
 ---
 
@@ -90,7 +90,7 @@ The architectures above are each organized around one enforcement mechanism. The
 
 **What it does not prevent:** the task. The polished email is returned identically in every mode.
 
-See [category-b-collection/README.md](category-b-collection/README.md) for setup, demo, flowchart, and test instructions.
+See [prototype-6/README.md](prototype-6/README.md) for setup, demo, flowchart, and test instructions.
 
 ---
 

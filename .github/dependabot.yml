@@ -6,12 +6,12 @@ updates:
   # review. The same split applies to security updates.
   - package-ecosystem: npm
     directories:
-      - /architecture-a
-      - /architecture-b
-      - /architecture-c
-      - /architecture-d
-      - /architecture-e
-      - /category-b-collection
+      - /prototype-1
+      - /prototype-2
+      - /prototype-3
+      - /prototype-4
+      - /prototype-5
+      - /prototype-6
     schedule:
       interval: weekly
     open-pull-requests-limit: 10

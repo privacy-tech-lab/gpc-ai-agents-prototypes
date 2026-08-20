@@ -1,0 +1,30 @@
+{
+  "name": "prototype-4",
+  "version": "1.0.0",
+  "description": "Fanout and provider aggregation surface. The LLM provider as a structural new privacy boundary.",
+  "main": "orchestrator/orchestrator.js",
+  "type": "commonjs",
+  "license": "ISC",
+  "scripts": {
+    "baseline":    "node harness/run_baseline.js",
+    "gpc":         "node harness/run_gpc.js",
+    "mitigated":   "node harness/run_mitigated.js",
+    "signal-drop": "node harness/run_signal_drop.js",
+    "aggregate":   "node harness/run_aggregate.js",
+    "ai-baseline": "node harness/run_ai_baseline.js",
+    "ai-gpc":      "node harness/run_ai_gpc.js",
+    "ai-demo":     "node harness/run_ai_baseline.js && node harness/run_ai_gpc.js",
+    "compare":     "node harness/compare_results.js",
+    "demo":        "node harness/run_baseline.js && node harness/run_gpc.js && node harness/run_mitigated.js && node harness/run_signal_drop.js && node harness/run_aggregate.js && node harness/compare_results.js",
+    "start":       "node orchestrator/orchestrator.js",
+    "test":        "jest tests/ --runInBand"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "dotenv":  "^17.4.2",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
+  }
+}
