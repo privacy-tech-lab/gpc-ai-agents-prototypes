@@ -54,9 +54,9 @@ flowchart TD
 
     classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
     class D1,D2,FW category
-    B1c["B1 — Input collection opt-out:\nsubmission used for the task, then discarded"]:::category -.-> D1
-    B2c["B2 — Behavioral collection opt-out:\npassively generated signals not recorded"]:::category -.-> D2
-    B3c["B3 — Derived collection opt-out:\ninference computed but suppressed at the storage boundary"]:::category -.-> FW
+    B1c["B1, Input collection opt-out:\nsubmission used for the task, then discarded"]:::category -.-> D1
+    B2c["B2, Behavioral collection opt-out:\npassively generated signals not recorded"]:::category -.-> D2
+    B3c["B3, Derived collection opt-out:\ninference computed but suppressed at the storage boundary"]:::category -.-> FW
 ```
 
 ---
@@ -113,7 +113,7 @@ The classifier runs in both modes because it produces the task output as well as
 prototype-6/
 ├── session_fixture.js       One session: instruction, draft, 3 telemetry events
 ├── inference_classifier.js  Draft → polished_email + inferred_attributes + attribute_sources
-├── mcp_client.js            Real MCP client (stdio) — spawns mcp-server/server.js
+├── mcp_client.js            Real MCP client (stdio): spawns mcp-server/server.js
 ├── stores.js                createStores(); inputLog, behaviorLog, derivedProfile
 ├── collection_gate.js       resolveOptouts(); collectInput / collectBehavior / deriveProfile
 │
@@ -121,9 +121,9 @@ prototype-6/
 │   └── server.js            MCP server entry point (real @modelcontextprotocol/sdk Server, stdio);
 │                            exposes classify_draft, thin wrapper around inference_classifier.js
 │
-│  Deterministic core (no model — what the tests run):
+│  Deterministic core (no model, what the tests run):
 ├── orchestrator.js          run({gpc, scope}): walks all three boundaries in order
-├── run_baseline.js          No opt-outs — all three stores fill
+├── run_baseline.js          No opt-outs, all three stores fill
 ├── run_optout.js            --gpc or --scope=b1,b2,b3
 │
 │  LLM agent path (requires Ollama):
@@ -174,8 +174,8 @@ npm test
 ### Demo runs (deterministic, no model)
 
 ```bash
-npm run baseline       # no opt-outs — 1 draft, 3 events, 4 attributes
-npm run optout:full    # --gpc — all three stores empty
+npm run baseline       # no opt-outs, 1 draft, 3 events, 4 attributes
+npm run optout:full    # --gpc, all three stores empty
 npm run optout:b1      # draft discarded; telemetry and profile still collected
 npm run optout:b2      # telemetry suppressed; draft and profile still collected
 npm run optout:b3      # profile empty; draft and telemetry still collected

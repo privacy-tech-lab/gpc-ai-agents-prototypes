@@ -10,7 +10,7 @@ Architecture B adds purpose-level enforcement over Architecture A's tool-level b
 
 | Layer | Mechanism | Enforcement point |
 |---|---|---|
-| **1. Transport** | `Sec-GPC: 1` HTTP header or `gpc` in request body; optional `gpc_scope` array for partial opt-out | `buildPrivacyContext()` in `orchestrator.js` reads `gpc` and `gpc_scope` once from the inbound request and builds `privacyContext = { gpc, gpc_scope }`, which is passed as a single object to `runAgentLoop()` and forwarded to every downstream call; nothing below re-reads the header |
+| **1. Transport** | `Sec-GPC: 1` HTTP header or `gpc` in request body; optional `gpc_scope` array for partial opt-out | `buildPrivacyContext()` (shared in `core/gpc.js`, imported and called by `orchestrator.js`) reads `gpc` and `gpc_scope` once from the inbound request and builds `privacyContext = { gpc, gpc_scope }`, which is passed as a single object to `runAgentLoop()` and forwarded to every downstream call; nothing below re-reads the header |
 | **2. Agent protocol** | `_meta = {gpc, gpc_scope, purpose}` task envelope | `orchestrator/agent_loop.js` builds a `_meta` envelope before each tool call, setting `purpose: 'patient_response'` to mark the primary task as non-restrictable; the envelope travels alongside `get_medical_records` arguments so the full GPC context is always available at the execution site |
 | **3. Trust boundary** | `evaluatePurpose()` at the ad platform HTTP endpoint | `fanOutSecondaryPurposes()` sends `gpc` and `gpc_scope` in the POST body to the ad platform; the ad platform calls `evaluatePurpose({ gpc, gpc_scope }, 'ad_targeting', registry)` at its HTTP boundary before touching the vector store and returns `status: blocked` without writing if `ad_targeting` is in scope, independent of what the calling code did |
 | **4. Data layer** | `withPurposeCheck()` policy wrapper | Wraps the `logInteraction` and `addTrainingExample` handlers in `analytics.js` and `trainingDataset.js`. A restrictable-purpose registry (`purposeRegistry.js`) defines which pipelines are opt-outable: `analytics`, `model_training`, and `ad_targeting`. If `gpc=1` and no `gpc_scope` is set (all purposes blocked) or the purpose is explicitly listed in `gpc_scope`, the wrapper returns `status: blocked` without executing. `get_medical_records` is not in the registry and always executes. |
@@ -21,43 +21,50 @@ Architecture B adds purpose-level enforcement over Architecture A's tool-level b
 
 ## GPC categories depicted
 
-Architecture B implements **Category C (Use)** from the opt-out typology. `get_medical_records` is never gated, which is **C1 (primary use restriction)** in practice: data stays bound to the task it was collected for. Of the three secondary pipelines, `analytics` is **C2 (secondary use restriction)**, `ad_targeting` is **C2a (targeting)**, and `model_training` is **C3 (data repurposing restriction)** — each independently opt-outable via `gpc_scope`.
+Architecture B implements **Category C (Use)** from the opt-out typology. `get_medical_records` is never gated, which is **C1 (primary use restriction)** in practice: data stays bound to the task it was collected for. Of the three secondary pipelines, `analytics` is **C2 (secondary use restriction)**, `ad_targeting` is **C2a (targeting)**, and `model_training` is **C3 (data repurposing restriction)**, each independently opt-outable via `gpc_scope`.
 
 ```mermaid
 flowchart TD
     U["Patient request\nSec-GPC / body.gpc / gpc_scope"] --> O["orchestrator.js\nbuildPrivacyContext()"]
     O --> MA["Medical Agent (LLM)\ntool: get_medical_records"]
     MA -- "real MCP tools/call" --> MR["get_medical_records\nnever gated"]
-    MR -.-> C1["Category C1 — Primary use:\nalways proceeds"]
-    MR --> ANS["Answer delivered to patient\n(always, regardless of GPC)"]
-    ANS --> FO["fanOutSecondaryPurposes()"]
+    MR -.-> C1["Category C1, Primary use:\nalways proceeds"]
+    MR --> RESP["finalResponse composed"]
+    RESP --> FO["fanOutSecondaryPurposes()\nawaited before responding"]
 
     FO --> AN{"withPurposeCheck\npurpose = analytics"}
     FO --> AD{"evaluatePurpose @ ad platform\npurpose = ad_targeting"}
     FO --> TR{"withPurposeCheck\npurpose = model_training"}
 
-    AN -- "in gpc_scope?" --> ANB["blocked"]
-    AN -- "not in scope" --> ANO["ok: analytics_log.json"]
-    AD -- "in gpc_scope?" --> ADB["blocked"]
-    AD -- "not in scope" --> ADO["ok: ad_vector_store.json"]
-    TR -- "in gpc_scope?" --> TRB["blocked"]
-    TR -- "not in scope" --> TRO["ok: training_dataset.jsonl"]
+    AN -- "gpc off, or scope excludes analytics" --> ANO["ok: analytics_log.json"]
+    AN -- "gpc on, and analytics in scope or no scope set" --> ANB["blocked"]
+    AD -- "gpc off, or scope excludes ad_targeting" --> ADO["ok: ad_vector_store.json"]
+    AD -- "gpc on, and ad_targeting in scope or no scope set" --> ADB["blocked"]
+    TR -- "gpc off, or scope excludes model_training" --> TRO["ok: training_dataset.jsonl"]
+    TR -- "gpc on, and model_training in scope or no scope set" --> TRB["blocked"]
+
+    ANO --> ANS["HTTP response:\n{ response, toolCalls, secondaryEffects }"]
+    ANB --> ANS
+    ADO --> ANS
+    ADB --> ANS
+    TRO --> ANS
+    TRB --> ANS
 
     classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
     class AN,ANB,ANO category
     class AD,ADB,ADO category
     class TR,TRB,TRO category
-    C2["Category C2 — Secondary use"]:::category -.-> AN
-    C2a["Category C2a — Targeting"]:::category -.-> AD
-    C3["Category C3 — Repurposing"]:::category -.-> TR
+    C2["Category C2, Secondary use"]:::category -.-> AN
+    C2a["Category C2a, Targeting"]:::category -.-> AD
+    C3["Category C3, Repurposing"]:::category -.-> TR
 ```
 
 ---
 
 ## Protocol compliance
 
-- **MCP.** `get_medical_records` is served by `mcp-server/server.js`, a real `@modelcontextprotocol/sdk` `Server` over stdio, and reached by `orchestrator/mcp_client.js`, a real `Client` that spawns it as a child process. There's no policy interceptor at this layer — that's the point of Architecture B: the primary tool call is never GPC-gated, only the secondary uses of its output are (see `withPurposeCheck()` below).
-- **A2A.** Not applicable here. Architecture B has a single agent (the medical assistant); the three secondary pipelines are deterministic backend services, not autonomous agents making their own decisions, so modeling them as A2A peers would misrepresent what they are. The ad platform's HTTP boundary (`services/adPlatform.js`) is a plain REST call, not an agent protocol, by design — it's a stand-in for a third-party vendor endpoint.
+- **MCP.** `get_medical_records` is served by `mcp-server/server.js`, a real `@modelcontextprotocol/sdk` `Server` over stdio, and reached by `orchestrator/mcp_client.js`, a real `Client` that spawns it as a child process. There's no policy interceptor at this layer, that's the point of Architecture B: the primary tool call is never GPC-gated, only the secondary uses of its output are (see `withPurposeCheck()` below).
+- **A2A.** Not applicable here. Architecture B has a single agent (the medical assistant); the three secondary pipelines are deterministic backend services, not autonomous agents making their own decisions, so modeling them as A2A peers would misrepresent what they are. The ad platform's HTTP boundary (`services/adPlatform.js`) is a plain REST call, not an agent protocol, by design: it's a stand-in for a third-party vendor endpoint.
 
 ---
 
@@ -67,7 +74,7 @@ flowchart TD
 POST /ask  { patient_id, query, gpc, gpc_scope }
   → orchestrator.js              (plain code: reads Sec-GPC/body gpc, builds privacyContext)
       → medical_agent.js         (LLM loop: composes answer)
-          → mcp_client.js  ⇄ stdio ⇄  mcp-server/server.js   (get_medical_records — never GPC-gated)
+          → mcp_client.js  ⇄ stdio ⇄  mcp-server/server.js   (get_medical_records, never GPC-gated)
       → fanOutSecondaryPurposes() (plain code: fans out to secondary pipelines)
           → analytics.js         (withPurposeCheck: purpose=analytics)
           → trainingDataset.js   (withPurposeCheck: purpose=model_training)
@@ -96,7 +103,7 @@ prototype-2/
 ├── orchestrator/
 │   ├── orchestrator.js          Entry point: reads Sec-GPC/body gpc, dispatches agent, fans out
 │   ├── agent_loop.js            Shared LLM turn loop (tool_choice, nudge, required-tool tracking)
-│   └── mcp_client.js            Real MCP client (stdio) — spawns mcp-server/server.js
+│   └── mcp_client.js            Real MCP client (stdio), spawns mcp-server/server.js
 │
 ├── agents/                      LLM agents only
 │   └── medical_agent.js         LLM medical agent (runAgentLoop, tool: get_medical_records over MCP)
@@ -151,7 +158,7 @@ npm install
 npm test
 ```
 
-No Ollama needed — `medical_agent.js`'s LLM loop isn't exercised by this suite (see `mcp_client.test.js` below, which tests the real MCP transport it depends on directly, without needing a model).
+No Ollama needed: `medical_agent.js`'s LLM loop isn't exercised by this suite (see `mcp_client.test.js` below, which tests the real MCP transport it depends on directly, without needing a model).
 
 | Test file | What it covers |
 |---|---|

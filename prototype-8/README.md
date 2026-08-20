@@ -51,7 +51,7 @@ flowchart TD
 
     classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
     class P,DR,DU category
-    E1["Category E1 — Selective delegation:\nstanding granted per tier, never wholesale;\nunassigned and unattended default to the\nmost restrictive treatment"]:::category -.-> P
+    E1["Category E1 (Selective delegation):\nstanding granted per tier, never wholesale;\nunassigned and unattended default to the\nmost restrictive treatment"]:::category -.-> P
 ```
 
 ---
@@ -83,10 +83,10 @@ The last two rows are the interesting ones. They are where a real system quietly
 ### Silent baseline (the failure case)
 
 ```
-action
+action (all six)
   → vendor default treated as consent
       → mcp_client.js ⇄ stdio ⇄ mcp-server/server.js: <action>(args)
-  → { status: 'executed', violations: ['E1'] }   for the four with no user grant
+  → { status: 'executed' } for all six; violations: ['E1'] added for the four with no autonomous user grant
 ```
 
 ### E1 enforced, user available
@@ -119,16 +119,16 @@ prototype-8/
 ├── trip_fixture.js          Six actions with reversibility / sensitivity / consequence
 ├── delegation_manifest.js   VENDOR_PROPOSAL, USER_ASSIGNMENTS, effectiveTier()
 ├── action_handlers.js       The six simulated action implementations
-├── mcp_client.js            Real MCP client (stdio) — spawns mcp-server/server.js
+├── mcp_client.js            Real MCP client (stdio), spawns mcp-server/server.js
 ├── delegation_gate.js       requestAction(): the E1 enforcement seam
 │
 ├── mcp-server/
 │   └── server.js            MCP server entry point (real @modelcontextprotocol/sdk Server, stdio);
 │                            exposes the six actions, thin wrapper around action_handlers.js
 │
-│  Deterministic core (no model — what the tests run):
+│  Deterministic core (no model, what the tests run):
 ├── orchestrator.js          run({silent, gpc, userPresent, respond}): all six actions in order
-├── run_baseline.js          Silent baseline — everything runs, four E1 violations
+├── run_baseline.js          Silent baseline: everything runs, four E1 violations
 ├── run_optout.js            E1 enforced; --gpc, --unattended, --respond=decline
 │
 │  LLM agent path (requires Ollama):
@@ -175,12 +175,12 @@ npm test
 ### Demo runs (deterministic, no model)
 
 ```bash
-npm run baseline            # vendor defaults as consent — four E1 violations
+npm run baseline            # vendor defaults as consent: four E1 violations
 npm run optout              # attended, surfaced asks approved
 npm run optout:decline      # attended, surfaced asks declined
-npm run optout:unattended   # nobody available — surfaced asks declined, not assumed
+npm run optout:unattended   # nobody available: surfaced asks declined, not assumed
 npm run optout:gpc          # GPC voids the vendor default; tracking has to ask too
-npm run optout:strict       # GPC + unattended — only the two user-granted actions run
+npm run optout:strict       # GPC + unattended: only the two user-granted actions run
 npm run demo                # baseline, attended, unattended, GPC in sequence
 ```
 

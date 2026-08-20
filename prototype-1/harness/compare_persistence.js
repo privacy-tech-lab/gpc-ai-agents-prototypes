@@ -31,7 +31,7 @@ function main() {
   const missing = results.filter((r) => !r.data);
   if (missing.length) {
     console.error('Run all four session-2 tiers first:');
-    console.error('  npm run session2:baseline && npm run session2:d3 && npm run session2:d2 && npm run session2:d1');
+    console.error('  node harness/run_session2.js && node harness/run_session2.js --scope=d3 && node harness/run_session2.js --scope=d2 && node harness/run_session2.js --scope=d1');
     process.exit(1);
   }
 
@@ -54,9 +54,11 @@ function main() {
     console.log([label.padEnd(COL), ...results.map((r) => getVal(r.data).padEnd(10))].join(' │ '));
   }
 
-  console.log('\nThis is the Category D hierarchy made concrete: d1 blocks everything below it,');
-  console.log('d2 additionally allows writes, d3 additionally allows raw-history consultation,');
-  console.log('and baseline additionally allows the synthesized behavioral profile.\n');
+  console.log('\nThis is the Category D split made concrete: writes go through storage.js, which');
+  console.log('blocks them whenever GPC is on, the same way at d1, d2, and d3. Reads go through');
+  console.log('personalization.js, which tracks scope: d1 and d2 consult nothing, d3 additionally');
+  console.log('allows raw-history consultation, and baseline additionally allows the synthesized');
+  console.log('behavioral profile.\n');
 }
 
 main();

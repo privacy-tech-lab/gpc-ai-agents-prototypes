@@ -8,13 +8,13 @@ The structural finding falls out of running the prototype: even when every site 
 
 Architecture D introduces a **provider middleware** (`provider/provider.js`) that sits between the orchestrator and the publishers. Every fanout flows through it. The provider logs each observation before forwarding, optionally strips the `_meta` envelope (the threat-model demonstration; the `mitm: true` flag models a hostile man-in-the-middle), and optionally applies data-handling commitments before recording.
 
-**Result:** in baseline mode every site logs and writes a profile entry. In GPC mode the strict sites suppress both, but the provider observation log is substantively identical to baseline. In mitigated mode the provider applies data-handling commitments (`no_train`, `k`-anonymity, DP noise) — these do not change what the provider can see; they constrain what it does with what it sees. In signal-drop mode the provider acts as adversary and strips `_meta` before forwarding, surfacing the property that a hostile provider can silently nullify enforcement at every destination while retaining full visibility itself.
+**Result:** in baseline mode every site logs and writes a profile entry. In GPC mode the strict sites suppress both, but the provider observation log is substantively identical to baseline. In mitigated mode the provider applies data-handling commitments (`no_train`, `k`-anonymity, DP noise). These do not change what the provider can see; they constrain what it does with what it sees. In signal-drop mode the provider acts as adversary and strips `_meta` before forwarding, surfacing the property that a hostile provider can silently nullify enforcement at every destination while retaining full visibility itself.
 
 ---
 
 ## How D's fanout differs from B's
 
-Architecture B also uses the word "fanout" — `fanOutSecondaryPurposes` calls the analytics pipeline, the training dataset pipeline, and the ad-targeting platform in parallel. The shape looks similar at a distance. The threats and mitigations it surfaces are different.
+Architecture B also uses the word "fanout": `fanOutSecondaryPurposes` calls the analytics pipeline, the training dataset pipeline, and the ad-targeting platform in parallel. The shape looks similar at a distance. The threats and mitigations it surfaces are different.
 
 | | Architecture B fanout | Architecture D fanout |
 |---|---|---|
@@ -22,8 +22,8 @@ Architecture B also uses the word "fanout" — `fanOutSecondaryPurposes` calls t
 | Declared purpose | Different per call (`analytics`, `model_training`, `ad_targeting`) | Same across all calls (the user's research question) |
 | Data shape | The same primary record flows to each pipeline | The same query goes to each publisher |
 | Decision-time | Pipelines are wired at orchestrator build time | The set of publishers (and what to ask each) is chosen at request time |
-| What opt-out scopes | A *purpose* — same data permitted for one downstream use, blocked for another | No per-peer scoping. Every peer receives the same `_meta` envelope. Per-site enforcement is what differs, not per-site opt-in |
-| What aggregation surfaces | None at the sender. Each pipeline is its own controller for its own purpose | The provider sees every peer the agent chose, every sub-query it sent, and the GPC bit on each — a cross-peer view no single site or pipeline has |
+| What opt-out scopes | A *purpose*: same data permitted for one downstream use, blocked for another | No per-peer scoping. Every peer receives the same `_meta` envelope. Per-site enforcement is what differs, not per-site opt-in |
+| What aggregation surfaces | None at the sender. Each pipeline is its own controller for its own purpose | The provider sees every peer the agent chose, every sub-query it sent, and the GPC bit on each: a cross-peer view no single site or pipeline has |
 
 B's fanout is purpose-divergent and policy-internal. D's fanout is peer-divergent and policy-external. They share a word but model different threats and require different mitigations.
 
@@ -31,22 +31,19 @@ B's fanout is purpose-divergent and policy-internal. D's fanout is peer-divergen
 
 ## GPC categories depicted
 
-Architecture D's core finding — the provider's cross-request visibility is structural and doesn't shrink no matter how well sites enforce GPC — is mostly a gap the opt-out typology names but doesn't cover: it has no frame for cumulative, aggregate visibility at a structural intermediary, since categories A–D describe per-call constraints and the typology's own limitations note that it has "no frame for cumulative or aggregate harms." Where D's individual mechanisms do map: the fanout to multiple publishers is **Category C (Use), C4 (sharing restriction)** — how far a query travels across connected systems. The mitigations layer maps to **C3 (data repurposing restriction)** for the `do_not_train` tag and **B3 (derived-collection opt-out)** for k-anonymity suppressing an inferred interest profile below a cohort threshold.
+Architecture D's core finding (the provider's cross-request visibility is structural and doesn't shrink no matter how well sites enforce GPC) is mostly a gap the opt-out typology names but doesn't cover: it has no frame for cumulative, aggregate visibility at a structural intermediary, since categories A-D describe per-call constraints and the typology's own limitations note that it has "no frame for cumulative or aggregate harms." Where D's individual mechanisms do map: the fanout to multiple publishers is **Category C (Use), C4 (sharing restriction)**: how far a query travels across connected systems. The mitigations layer maps to **C3 (data repurposing restriction)** for the `do_not_train` tag and **B3 (derived-collection opt-out)** for k-anonymity suppressing an inferred interest profile below a cohort threshold.
 
 ```mermaid
 flowchart TD
     U["User query\nbaggage / Sec-GPC: gpc"] --> O["orchestrator.js"]
     O -- "fanout(query, site_ids, _meta)" --> P["provider.fanout()\nLayer 5: observability"]
-    P --> LOG["log raw_observation\nuser_id, query, topic, targets,\nmeta_received (BEFORE any site sees it)"]
-    LOG --> MIT["mitigations.apply()"]
-    MIT -.-> C3["Category C3 — Repurposing:\ndo_not_train tag"]
-    MIT -.-> B3["Category B3 — Derived collection:\nk-anon suppresses interest profile"]
-    MIT --> MITM{"mitm = true?"}
-    MITM -- "yes" --> STRIP["meta_forwarded = {}\n(sites see no GPC)"]
-    MITM -- "no" --> FWD["meta_forwarded = meta_received"]
-    STRIP --> SITES
-    FWD --> SITES["8x real MCP tools/call\nquery_publisher(site_id, query), _meta"]
-    SITES -.-> C4["Category C4 — Sharing:\nhow far the query travels"]
+    P --> RAW["build raw_observation\nuser_id, query, topic, targets,\nmeta_received = _meta\nmeta_forwarded = mitm ? {} : _meta"]
+    RAW --> MIT["mitigations.apply()"]
+    MIT -.-> C3["Category C3 (Repurposing):\ndo_not_train tag"]
+    MIT -.-> B3["Category B3 (Derived collection):\nk-anon suppresses interest profile"]
+    MIT --> LOG["push to observation_log\n(BEFORE any site sees the request)"]
+    LOG --> SITES["8x real MCP tools/call\nquery_publisher(site_id, query), meta_forwarded"]
+    SITES -.-> C4["Category C4 (Sharing):\nhow far the query travels"]
     SITES --> DEC{"each site's own\nenforcement level"}
     DEC -- "strict + gpc" --> NOLOG["logged: false"]
     DEC -- "advisory + gpc" --> PARTIAL["logged: true, profile_write: false"]
@@ -56,7 +53,7 @@ flowchart TD
     FULL --> RES
     RES --> ANS["Answer to user\n(identical regardless of GPC)"]
 
-    NOTE["provider_view is field-for-field identical\nwhether GPC was on or off —\nthe structural finding no category fully covers"] -.-> LOG
+    NOTE["provider_view is field-for-field identical\nwhether GPC was on or off.\nThe structural finding no category fully covers."] -.-> LOG
 
     classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
     class MIT,SITES category
@@ -70,9 +67,9 @@ This section documents the two mechanisms the architecture demonstrates: what th
 
 ### Provider visibility (structural finding)
 
-The core claim is that per-call GPC enforcement at sites does not bound provider-side visibility. In the browser model, no single party sees the cumulative GPC traffic of a single user across destinations. In the agent model, the provider does — by design, because the agent's reasoning runs there.
+The core claim is that per-call GPC enforcement at sites does not bound provider-side visibility. In the browser model, no single party sees the cumulative GPC traffic of a single user across destinations. In the agent model, the provider does, by design, because the agent's reasoning runs there.
 
-**How it is demonstrated:** `run_baseline.js` and `run_gpc.js` use identical user queries and identical fanout targets, differing only in `_meta.gpc`. The `site_level_view` field changes between the two runs — strict publishers move from `logged: true` to `logged: false`. The `provider_view` does not. Every field the provider needs to compute aggregate derivations (`user_id`, `query`, `query_topic`, `fanout_targets`, `meta_received`) is captured identically in both runs. The structural invariant is asserted in `tests/provider.test.js → "structural invariant: provider view unchanged by GPC state"`.
+**How it is demonstrated:** `run_baseline.js` and `run_gpc.js` use identical user queries and identical fanout targets, differing only in `_meta.gpc`. The `site_level_view` field changes between the two runs: strict publishers move from `logged: true` to `logged: false`. The `provider_view` does not. Every field the provider needs to compute aggregate derivations (`user_id`, `query`, `query_topic`, `fanout_targets`, `meta_received`) is captured identically in both runs. The structural invariant is asserted in `tests/provider.test.js → "structural invariant: provider view unchanged by GPC state"`.
 
 `run_aggregate.js` extends the same point across users. It runs an 80-user simulation with mixed GPC state through the provider middleware and reports four derivations no browser-era intermediary could compute:
 
@@ -85,7 +82,7 @@ The core claim is that per-call GPC enforcement at sites does not bound provider
 
 The simulation is deterministic (seeded `mulberry32`) so the figures are reproducible.
 
-**What it does not cover:** this is a visibility claim, not a use claim. The protocol-level fact that the provider can derive these things does not by itself constitute a violation — that is what the mitigations below attempt to address.
+**What it does not cover:** this is a visibility claim, not a use claim. The protocol-level fact that the provider can derive these things does not by itself constitute a violation: that is what the mitigations below attempt to address.
 
 ### Provider-side data-handling commitments (mitigations)
 
@@ -101,13 +98,13 @@ These compose with `chain(...)`. `run_mitigated.js` exercises the full chain.
 
 **How it is demonstrated:** Compare `run_gpc.js` against `run_mitigated.js`. `provider_view` in the mitigated run includes the `do_not_train`, `k_anon_suppressed`, and `cohort_size` fields. `inferUserInterests()` honors `k_anon_suppressed` and returns an empty interest profile for any user below the cohort threshold.
 
-**What it does not cover:** these commitments are the available lever, not a guarantee. They are advisory and unverifiable at the protocol layer — the user has no way to confirm `do_not_train` was honored or that DP noise was correctly calibrated. Establishing protocol-level verification (attestations, audited logs, third-party witnesses) is out of scope here.
+**What it does not cover:** these commitments are the available lever, not a guarantee. They are advisory and unverifiable at the protocol layer: the user has no way to confirm `do_not_train` was honored or that DP noise was correctly calibrated. Establishing protocol-level verification (attestations, audited logs, third-party witnesses) is out of scope here.
 
 ---
 
 ## Protocol compliance
 
-- **MCP.** Each publisher call the provider forwards travels over a real MCP `tools/call`: `mcp-server/server.js` is a real `@modelcontextprotocol/sdk` `Server` over stdio exposing `query_publisher`, and `provider/mcp_client.js` is a real `Client` the provider calls instead of importing `services/site_handlers.js` directly. `_meta.gpc` (or `{}`, once the provider's `mitm` flag strips it) is what each publisher's own enforcement decision reads — the exact envelope-forwarding property the architecture depends on. `services/site_handlers.js` itself is unchanged; the MCP server is a thin transport wrapper around it, same as Architectures A/B/C.
+- **MCP.** Each publisher call the provider forwards travels over a real MCP `tools/call`: `mcp-server/server.js` is a real `@modelcontextprotocol/sdk` `Server` over stdio exposing `query_publisher`, and `provider/mcp_client.js` is a real `Client` the provider calls instead of importing `services/site_handlers.js` directly. `_meta.gpc` (or `{}`, once the provider's `mitm` flag strips it) is what each publisher's own enforcement decision reads: the exact envelope-forwarding property the architecture depends on. `services/site_handlers.js` itself is unchanged; the MCP server is a thin transport wrapper around it, same as Architectures A/B/C.
 - **A2A.** Not applicable. `research_agent.js` is the only agent; the provider and the eight publishers are middleware and content endpoints, not autonomous agents making their own decisions, so there's no second agent for A2A to sit between.
 
 ### GPC signal integration
@@ -118,14 +115,13 @@ The signal travels in the `_meta` envelope (`_meta.gpc: 0|1`), matching the conv
 Orchestrator                Provider                    Sites (8x, over MCP)
    |                          |                           |
    |--fanout(query, _meta)--->|                           |
-   |                          |  log observation          |
+   |                          |  build raw_observation    |
+   |                          |  (meta_forwarded = mitm ? {} : _meta)
    |                          |  apply mitigations        |
+   |                          |  push to observation_log  |
    |                          |                           |
-   |                          |--mitm? strip _meta-+      |
-   |                          |                    |      |
-   |                          |--meta_forwarded -->|----->| tools/call query_publisher(site_id, q), _meta
-   |                          |                    |----->| ...
-   |                          |                    |----->| (8 sites in parallel, real stdio MCP)
+   |                          |--meta_forwarded --------->| tools/call query_publisher(site_id, q)
+   |                          |-------------------------->| ... (8 sites in parallel, real stdio MCP)
    |                          |                           |
    |<---site_results, log_id--|                           |
 ```
@@ -136,7 +132,7 @@ The signal-drop experiment exercises the threat model: when the provider's `mitm
 
 ## Pipeline diagrams
 
-### baseline — GPC off
+### baseline: GPC off
 
 ```
 run_baseline.js
@@ -155,7 +151,7 @@ Output: site_level_view = 8x normal_operation
         derivations    = topic, reach, interests inferable
 ```
 
-### gpc — GPC on; per-site enforcement; provider visibility unchanged
+### gpc: GPC on; per-site enforcement; provider visibility unchanged
 
 ```
 run_gpc.js
@@ -176,7 +172,7 @@ Output: site_level_view = mixed by publisher enforcement level
         structural_finding emitted
 ```
 
-### mitigated — GPC on plus provider-side commitments
+### mitigated: GPC on plus provider-side commitments
 
 ```
 run_mitigated.js
@@ -196,7 +192,7 @@ Output: provider_view includes commitment tags
         note: commitments unverifiable at protocol layer
 ```
 
-### signal-drop — provider strips _meta before forwarding
+### signal-drop: provider strips _meta before forwarding
 
 ```
 run_signal_drop.js
@@ -217,7 +213,7 @@ Output: meta_received_by_provider = {gpc:1}
         finding: provider can silently nullify enforcement at all destinations
 ```
 
-### aggregate — 80-user simulation, mixed GPC
+### aggregate: 80-user simulation, mixed GPC
 
 ```
 run_aggregate.js
@@ -236,7 +232,7 @@ Output: log_size                       = 155
         structural_finding             = these derivations are provider-only
 ```
 
-### ai-baseline / ai-gpc — Ollama-driven fanout
+### ai-baseline / ai-gpc: Ollama-driven fanout
 
 ```
 run_ai_baseline.js   (or run_ai_gpc.js)
@@ -308,9 +304,9 @@ prototype-4/
 │
 ├── provider/               Provider middleware (the centerpiece of Architecture D)
 │   ├── provider.js         Observation log; mitm; mitigations hook; calls mcp_client.js per site
-│   ├── mcp_client.js       Real MCP client (stdio) — spawns mcp-server/server.js
+│   ├── mcp_client.js       Real MCP client (stdio): spawns mcp-server/server.js
 │   ├── topic_classifier.js Deterministic topic inference from query text
-│   ├── mitigations.js      Provider-side commitments — no_train, k-anonymity, DP noise; chain()
+│   ├── mitigations.js      Provider-side commitments: no_train, k-anonymity, DP noise; chain()
 │   └── aggregation.js      Visibility derivations from the provider observation log
 │
 ├── mcp-server/
@@ -318,7 +314,7 @@ prototype-4/
 │                           exposes query_publisher, thin wrapper around site_handlers.js
 │
 ├── services/               Deterministic supporting infrastructure (no LLM)
-│   ├── tool_registry.js    Publisher catalog — id, name, domain, supports_gpc, enforcement
+│   ├── tool_registry.js    Publisher catalog: id, name, domain, supports_gpc, enforcement
 │   └── site_handlers.js    Per-publisher GPC enforcement; querySite, decideTracking; Tavily live fetch
 │
 ├── harness/
@@ -367,7 +363,7 @@ ollama pull qwen2.5:14b
 ollama serve
 ```
 
-Tool-using models only — `gemma3:1b` and other text-only models will fail at the first tool call.
+Tool-using models only. `gemma3:1b` and other text-only models will fail at the first tool call.
 
 ### Tavily (optional, enables live publisher fetches)
 
@@ -382,7 +378,7 @@ Mirrors the Tavily integration in Architecture A's `search_web` tool.
 
 ### HTTP entry (optional)
 
-`npm run start` boots the Express app on `ASSISTANT_PORT` (default 4011). The route reads `Sec-GPC` from the request headers and builds the privacy context before dispatching the fanout. The body is capped at 10 kB and SIGINT/SIGTERM trigger a graceful shutdown; the app is not otherwise hardened — do not expose it on a public interface without a reverse proxy that adds auth, rate limiting, and request limits.
+`npm run start` boots the Express app on `ASSISTANT_PORT` (default 4011). The route reads `Sec-GPC` from the request headers and builds the privacy context before dispatching the fanout. The body is capped at 10 kB and SIGINT/SIGTERM trigger a graceful shutdown; the app is not otherwise hardened: do not expose it on a public interface without a reverse proxy that adds auth, rate limiting, and request limits.
 
 Scripted fanout (every publisher in the registry):
 
@@ -462,7 +458,7 @@ Each run prints a single JSON object to stdout. The fields relevant to the paper
 |---|---|
 | `site_level_view` | Per-publisher slice of one fanout: did the site see GPC, what tracking decision did it make |
 | `provider_view` | Full observation log from the provider middleware; one entry per `provider.fanout()` call |
-| `provider_derivations` | Aggregate inferences computed over `provider_view` — adoption rate, topic distribution, publisher reach, per-user interest profile |
+| `provider_derivations` | Aggregate inferences computed over `provider_view`: adoption rate, topic distribution, publisher reach, per-user interest profile |
 | `model_tool_calls` (ai modes) | Each model-generated `query_publisher` call: publisher chosen, sub-query written, site decision |
 | `structural_finding` (gpc, ai-gpc) | Plain-language statement of the provider-visibility claim observable in the run |
 | `meta_received_by_provider` / `meta_forwarded_to_sites` (signal-drop) | The asymmetry that surfaces the threat-model property |
