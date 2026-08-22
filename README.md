@@ -1,12 +1,23 @@
 # GPC AI Agents Prototypes
 
-Experimental prototypes exploring how the Global Privacy Control (GPC) signal propagates and is enforced across multi-agent AI pipelines. Each architecture simulates a realistic agentic workflow and tests a specific question: does the user's opt-out actually stop data from being shared, or does it only carry the signal forward and leave enforcement to whoever is downstream?
+Experimental prototypes exploring how the Global Privacy Control (GPC) signal propagates and is enforced across multi-agent AI pipelines. Each prototype simulates a realistic agentic workflow and tests a specific question: does the user's opt-out actually stop data from being shared, or does it only carry the signal forward and leave enforcement to whoever is downstream?
 
 ---
 
-## Architectures
+## Prototypes
 
-### Architecture A: Tool-Level Blocking via MCP Interceptor
+| Prototype | Folder | What it enforces | Typology coverage |
+|---|---|---|---|
+| 1 | [prototype-1](prototype-1) | Tool-level blocking via an MCP interceptor | Category D, D1 |
+| 2 | [prototype-2](prototype-2) | Secondary pipeline gating after the agent | Category C, C1 to C3 |
+| 3 | [prototype-3](prototype-3) | Consent-scoped tool registry | Category A, A1 and A2 |
+| 4 | [prototype-4](prototype-4) | Signal propagation and the provider visibility gap | A gap the typology does not cover; its mechanisms touch C4, C3, B3 |
+| 5 | [prototype-5](prototype-5) | Inference firewall for derived attributes | Category B, B3 |
+| 6 | [prototype-6](prototype-6) | Collection gate at input, behavioral, and derived boundaries | Category B, B1 to B3 |
+| 7 | [prototype-7](prototype-7) | Retention boundaries at session end, recall, and profile synthesis | Category D, D1 to D3 |
+| 8 | [prototype-8](prototype-8) | Delegation tiering with a decline-by-default fallback | Category E, E1 |
+
+### Prototype 1: Tool-Level Blocking via MCP Interceptor
 
 **Scenario:** a user asks an AI assistant to plan a 5-day trip to Japan. The assistant searches the web, synthesises an itinerary, and (without GPC) saves the result to the user's profile and syncs to a third-party vendor.
 
@@ -20,7 +31,7 @@ See [prototype-1/README.md](prototype-1/README.md) for setup, demo, and test ins
 
 ---
 
-### Architecture B: Secondary Pipeline Gating After the Agent
+### Prototype 2: Secondary Pipeline Gating After the Agent
 
 **Scenario:** a patient asks a medical assistant what their blood pressure reading means. The same interaction also feeds an analytics log, a model-training dataset, and a pharma ad-targeting platform.
 
@@ -34,7 +45,7 @@ See [prototype-2/README.md](prototype-2/README.md) for setup, demo, and test ins
 
 ---
 
-### Architecture C: Consent-Scoped Tool Registry
+### Prototype 3: Consent-Scoped Tool Registry
 
 **Scenario:** a user consents to file access and web search when signing up for an AI productivity platform. A later platform update silently adds an email sender and a behavior tracker to the MCP server.
 
@@ -48,7 +59,7 @@ See [prototype-3/README.md](prototype-3/README.md) for setup, demo, and test ins
 
 ---
 
-### Architecture D: Signal Propagation and the Provider Visibility Gap
+### Prototype 4: Signal Propagation and the Provider Visibility Gap
 
 **Scenario:** a user asks an AI assistant to research the iPhone 17 across eight tech publishers simultaneously.
 
@@ -56,13 +67,13 @@ See [prototype-3/README.md](prototype-3/README.md) for setup, demo, and test ins
 
 **What it prevents:** tracking at individual publisher sites that honor the signal.
 
-**What it does not prevent:** the provider layer from observing every query. The provider sits between the user's agent and the publishers and records each fanout regardless of the GPC bit. This is the architecture's finding: the AI provider is a structural new privacy boundary that GPC as currently specified does not reach. The signal propagates downstream to sites, but the platform operating the agent sees everything.
+**What it does not prevent:** the provider layer from observing every query. The provider sits between the user's agent and the publishers and records each fanout regardless of the GPC bit. This is the prototype's finding: the AI provider is a structural new privacy boundary that GPC as currently specified does not reach. The signal propagates downstream to sites, but the platform operating the agent sees everything.
 
 See [prototype-4/README.md](prototype-4/README.md) for setup, demo, and test instructions.
 
 ---
 
-### Architecture E: Inference Firewall for Derived Attributes
+### Prototype 5: Inference Firewall for Derived Attributes
 
 **Scenario:** a user runs eight ordinary search queries. Each query is fed through a classifier that infers personal attributes (health conditions, financial situation, employment status) without the user ever disclosing them explicitly.
 
@@ -76,11 +87,9 @@ See [prototype-5/README.md](prototype-5/README.md) for setup, demo, and test ins
 
 ---
 
-## Category prototypes
+Prototypes 1 through 5 are each organized around one enforcement mechanism. Prototypes 6 through 8 are organized the other way, by the opt-out typology: one prototype per category, covering that category's subtypes exactly. They complement the first five rather than replacing them.
 
-The architectures above are each organized around one enforcement mechanism. These prototypes are organized the other way, by the opt-out typology: one prototype per category, covering that category's subtypes exactly. They complement the architectures rather than replacing them.
-
-### Category B: Collection
+### Prototype 6: Collection
 
 **Scenario:** a user asks an AI writing assistant to polish one email to their manager about a raise. While composing, they deleted a sentence about treatment costs before submitting, paused 42 seconds over the salary line, and rewrote the opening three times.
 
@@ -94,14 +103,42 @@ See [prototype-6/README.md](prototype-6/README.md) for setup, demo, flowchart, a
 
 ---
 
+### Prototype 7: Persistence
+
+**Scenario:** a user talks to Aria, a memory-enabled assistant, across two sessions. In session 1 they mention being vegetarian on a tight budget while asking for dinner recipes. Session 2 tests whether any of that carries forward.
+
+**Enforcement:** three retention boundaries. D1 (session scope): at session end, transcripts and disclosed facts are discarded instead of archived. D2 (cross-session scope): at session start, the archive exists but returns nothing to the new session. D3 (long-term profile scope): the synthesis step is skipped and sessions stay inert transcripts. The subtypes form a hierarchy, so a bare GPC signal asserts the strictest scope.
+
+**What it prevents:** data surviving the session, past sessions informing future ones, and a durable behavioral model being built from what is retained.
+
+**What it does not prevent:** within-session coherence. Aria still uses what the user said earlier in the same session, in every mode including D1.
+
+See [prototype-7/README.md](prototype-7/README.md) for setup, demo, and test instructions.
+
+---
+
+### Prototype 8: Delegation
+
+**Scenario:** a user asks a travel agent to book a weekend trip. Finishing the job takes six actions: search flights, hold a hotel room, buy a non-refundable ticket with the card on file, send passport details to the airline, and around the session, enable fare tracking and a newsletter. The six are not equivalent in reversibility, sensitivity, or consequence.
+
+**Enforcement:** the user partitions actions into tiers and grants the agent standing in some while withholding it in others. A user assignment always beats the vendor's proposed tiering, and anything nobody assigned falls to the most restrictive treatment. The GPC signal does not set tiers; it voids the vendor's proposed ones, on the grounds that a global opt-out means consent to a tier may not be inferred from a platform default.
+
+**What it prevents:** the agent charging a card, sending passport data, enabling tracking, and subscribing the user, four actions it had no standing for.
+
+**What it does not prevent:** the searches and the hotel hold, which the user granted and which still run unattended.
+
+See [prototype-8/README.md](prototype-8/README.md) for setup, demo, and test instructions.
+
+---
+
 ## Shared Infrastructure
 
-The `core/` directory holds modules used across multiple architectures:
+The `core/` directory holds modules used across multiple prototypes:
 
-- `ollama.js`: Ollama chat-completion caller with a fixture gate for offline testing (used by all architectures)
-- `tavily.js`: Tavily search caller with timeout and fixture support (used by arch-A and arch-D)
-- `agent_loop.js`: shared LLM turn loop with `requiredTools` enforcement (used by arch-A, arch-C, and arch-E as thin wrappers)
-- `gpc.js`: shared `buildPrivacyContext` helper that reads the GPC signal from an Express request (used by arch-B and arch-D)
+- `ollama.js`: Ollama chat-completion caller with a fixture gate for offline testing (used by all prototypes)
+- `tavily.js`: Tavily search caller with timeout and fixture support (used by prototypes 1 and 4)
+- `agent_loop.js`: shared LLM turn loop with `requiredTools` enforcement (used by prototypes 1, 3, and 5 as thin wrappers)
+- `gpc.js`: shared `buildPrivacyContext` helper that reads the GPC signal from an Express request (used by prototypes 2 and 4)
 
 ---
 

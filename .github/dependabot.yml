@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # npm dependencies for every architecture prototype. One entry covers all
+  # npm dependencies for every prototype. One entry covers all
   # five package directories. Minor and patch updates are grouped so they can
   # be auto-merged; major updates are grouped separately and left for manual
   # review. The same split applies to security updates.

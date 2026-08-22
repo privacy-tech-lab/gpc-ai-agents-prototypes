@@ -1,4 +1,4 @@
-# Category B: Collection
+# Prototype 6: Collection
 
 ## What it demonstrates
 
@@ -24,7 +24,7 @@ Category B puts a gate at each of the three boundaries. The task is never gated:
 
 This prototype implements **Category B (Collection)** and all three of its subtypes: **B1 (input)**, **B2 (behavioral)**, and **B3 (derived)**. The three are distinguished by the user's relationship to the data, and each is assertable on its own.
 
-One scope note, inherited from Architecture E: the typology defines B3 as opting out of the *production* of inferences, but the firewall here enforces at the storage boundary. The classifier still runs and the inference is still computed, which is what `would_have_written` reports. This is the weaker, more practical reading of B3.
+One scope note, inherited from Prototype 5: the typology defines B3 as opting out of the *production* of inferences, but the firewall here enforces at the storage boundary. The classifier still runs and the inference is still computed, which is what `would_have_written` reports. This is the weaker, more practical reading of B3.
 
 | | No opt-out | `--scope=b1` | `--scope=b2` | `--scope=b3` | `--gpc` |
 |---|---|---|---|---|---|
@@ -214,11 +214,11 @@ The `would_have_*` fields are the audit trail: under an opt-out they record exac
 
 ---
 
-## How it differs from Architecture E
+## How it differs from Prototype 5
 
-Architecture E covers B3 alone, with a session of eight search queries. This prototype covers the whole of Category B in one interaction.
+Prototype 5 covers B3 alone, with a session of eight search queries. This prototype covers the whole of Category B in one interaction.
 
-| | Architecture E | Category B |
+| | Prototype 5 | Category B |
 |---|---|---|
 | Subtypes covered | B3 | B1, B2, B3 |
 | Scenario | 8 search queries | 1 email polished |

@@ -1,4 +1,4 @@
-# Architecture A: GPC Enforcement in a Multi-Agent Pipeline
+# Prototype 1: GPC Enforcement in a Multi-Agent Pipeline
 
 ## What it demonstrates
 
@@ -19,7 +19,7 @@ The GPC signal travels between layers via the MCP `_meta` envelope, which is att
 
 ## GPC categories depicted
 
-Architecture A implements **Category D (Persistence)** from the opt-out typology, specifically **D1 (session scope)**. Blocking `save_to_profile`, `log_interaction`, and `user_profile_lookup` means nothing survives past the immediate interaction and no prior storage is read back, while the same-session task (search, synthesis, the answer itself) runs unaffected.
+Prototype 1 implements **Category D (Persistence)** from the opt-out typology, specifically **D1 (session scope)**. Blocking `save_to_profile`, `log_interaction`, and `user_profile_lookup` means nothing survives past the immediate interaction and no prior storage is read back, while the same-session task (search, synthesis, the answer itself) runs unaffected.
 
 ```mermaid
 flowchart TD

@@ -1,4 +1,4 @@
-# Category E: Delegation
+# Prototype 8: Delegation
 
 ## What it demonstrates
 
@@ -58,7 +58,7 @@ flowchart TD
 
 ## Protocol compliance
 
-- **MCP.** The six actions in `action_handlers.js` are served by `mcp-server/server.js`, a real `@modelcontextprotocol/sdk` `Server` over stdio, reached by `mcp_client.js`, a real `Client` that spawns it as a child process. Execution is the stateless piece and belongs server-side. Tier resolution stays client-side in `delegation_gate.js`, mirroring Architecture C, where the consent gate decides and only then does the call reach the MCP server. That ordering is the substance of the prototype: a declined action never crosses the wire, so the tool server is never asked to enforce a policy the user owns.
+- **MCP.** The six actions in `action_handlers.js` are served by `mcp-server/server.js`, a real `@modelcontextprotocol/sdk` `Server` over stdio, reached by `mcp_client.js`, a real `Client` that spawns it as a child process. Execution is the stateless piece and belongs server-side. Tier resolution stays client-side in `delegation_gate.js`, mirroring Prototype 3, where the consent gate decides and only then does the call reach the MCP server. That ordering is the substance of the prototype: a declined action never crosses the wire, so the tool server is never asked to enforce a policy the user owns.
 - **A2A.** Not applicable. There is a single agent here. Surfacing a decision goes to the *user*, not to another agent, so there is no agent-to-agent handoff to carry the signal across.
 
 ---
@@ -217,11 +217,11 @@ Each run prints a JSON object followed by a per-action summary.
 
 ---
 
-## How it differs from Architecture C
+## How it differs from Prototype 3
 
 Both gate before execution and both let the MCP server stay policy-free. They differ in what is being withheld.
 
-| | Architecture C | Category E |
+| | Prototype 3 | Category E |
 |---|---|---|
 | Typology category | A1 / A2 (Presence) | E1 (Delegation) |
 | What is gated | Whether a capability exists for the agent at all | Whether the agent may resolve a decision alone |

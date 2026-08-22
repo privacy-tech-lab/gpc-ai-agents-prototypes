@@ -1,4 +1,4 @@
-# Category D: Persistence
+# Prototype 7: Persistence
 
 Opting out of how long data survives.
 
