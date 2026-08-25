@@ -1,3 +1,16 @@
+<p align="center">
+  <a href="https://github.com/privacy-tech-lab/gpc-ai-agents-prototypes/commits/main"><img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/privacy-tech-lab/gpc-ai-agents-prototypes"></a>
+  <a href="https://github.com/privacy-tech-lab/gpc-ai-agents-prototypes/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues-raw/privacy-tech-lab/gpc-ai-agents-prototypes"></a>
+  <a href="https://github.com/privacy-tech-lab/gpc-ai-agents-prototypes/issues?q=is%3Aissue+is%3Aclosed"><img alt="GitHub closed issues" src="https://img.shields.io/github/issues-closed-raw/privacy-tech-lab/gpc-ai-agents-prototypes"></a>
+  <a href="https://github.com/privacy-tech-lab/gpc-ai-agents-prototypes/blob/main/LICENSE.md"><img alt="GitHub" src="https://img.shields.io/github/license/privacy-tech-lab/gpc-ai-agents-prototypes"></a>
+  <a href="https://github.com/privacy-tech-lab/gpc-ai-agents-prototypes/watchers"><img alt="GitHub watchers" src="https://img.shields.io/github/watchers/privacy-tech-lab/gpc-ai-agents-prototypes?style=social"></a>
+  <a href="https://github.com/privacy-tech-lab/gpc-ai-agents-prototypes/stargazers"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/privacy-tech-lab/gpc-ai-agents-prototypes?style=social"></a>
+  <a href="https://github.com/privacy-tech-lab/gpc-ai-agents-prototypes/network/members"><img alt="GitHub forks" src="https://img.shields.io/github/forks/privacy-tech-lab/gpc-ai-agents-prototypes?style=social"></a>
+  <a href="https://github.com/sponsors/privacy-tech-lab"><img alt="GitHub sponsors" src="https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86"></a>
+</p>
+
+
+
 # GPC AI Agents Prototypes
 
 Experimental prototypes exploring how the Global Privacy Control (GPC) signal propagates and is enforced across multi-agent AI pipelines. Each architecture simulates a realistic agentic workflow and tests a specific question: does the user's opt-out actually stop data from being shared, or does it only carry the signal forward and leave enforcement to whoever is downstream?
