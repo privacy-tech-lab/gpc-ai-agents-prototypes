@@ -127,3 +127,32 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the issue template, PR conventions, a
 ## Copyright
 
 Copyright 2026 Privacy Tech Lab at Wesleyan University. Licensed under the MIT License — see [LICENSE](LICENSE).
+
+## Thank You!
+
+<p align="center"><strong>We would like to thank our supporters!</strong></p><br>
+
+<p align="center">Major financial support provided by the National Science Foundation under awards <a href="https://nsf.gov/awardsearch/showAward?AWD_ID=2055196">#2055196</a> and <a href="https://www.nsf.gov/awardsearch/show-award/?AWD_ID=2618248">#2618248</a>.</p>
+
+<p align="center">
+   <img class="img-fluid" src="./nsf.png" height="100px" alt="National Science Foundation Logo">
+</p>
+
+<p align="center">Additional financial support provided by the Alfred P. Sloan Foundation, Wesleyan University, and the Anil Fernando Endowment.</p>
+
+<p align="center">
+  <a href="https://sloan.org/grant-detail/9631">
+    <img class="img-fluid" src="./sloan_logo.jpg" height="70px" alt="Sloan Foundation Logo">
+  </a>
+  <a href="https://www.wesleyan.edu/mathcs/cs/index.html">
+    <img class="img-fluid" src="./wesleyan_shield.png" height="70px" alt="Wesleyan University Logo">
+  </a>
+</p>
+
+<p align="center">Conclusions reached or positions taken are our own and not necessarily those of our financial supporters, its trustees, officers, or staff.</p>
+
+##
+
+<p align="center">
+  <a href="https://privacytechlab.org/"><img src="./plt_logo.png" width="200px" height="200px" alt="privacy-tech-lab logo"></a>
+<p>
