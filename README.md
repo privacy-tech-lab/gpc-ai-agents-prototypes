@@ -13,24 +13,29 @@
 
 # GPC AI Agents Prototypes
 
-Experimental prototypes exploring how the Global Privacy Control (GPC) signal propagates and is enforced across multi-agent AI pipelines. Each prototype simulates a realistic agentic workflow and tests a specific question: does the user's opt-out actually stop data from being shared, or does it only carry the signal forward and leave enforcement to whoever is downstream?
+The GPC AI Agent Prototypes are developed and maintained by the [OptMeowt team](https://github.com/privacy-tech-lab/gpc-optmeowt#optmeowt-).
 
----
+This repo contains experimental prototypes exploring how the [Global Privacy Control (GPC) signal](https://globalprivacycontrol.org/) propagates and is enforced across multi-agent AI pipelines. Each prototype simulates a realistic agentic workflow and tests a specific question: does the user's opt-out actually stop data from being shared, or does it only carry the signal forward and leave enforcement to whoever is downstream?
 
-## Prototypes
+[1. Prototypes](#1-prototypes)  
+[2. Promo Video](#2-shared-infrastructure)  
+[3. How Does OptMeowt Work?](#3-contributing)  
+[4. Thank You!](#4-thank-you)
 
-| Prototype | Folder | What it enforces | Typology coverage |
-|---|---|---|---|
-| 1 | [prototype-1](prototype-1) | Tool-level blocking via an MCP interceptor | Category D, D1 |
-| 2 | [prototype-2](prototype-2) | Secondary pipeline gating after the agent | Category C, C1 to C3 |
-| 3 | [prototype-3](prototype-3) | Consent-scoped tool registry | Category A, A1 and A2 |
-| 4 | [prototype-4](prototype-4) | Signal propagation and the provider visibility gap | A gap the typology does not cover; its mechanisms touch C4, C3, B3 |
-| 5 | [prototype-5](prototype-5) | Inference firewall for derived attributes | Category B, B3 |
-| 6 | [prototype-6](prototype-6) | Collection gate at input, behavioral, and derived boundaries | Category B, B1 to B3 |
-| 7 | [prototype-7](prototype-7) | Retention boundaries at session end, recall, and profile synthesis | Category D, D1 to D3 |
-| 8 | [prototype-8](prototype-8) | Delegation tiering with a decline-by-default fallback | Category E, E1 |
+## 1. Prototypes
 
-### Prototype 1: Tool-Level Blocking via MCP Interceptor
+| Prototype | Folder                     | What it enforces                                                   | Typology coverage                                                  |
+| --------- | -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| 1         | [prototype-1](prototype-1) | Tool-level blocking via an MCP interceptor                         | Category D, D1                                                     |
+| 2         | [prototype-2](prototype-2) | Secondary pipeline gating after the agent                          | Category C, C1 to C3                                               |
+| 3         | [prototype-3](prototype-3) | Consent-scoped tool registry                                       | Category A, A1 and A2                                              |
+| 4         | [prototype-4](prototype-4) | Signal propagation and the provider visibility gap                 | A gap the typology does not cover; its mechanisms touch C4, C3, B3 |
+| 5         | [prototype-5](prototype-5) | Inference firewall for derived attributes                          | Category B, B3                                                     |
+| 6         | [prototype-6](prototype-6) | Collection gate at input, behavioral, and derived boundaries       | Category B, B1 to B3                                               |
+| 7         | [prototype-7](prototype-7) | Retention boundaries at session end, recall, and profile synthesis | Category D, D1 to D3                                               |
+| 8         | [prototype-8](prototype-8) | Delegation tiering with a decline-by-default fallback              | Category E, E1                                                     |
+
+### 1.1 Prototype 1: Tool-Level Blocking via MCP Interceptor
 
 **Scenario:** a user asks an AI assistant to plan a 5-day trip to Japan. The assistant searches the web, synthesizes an itinerary, and (without GPC) saves the result to the user's profile and syncs to a third-party vendor.
 
@@ -42,9 +47,7 @@ Experimental prototypes exploring how the Global Privacy Control (GPC) signal pr
 
 See [prototype-1/README.md](prototype-1/README.md) for setup, demo, and test instructions.
 
----
-
-### Prototype 2: Secondary Pipeline Gating After the Agent
+### 1.2 Prototype 2: Secondary Pipeline Gating After the Agent
 
 **Scenario:** a patient asks a medical assistant what their blood pressure reading means. The same interaction also feeds an analytics log, a model-training dataset, and a pharma ad-targeting platform.
 
@@ -56,9 +59,7 @@ See [prototype-1/README.md](prototype-1/README.md) for setup, demo, and test ins
 
 See [prototype-2/README.md](prototype-2/README.md) for setup, demo, and test instructions.
 
----
-
-### Prototype 3: Consent-Scoped Tool Registry
+### 1.3 Prototype 3: Consent-Scoped Tool Registry
 
 **Scenario:** a user consents to file access and web search when signing up for an AI productivity platform. A later platform update silently adds an email sender and a behavior tracker to the MCP server.
 
@@ -70,9 +71,7 @@ See [prototype-2/README.md](prototype-2/README.md) for setup, demo, and test ins
 
 See [prototype-3/README.md](prototype-3/README.md) for setup, demo, and test instructions.
 
----
-
-### Prototype 4: Signal Propagation and the Provider Visibility Gap
+### 1.4 Prototype 4: Signal Propagation and the Provider Visibility Gap
 
 **Scenario:** a user asks an AI assistant to research the iPhone 17 across eight tech publishers simultaneously.
 
@@ -84,9 +83,7 @@ See [prototype-3/README.md](prototype-3/README.md) for setup, demo, and test ins
 
 See [prototype-4/README.md](prototype-4/README.md) for setup, demo, and test instructions.
 
----
-
-### Prototype 5: Inference Firewall for Derived Attributes
+### 1.5 Prototype 5: Inference Firewall for Derived Attributes
 
 **Scenario:** a user runs eight ordinary search queries. Each query is fed through a classifier that infers personal attributes (health conditions, financial situation, employment status) without the user ever disclosing them explicitly.
 
@@ -98,11 +95,9 @@ See [prototype-4/README.md](prototype-4/README.md) for setup, demo, and test ins
 
 See [prototype-5/README.md](prototype-5/README.md) for setup, demo, and test instructions.
 
----
-
 Prototypes 1 through 5 are each organized around one enforcement mechanism. Prototypes 6 through 8 are organized the other way, by the opt-out typology: one prototype per category, covering that category's subtypes exactly. They complement the first five rather than replacing them.
 
-### Prototype 6: Collection
+### 1.6 Prototype 6: Collection
 
 **Scenario:** a user asks an AI writing assistant to polish one email to their manager about a raise. While composing, they deleted a sentence about treatment costs before submitting, paused 42 seconds over the salary line, and rewrote the opening three times.
 
@@ -114,9 +109,7 @@ Prototypes 1 through 5 are each organized around one enforcement mechanism. Prot
 
 See [prototype-6/README.md](prototype-6/README.md) for setup, demo, flowchart, and test instructions.
 
----
-
-### Prototype 7: Persistence
+### 1.7 Prototype 7: Persistence
 
 **Scenario:** a user talks to Aria, a memory-enabled assistant, across two sessions. In session 1 they mention being vegetarian on a tight budget while asking for dinner recipes. Session 2 tests whether any of that carries forward.
 
@@ -128,9 +121,7 @@ See [prototype-6/README.md](prototype-6/README.md) for setup, demo, flowchart, a
 
 See [prototype-7/README.md](prototype-7/README.md) for setup, demo, and test instructions.
 
----
-
-### Prototype 8: Delegation
+### 1.8 Prototype 8: Delegation
 
 **Scenario:** a user asks a travel agent to book a weekend trip. Finishing the job takes six actions: search flights, hold a hotel room, buy a non-refundable ticket with the card on file, send passport details to the airline, and around the session, enable fare tracking and a newsletter. The six are not equivalent in reversibility, sensitivity, or consequence.
 
@@ -142,9 +133,7 @@ See [prototype-7/README.md](prototype-7/README.md) for setup, demo, and test ins
 
 See [prototype-8/README.md](prototype-8/README.md) for setup, demo, and test instructions.
 
----
-
-## Shared Infrastructure
+## 2. Shared Infrastructure
 
 The `core/` directory holds modules used across multiple prototypes:
 
@@ -153,19 +142,11 @@ The `core/` directory holds modules used across multiple prototypes:
 - `agent_loop.js`: shared LLM turn loop with `requiredTools` enforcement (used by arch-A, arch-C, and arch-E as thin wrappers)
 - `gpc.js`: shared `buildPrivacyContext` helper that reads the GPC signal from an Express request (used by arch-B and arch-D)
 
----
-
-## Contributing
+## 3. Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the issue template, PR conventions, and the writing rules we use across this repo.
 
----
-
-## Copyright
-
-Copyright 2026 Privacy Tech Lab at Wesleyan University. Licensed under the MIT License — see [LICENSE](LICENSE).
-
-## Thank You!
+## 4. Thank You!
 
 <p align="center"><strong>We would like to thank our supporters!</strong></p><br>
 
