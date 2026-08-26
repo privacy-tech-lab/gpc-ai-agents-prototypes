@@ -1,10 +1,10 @@
-# Architecture E: Inference Firewall
+# Prototype 5: Inference Firewall
 
 ## What it demonstrates
 
 A user runs eight ordinary search queries. None of them disclose anything directly — they are questions anyone might type. But the text of each query can be fed through a classifier that infers personal attributes: a health condition, a financial situation, an employment status. Run across a session, those inferences accumulate into a detailed profile the user never agreed to hand over. This is *derived collection*, and it is hard to prevent because the answer the user wanted is still useful, and the inference happens server-side where the user never sees it.
 
-Architecture E puts a firewall between the classifier and the profile store. When the B3 signal is on, the inference is intercepted before it is written: the answer still reaches the user, but no attributes are kept. When B3 is off, the same pipeline builds a full shadow profile from the eight queries.
+Prototype 5 puts a firewall between the classifier and the profile store. When the B3 signal is on, the inference is intercepted before it is written: the answer still reaches the user, but no attributes are kept. When B3 is off, the same pipeline builds a full shadow profile from the eight queries.
 
 The firewall can be driven two ways. The **deterministic core** (`orchestrator.js`) runs a fixed list of eight queries through the classifier with no model — the eight stand in for a session's worth of searches, and this is what the tests exercise. The optional **LLM agent** (`agent.js`, requires Ollama) gives a real model a `search` tool and lets it decide to call it for each question; the firewall runs *inside* that tool, so the model only ever sees the answer and can't route around it. Either way, what is under test is the firewall at the classify-to-store boundary, not how the queries are chosen.
 
@@ -21,7 +21,7 @@ The firewall can be driven two ways. The **deterministic core** (`orchestrator.j
 
 ## GPC category depicted
 
-Architecture E implements **B3 (derived-collection opt-out)** from **Category B (Collection)** of the opt-out typology: opting out of what a system concludes about a user, as distinct from what the user submits (B1) or what they passively generate (B2). One scope note: the typology defines B3 as opting out of the *production* of inferences, but the firewall here enforces at the storage boundary instead — the classifier still runs and the inference is still computed (`would_have_written` reports it) — so this is the weaker, more practical reading of B3, not a strict block on computation itself.
+Prototype 5 implements **B3 (derived-collection opt-out)** from **Category B (Collection)** of the opt-out typology: opting out of what a system concludes about a user, as distinct from what the user submits (B1) or what they passively generate (B2). One scope note: the typology defines B3 as opting out of the *production* of inferences, but the firewall here enforces at the storage boundary instead — the classifier still runs and the inference is still computed (`would_have_written` reports it) — so this is the weaker, more practical reading of B3, not a strict block on computation itself.
 
 | | B3 off (baseline) | B3 on (enforced) |
 |---|---|---|
@@ -120,7 +120,7 @@ prototype-5/
 ├── run_b3.js              B3 on — inference blocked, profile stays empty
 │
 │  LLM agent path (requires Ollama):
-├── agent_loop.js          Shared LLM turn loop (copied from Architecture A)
+├── agent_loop.js          Shared LLM turn loop (copied from Prototype 1)
 ├── agent.js               search tool + executeSearch (the firewall boundary); ask(), runSession()
 ├── run_agent.js           Live demo: a model drives the session, --b3 toggles the firewall
 ├── package.json
@@ -202,9 +202,9 @@ Each run prints a JSON object followed by a short summary.
 
 ---
 
-## How it differs from Architecture C
+## How it differs from Prototype 3
 
-| | Architecture C | Architecture E |
+| | Prototype 3 | Prototype 5 |
 |---|---|---|
 | Typology category | A1 / A2 (Presence) | B3 (Collection) |
 | What is gated | Tool execution | Attribute writing |

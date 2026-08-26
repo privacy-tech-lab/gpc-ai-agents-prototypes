@@ -1,7 +1,7 @@
 {
   "name": "gpc-ai-agents-prototypes",
   "version": "1.0.0",
-  "description": "GPC enforcement in AI agent pipelines — Architecture A (tool-level) and Architecture B (purpose-level)",
+  "description": "GPC enforcement in AI agent pipelines. Eight prototypes, numbered 1 through 8, each testing one opt-out enforcement mechanism or typology category.",
   "scripts": {
     "compare":        "node compare_architectures.js",
     "compare-run":    "node compare_architectures.js --run",

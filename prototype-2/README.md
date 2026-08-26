@@ -1,4 +1,4 @@
-# Architecture B: Purpose-Scoped GPC Enforcement Across a Multi-Stage AI Pipeline
+# Prototype 2: Purpose-Scoped GPC Enforcement Across a Multi-Stage AI Pipeline
 
 ## What it demonstrates
 
@@ -6,7 +6,7 @@ A patient asks an AI assistant: *"What does my blood pressure reading mean, and 
 
 The assistant retrieves their records and answers the question. In a non-GPC world, that same interaction also feeds an analytics log, a model-training dataset, and a pharma ad-targeting platform: downstream systems the patient never directly interacted with. With GPC, each of those secondary data flows is independently gated by its declared purpose.
 
-Architecture B adds purpose-level enforcement over Architecture A's tool-level blocking. A single interaction fans out to multiple secondary pipelines; the patient can opt out of specific purposes (e.g., ad targeting) while allowing others (e.g., analytics), independently and without affecting the primary response.
+Prototype 2 adds purpose-level enforcement over Prototype 1's tool-level blocking. A single interaction fans out to multiple secondary pipelines; the patient can opt out of specific purposes (e.g., ad targeting) while allowing others (e.g., analytics), independently and without affecting the primary response.
 
 | Layer | Mechanism | Enforcement point |
 |---|---|---|
@@ -21,7 +21,7 @@ Architecture B adds purpose-level enforcement over Architecture A's tool-level b
 
 ## GPC categories depicted
 
-Architecture B implements **Category C (Use)** from the opt-out typology. `get_medical_records` is never gated, which is **C1 (primary use restriction)** in practice: data stays bound to the task it was collected for. Of the three secondary pipelines, `analytics` is **C2 (secondary use restriction)**, `ad_targeting` is **C2a (targeting)**, and `model_training` is **C3 (data repurposing restriction)** — each independently opt-outable via `gpc_scope`.
+Prototype 2 implements **Category C (Use)** from the opt-out typology. `get_medical_records` is never gated, which is **C1 (primary use restriction)** in practice: data stays bound to the task it was collected for. Of the three secondary pipelines, `analytics` is **C2 (secondary use restriction)**, `ad_targeting` is **C2a (targeting)**, and `model_training` is **C3 (data repurposing restriction)** — each independently opt-outable via `gpc_scope`.
 
 ```mermaid
 flowchart TD
@@ -56,8 +56,8 @@ flowchart TD
 
 ## Protocol compliance
 
-- **MCP.** `get_medical_records` is served by `mcp-server/server.js`, a real `@modelcontextprotocol/sdk` `Server` over stdio, and reached by `orchestrator/mcp_client.js`, a real `Client` that spawns it as a child process. There's no policy interceptor at this layer — that's the point of Architecture B: the primary tool call is never GPC-gated, only the secondary uses of its output are (see `withPurposeCheck()` below).
-- **A2A.** Not applicable here. Architecture B has a single agent (the medical assistant); the three secondary pipelines are deterministic backend services, not autonomous agents making their own decisions, so modeling them as A2A peers would misrepresent what they are. The ad platform's HTTP boundary (`services/adPlatform.js`) is a plain REST call, not an agent protocol, by design — it's a stand-in for a third-party vendor endpoint.
+- **MCP.** `get_medical_records` is served by `mcp-server/server.js`, a real `@modelcontextprotocol/sdk` `Server` over stdio, and reached by `orchestrator/mcp_client.js`, a real `Client` that spawns it as a child process. There's no policy interceptor at this layer — that's the point of Prototype 2: the primary tool call is never GPC-gated, only the secondary uses of its output are (see `withPurposeCheck()` below).
+- **A2A.** Not applicable here. Prototype 2 has a single agent (the medical assistant); the three secondary pipelines are deterministic backend services, not autonomous agents making their own decisions, so modeling them as A2A peers would misrepresent what they are. The ad platform's HTTP boundary (`services/adPlatform.js`) is a plain REST call, not an agent protocol, by design — it's a stand-in for a third-party vendor endpoint.
 
 ---
 

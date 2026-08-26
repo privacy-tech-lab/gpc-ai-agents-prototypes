@@ -1,7 +1,7 @@
 {
   "name": "core",
   "version": "1.0.0",
-  "description": "Shared IO layer: Tavily search and Ollama chat-completion callers used by every architecture.",
+  "description": "Shared IO layer: Tavily search and Ollama chat-completion callers used by every prototype.",
   "main": "index.js",
   "type": "commonjs",
   "license": "ISC",

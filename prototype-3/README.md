@@ -1,10 +1,10 @@
-# Architecture C: Consent-Scoped Tool Registry
+# Prototype 3: Consent-Scoped Tool Registry
 
 ## What it demonstrates
 
 A user signs up for an AI productivity assistant and consents to two capability categories: `file_access` (reading documents) and `external_api` (web search). Six months later, a platform update adds two tools to the MCP server: `email_sender` (a `communication` capability) and `behavior_tracker` (an `analytics` capability). Nobody asks the user. On a platform with no registry enforcement, both tools are callable the moment the update ships — the consent given at signup is treated as if it covered them.
 
-Architecture C puts a consent check in front of every tool call. Each call is matched against a versioned consent manifest before it runs. A tool whose category was added after the manifest version is held until the user approves or declines it, and that decision is written to disk so it survives the next update. When the user has the GPC signal set, any non-primary category is declined automatically — the signal stands in for the per-tool prompt.
+Prototype 3 puts a consent check in front of every tool call. Each call is matched against a versioned consent manifest before it runs. A tool whose category was added after the manifest version is held until the user approves or declines it, and that decision is written to disk so it survives the next update. When the user has the GPC signal set, any non-primary category is declined automatically — the signal stands in for the per-tool prompt.
 
 The gate can be driven two ways. The **deterministic core** (`orchestrator.js`) walks a fixed tool sequence with no model — the run is reproducible and the tests need no Ollama. The optional **LLM agent** (`agent.js`, requires Ollama) gives a real model the user-facing tools (`file_read`, `web_search`, `email_sender`) and lets it decide which to call; every call still routes through `withConsentCheck()`, so a blocked or quarantined tool simply comes back to the model as that tool's result. Either way, what is under test is the consent gate, not how the tools are chosen.
 
@@ -23,7 +23,7 @@ The gate can be driven two ways. The **deterministic core** (`orchestrator.js`) 
 
 ## GPC categories depicted
 
-Architecture C implements **Category A (Presence)** from the opt-out typology. `run_v2.js --mode=silent` vs `--mode=approve` shows **A1 (integration opt-out)**: a new tool becomes callable the instant it ships under silent mode, versus only `after_consent` under the gated modes. `behavior_tracker` — ambient analytics fired by the platform, not the agent — is **A2 (activation opt-out)**: holding or GPC-declining it is a control over unsolicited background AI specifically.
+Prototype 3 implements **Category A (Presence)** from the opt-out typology. `run_v2.js --mode=silent` vs `--mode=approve` shows **A1 (integration opt-out)**: a new tool becomes callable the instant it ships under silent mode, versus only `after_consent` under the gated modes. `behavior_tracker` — ambient analytics fired by the platform, not the agent — is **A2 (activation opt-out)**: holding or GPC-declining it is a control over unsolicited background AI specifically.
 
 ```mermaid
 flowchart TD
@@ -131,7 +131,7 @@ prototype-3/
 ├── run_v2.js              v2.0 — --mode=silent|approve|decline|interactive [--gpc]
 │
 │  LLM agent path (requires Ollama):
-├── agent_loop.js          Shared LLM turn loop (copied from Architecture A)
+├── agent_loop.js          Shared LLM turn loop (copied from Prototype 1)
 ├── agent.js               User-facing tools + makeExecutor (the consent seam);
 │                          firePlatformTracker (ambient behavior_tracker); ask(), runSession()
 ├── run_agent.js           Live demo: a model drives the session, --mode / --gpc set enforcement
