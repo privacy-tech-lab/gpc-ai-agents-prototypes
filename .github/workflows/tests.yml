@@ -15,15 +15,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # prototype-2 is intentionally excluded until its missing
-        # lib/withPurposeCheck.js and lib/purposeRegistry.js are restored
-        # (see issue #38). Add it back here once its tests pass.
         architecture:
           - prototype-1
+          - prototype-2
           - prototype-3
           - prototype-4
           - prototype-5
           - prototype-6
+          - prototype-7
+          - prototype-8
     defaults:
       run:
         working-directory: ${{ matrix.architecture }}
