@@ -18,8 +18,8 @@ The GPC AI Agent Prototypes are developed and maintained by the [OptMeowt team](
 This repo contains experimental prototypes exploring how the [Global Privacy Control (GPC) signal](https://globalprivacycontrol.org/) propagates and is enforced across multi-agent AI pipelines. Each prototype simulates a realistic agentic workflow and tests a specific question: does the user's opt-out actually stop data from being shared, or does it only carry the signal forward and leave enforcement to whoever is downstream?
 
 [1. Prototypes](#1-prototypes)  
-[2. Promo Video](#2-shared-infrastructure)  
-[3. How Does OptMeowt Work?](#3-contributing)  
+[2. Shared Infrastructure](#2-shared-infrastructure)  
+[3. Contributing](#3-contributing)  
 [4. Thank You!](#4-thank-you)
 
 ## 1. Prototypes
