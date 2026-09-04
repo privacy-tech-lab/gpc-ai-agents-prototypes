@@ -61,7 +61,8 @@ Within-session context is never gated. That is the operational coherence D1 expl
 ## Setup
 
 ```bash
-npm install
+npm install        # once, from the repository root: installs every prototype
+cd prototype-7
 ```
 
 The scripted paths need nothing else. The live agent path needs Ollama running locally (`ollama serve`, `ollama pull qwen2.5:14b`; override with `OLLAMA_MODEL`).

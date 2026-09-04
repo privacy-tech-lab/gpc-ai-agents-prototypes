@@ -135,6 +135,14 @@ See [prototype-8/README.md](prototype-8/README.md) for setup, demo, and test ins
 
 ## 2. Shared Infrastructure
 
+The prototypes are npm workspaces with one lockfile at the repository root. Install once, then work inside any prototype:
+
+```bash
+npm install                  # from the repository root, installs all eight prototypes
+npm test                     # every prototype's suite
+cd prototype-5 && npm test   # one prototype
+```
+
 The `core/` directory holds modules used across multiple prototypes:
 
 - `ollama.js`: Ollama chat-completion caller with a fixture gate for offline testing (used by all architectures)

@@ -1,6 +1,6 @@
 name: Tests
 
-# Runs the jest suite for each architecture on every PR and on pushes to main.
+# Runs the jest suite for each prototype on every PR and on pushes to main.
 # This is the check that gates Dependabot auto-merge: a minor or patch update
 # only merges once these pass. Require it in branch protection for main.
 
@@ -24,13 +24,12 @@ jobs:
           - prototype-6
           - prototype-7
           - prototype-8
-    defaults:
-      run:
-        working-directory: ${{ matrix.architecture }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 20
+      # One install at the root covers every prototype (npm workspaces, one
+      # lockfile). The per-prototype test still runs in its own directory.
       - run: npm ci
-      - run: npm test
+      - run: npm test --workspace ${{ matrix.architecture }}

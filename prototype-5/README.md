@@ -140,8 +140,8 @@ prototype-5/
 No API keys — the classifier is a static table and the pipeline is deterministic. Node.js 18+.
 
 ```bash
+npm install        # once, from the repository root: installs every prototype
 cd prototype-5
-npm install
 ```
 
 ---

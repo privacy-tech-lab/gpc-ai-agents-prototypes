@@ -153,8 +153,8 @@ prototype-3/
 ## Setup
 
 ```bash
+npm install        # once, from the repository root: installs every prototype
 cd prototype-3
-npm install
 ```
 
 ---

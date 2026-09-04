@@ -18,6 +18,8 @@ When two or more feature branches are in flight, use `git worktree add ../protot
 
 Do not delete a worktree while its PR is still in review. Wait until the PR is merged or closed.
 
+Dependencies live in one `package-lock.json` at the repository root (npm workspaces). Run `npm install` at the root, never inside a prototype, and commit the root lockfile with any dependency change. A prototype-level lockfile would bring back the per-prototype Dependabot alerts that issue #113 removed.
+
 ## Writing rules
 
 These apply to issue bodies, PR descriptions, commit messages, code comments, and any prose in the repo:
