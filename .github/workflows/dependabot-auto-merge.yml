@@ -17,11 +17,19 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Auto-merge only the grouped minor and patch updates (version and
-      # security). Major updates land in groups whose names do not end in
-      # "-minor-and-patch", so they are skipped here and reviewed by hand.
-      - name: Approve and enable auto-merge for minor and patch updates
-        if: endsWith(steps.metadata.outputs.dependency-group, '-minor-and-patch')
+      # Auto-merge the grouped minor and patch VERSION updates, and EVERY
+      # grouped security update. Security bumps of transitive packages are
+      # filed under npm-security-major regardless of semver (issue #113), so
+      # filtering security PRs by group suffix left every one of them waiting
+      # for a human. Major version updates (npm-major) stay manual.
+      #
+      # "--auto" merges only once the required checks pass, which is the
+      # Tests workflow via the branch ruleset on main. Without that ruleset
+      # this step merges immediately, before the tests have finished.
+      - name: Approve and enable auto-merge for patch, minor and security updates
+        if: >-
+          endsWith(steps.metadata.outputs.dependency-group, '-minor-and-patch') ||
+          startsWith(steps.metadata.outputs.dependency-group, 'npm-security-')
         run: |
           gh pr review --approve "$PR_URL"
           gh pr merge --auto --squash "$PR_URL"
