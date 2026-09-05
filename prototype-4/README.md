@@ -351,8 +351,8 @@ prototype-4/
 Requires Node.js 18+.
 
 ```bash
+npm install        # once, from the repository root: installs every prototype
 cd prototype-4
-npm install
 cp ../.env.example ../.env  # optional; only needed to pin defaults or set TAVILY_API_KEY
 ```
 

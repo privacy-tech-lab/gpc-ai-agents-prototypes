@@ -137,8 +137,8 @@ prototype-2/
 ## Setup
 
 ```bash
+npm install        # once, from the repository root: installs every prototype
 cd prototype-2
-npm install
 ```
 
 ---

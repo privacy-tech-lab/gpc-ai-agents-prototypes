@@ -150,8 +150,8 @@ prototype-8/
 No API keys. The actions are simulated and the pipeline is deterministic. Node.js 18+.
 
 ```bash
+npm install        # once, from the repository root: installs every prototype
 cd prototype-8
-npm install
 ```
 
 ---

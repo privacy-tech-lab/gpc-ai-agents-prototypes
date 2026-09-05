@@ -147,8 +147,8 @@ prototype-6/
 No API keys. The classifier is a static table and the pipeline is deterministic. Node.js 18+.
 
 ```bash
+npm install        # once, from the repository root: installs every prototype
 cd prototype-6
-npm install
 ```
 
 ---
