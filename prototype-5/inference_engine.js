@@ -24,14 +24,19 @@
  *   }
  */
 
+const curtain = require('../core/curtain.js');
+
 function derive(query, classifiedAttrs, store) {
   const { inferred_attributes } = classifiedAttrs;
   store.write(inferred_attributes);
-  return {
+  const outcome = {
     status: 'derived',
     query,
     attributes: JSON.parse(JSON.stringify(inferred_attributes)),
   };
+  curtain.call('inference', `"${query}"`, undefined);
+  curtain.verdict(outcome, `profile += ${Object.keys(inferred_attributes).join(', ')}`);
+  return outcome;
 }
 
 module.exports = { derive };

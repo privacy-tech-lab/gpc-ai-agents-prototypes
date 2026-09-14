@@ -3,6 +3,7 @@ const { buildPersonalizationContext } = require('../services/personalization.js'
 const { MODEL } = require('./agent_loop.js');
 const { callAgent } = require('./a2a_client.js');
 const { closeClient } = require('./mcp_client.js');
+const curtain = require('../../core/curtain.js');
 
 let runtimePromise = null;
 
@@ -53,10 +54,14 @@ async function handleRequest({ query, user_id, secGpc = '', persistenceScope, ti
   // gpc key is present only when the signal is active; absence means no signal
   const _meta = gpc ? { gpc: 1, ...(persistenceScope ? { persistence_scope: persistenceScope } : {}) } : {};
 
+  curtain.signal(`Sec-GPC header ${secGpc === '1' ? 'present' : 'absent'}`, { gpc_active: gpc });
+  curtain.hop('envelope', '_meta built once, rides every downstream call', _meta);
+
   const { search, synthesis } = await getRuntime();
 
   // Agent 1: retrieval — reached over A2A; the LLM decides how many searches to run.
   // Personalization consultation (Category D tiers) runs alongside it, before synthesis.
+  curtain.hop('A2A', 'search-agent via Message.metadata', _meta);
   const [searchReply, personalization] = await Promise.all([
     callAgent({ baseUrl: search.url, text: query, metadata: _meta }),
     buildPersonalizationContext({ user_id, _meta, timing }),
@@ -66,6 +71,7 @@ async function handleRequest({ query, user_id, secGpc = '', persistenceScope, ti
   if (Array.isArray(searchReply.metadata.timing)) timing.push(...searchReply.metadata.timing);
 
   // Agent 2: synthesis — reached over A2A; the LLM reasons over raw results, calls no tools
+  curtain.hop('A2A', 'synthesis-agent via Message.metadata (plus rawResults)', _meta);
   const synthesisReply = await callAgent({
     baseUrl: synthesis.url,
     text: query,

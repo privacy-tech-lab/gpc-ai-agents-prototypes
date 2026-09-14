@@ -15,6 +15,7 @@
 
 const { callTool } = require('../orchestrator/mcp_client.js');
 const { isAllowed } = require('../mcp-server/gpc_policy.js');
+const curtain = require('../../core/curtain.js');
 
 /**
  * @param {object} opts
@@ -33,6 +34,7 @@ async function buildPersonalizationContext({ user_id, _meta, timing = [] }) {
     if (result.status === 'ok') history = result.result;
   } else {
     timing.push({ tool: 'get_interaction_history', durationMs: 0, status: 'blocked' });
+    curtain.verdict({ status: 'blocked', tool: 'get_interaction_history', reason: 'persistence scope below d3, checked before sending' });
   }
 
   const profileAllowed = isAllowed('user_profile_lookup', _meta);
@@ -41,6 +43,7 @@ async function buildPersonalizationContext({ user_id, _meta, timing = [] }) {
     if (result.status === 'ok') profile = result.result;
   } else {
     timing.push({ tool: 'user_profile_lookup', durationMs: 0, status: 'blocked' });
+    curtain.verdict({ status: 'blocked', tool: 'user_profile_lookup', reason: 'sensitive tool, checked before sending' });
   }
 
   return {

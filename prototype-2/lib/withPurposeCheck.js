@@ -24,6 +24,8 @@
  * test the gating logic independently of any service.
  */
 
+const curtain = require('../../core/curtain.js');
+
 function normalizeGpc(gpc) {
   return gpc === 1 || gpc === true || gpc === '1';
 }
@@ -91,23 +93,29 @@ function evaluatePurpose(privacyContext = {}, purpose, registry) {
 function withPurposeCheck(fn, { purpose, registry, layer = 'unnamed_layer' }) {
   return async function guarded(input, privacyContext = {}) {
     const decision = evaluatePurpose(privacyContext, purpose, registry);
+    curtain.call('purpose gate', `${layer} (purpose=${purpose})`,
+      { gpc: privacyContext.gpc, gpc_scope: privacyContext.gpc_scope });
 
     if (!decision.allowed) {
-      return {
+      const outcome = {
         status: 'blocked',
         reason: decision.reason,
         purpose,
         layer,
       };
+      curtain.verdict(outcome, layer);
+      return outcome;
     }
 
     const result = await fn(input, privacyContext);
-    return {
+    const outcome = {
       status: 'ok',
       purpose,
       layer,
       result,
     };
+    curtain.verdict(outcome, layer);
+    return outcome;
   };
 }
 

@@ -32,15 +32,20 @@
  *   }
  */
 
+const curtain = require('../core/curtain.js');
+
 function block(query, classifiedAttrs, store) {
   const { inferred_attributes } = classifiedAttrs;
   store.incrementBlocked();
-  return {
+  const outcome = {
     status: 'blocked',
     reason: 'b3_inference_firewall',
     query,
     would_have_written: JSON.parse(JSON.stringify(inferred_attributes)),
   };
+  curtain.call('inference', `"${query}"`, undefined);
+  curtain.verdict(outcome, 'firewall at the classify-to-store boundary');
+  return outcome;
 }
 
 module.exports = { block };

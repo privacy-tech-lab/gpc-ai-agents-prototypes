@@ -97,4 +97,22 @@ function deriveProfile(draftId, classified, stores, optouts) {
   };
 }
 
-module.exports = { resolveOptouts, collectInput, collectBehavior, deriveProfile, VALID_SUBTYPES };
+const curtain = require('../core/curtain.js');
+
+// The checkpoint functions stay pure; the curtain wrapper renders each
+// decision from the structured result they already return.
+function traced(fn) {
+  return (...args) => {
+    const result = fn(...args);
+    curtain.verdict(result, `${result.stage} checkpoint`);
+    return result;
+  };
+}
+
+module.exports = {
+  resolveOptouts,
+  collectInput: traced(collectInput),
+  collectBehavior: traced(collectBehavior),
+  deriveProfile: traced(deriveProfile),
+  VALID_SUBTYPES,
+};
