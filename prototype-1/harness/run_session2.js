@@ -1,13 +1,15 @@
 /**
  * Session 2: a follow-up request against the same seeded user (user-42,
  * Asia travel history from harness/seed_demo.js), run at whichever
- * Category D tier is requested. This is what makes D1/D2/D3 separately
- * observable — a single-session demo has no continuity to selectively
- * restrict in the first place.
+ * persistence scope is requested. A single-session demo has no continuity
+ * to selectively restrict, so this is what makes D1 and D3 separately
+ * observable. D2 has no enforcement point of its own in this codebase
+ * (see prototype-1/README.md, "Opt-out categories depicted"), so it
+ * currently produces the same result as D1.
  *
  *   node run_session2.js                 # baseline — full continuity
  *   node run_session2.js --scope=d3      # raw history ok, no synthesized profile
- *   node run_session2.js --scope=d2      # writes ok, no consultation at all
+ *   node run_session2.js --scope=d2      # writes blocked, no consultation at all (same as d1)
  *   node run_session2.js --scope=d1      # nothing persists, nothing consulted
  */
 

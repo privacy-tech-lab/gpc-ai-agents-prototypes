@@ -54,9 +54,9 @@ function main() {
     console.log([label.padEnd(COL), ...results.map((r) => getVal(r.data).padEnd(10))].join(' │ '));
   }
 
-  console.log('\nThis is the Category D hierarchy made concrete: d1 blocks everything below it,');
-  console.log('d2 additionally allows writes, d3 additionally allows raw-history consultation,');
-  console.log('and baseline additionally allows the synthesized behavioral profile.\n');
+  console.log('\nd1 and d2 block everything (no distinct D2 enforcement exists in this codebase today),');
+  console.log('d3 additionally allows raw-history consultation, and baseline additionally allows');
+  console.log('the synthesized behavioral profile.\n');
 }
 
 main();

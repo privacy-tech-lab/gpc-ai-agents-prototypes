@@ -23,6 +23,8 @@ The GPC signal travels between layers via the MCP `_meta` envelope, which is att
 
 Architecture A implements **Category D (Persistence)**, across two mechanisms with different tiers. `storage.js` enforces **D1 (session scope)**: `save_to_profile`, `log_interaction`, and its own `user_profile_lookup` call are all blocked whenever `gpc=1` is present, regardless of `persistence_scope`, so nothing written survives past the interaction. `personalization.js` adds the read-side distinction, consulted before synthesis runs: `get_interaction_history` needs `persistence_scope: 'd3'` (**D3**, long-term profile scope) or it is blocked, and its own `user_profile_lookup` call needs no GPC signal at all (baseline). Asserting `persistence_scope` changes what personalization consults; it does not loosen what storage writes.
 
+Only D1 and D3 have their own enforcement point in the code. `d2` (cross-session scope) is accepted as a `persistence_scope` value and shown in the harness output for completeness, but nothing in `gpc_policy.js` or `storage.js` reads it separately from `d1`: any `persistence_scope` below `d3` fails the same check, so `d2` currently behaves exactly like `d1`. Building a real D2 boundary would mean letting the model use within-session context while still blocking any read that reaches into a past session, which the current tool set (a single request, no session-scoped memory) does not distinguish.
+
 ```mermaid
 flowchart TD
     U["User request\nSec-GPC: 1 header + optional persistence_scope"] --> O["orchestrator.js\nreads Sec-GPC, builds _meta = gpc, persistence_scope"]
@@ -122,8 +124,8 @@ prototype-1/
 │   ├── run_gpc.js              Demo run: GPC on, sensitive tools blocked (_meta)
 │   ├── compare_results.js      Diff baseline vs GPC run, print report
 │   ├── seed_demo.js            Seed user-42 profile and interaction log
-│   ├── run_session2.js         Follow-up request at a given Category D tier (--scope=d1|d2|d3, or baseline)
-│   └── compare_persistence.js  Diff the four session-2 tiers, print the D1/D2/D3 permission matrix
+│   ├── run_session2.js         Follow-up request at a given persistence scope (--scope=d1|d2|d3, or baseline); d1 and d2 give the same result today, see note above
+│   └── compare_persistence.js  Diff the four session-2 runs, print the resulting permission table
 │
 ├── tests/
 │   ├── gpc_policy.test.js       withGpc() and isAllowed() blocking, passthrough, signal formats
@@ -202,17 +204,19 @@ Use real web search (Tavily free tier, 1000 calls/month):
 TAVILY_API_KEY=tvly-... npm run demo
 ```
 
-### Session 2: the D1/D2/D3 persistence matrix
+### Session 2: the persistence-scope comparison
 
 `run_session2.js` and `compare_persistence.js` are not wired into `package.json` scripts; run them directly with `node` after the seed step above:
 
 ```bash
 node harness/run_session2.js                 # baseline: full continuity
 node harness/run_session2.js --scope=d3      # raw history ok, no synthesized profile
-node harness/run_session2.js --scope=d2      # writes blocked, no consultation at all
+node harness/run_session2.js --scope=d2      # writes blocked, no consultation at all (same as d1, see above)
 node harness/run_session2.js --scope=d1      # nothing persists, nothing consulted
-node harness/compare_persistence.js          # print the four-tier comparison table
+node harness/compare_persistence.js          # print the four-run comparison table
 ```
+
+The table has four columns because `run_session2.js` accepts four `--scope` values, not because four are behaviorally distinct: `d1` and `d2` produce identical rows.
 
 ### Expected comparison report
 
