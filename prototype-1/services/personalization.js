@@ -3,14 +3,14 @@
  * data to feed into the synthesis agent, gated at two different
  * Category D boundaries:
  *
- *   - get_interaction_history (raw past interactions) needs D3 or better
+ *   - get_interaction_history (raw past interactions) needs D3
  *   - user_profile_lookup (synthesized behavioral profile) needs baseline
  *
- * This is what actually makes D2 and D3 observable: without a real
- * consultation step to gate, blocking storage alone (D1) is the only
- * distinction that shows up in behavior. Runs before the synthesis
- * agent, replacing the old dead-end user_profile_lookup call that used
- * to happen post-hoc inside storage.js and go unused.
+ * This is what actually makes D3 observable: without a real consultation
+ * step to gate, blocking storage alone (D1) is the only distinction that
+ * shows up in behavior. Runs before the synthesis agent, replacing the
+ * old dead-end user_profile_lookup call that used to happen post-hoc
+ * inside storage.js and go unused.
  */
 
 const { callTool } = require('../orchestrator/mcp_client.js');

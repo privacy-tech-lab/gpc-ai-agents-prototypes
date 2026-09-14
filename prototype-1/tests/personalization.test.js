@@ -42,17 +42,6 @@ describe('buildPersonalizationContext — d3 (raw history ok, no synthesized pro
   });
 });
 
-describe('buildPersonalizationContext — d2 (no consultation at all)', () => {
-  test('consults neither history nor profile', async () => {
-    const _meta = { gpc: 1, persistence_scope: 'd2' };
-    const ctx = await buildPersonalizationContext({ user_id: USER_ID, _meta, timing: [] });
-    expect(ctx.historyConsulted).toBe(false);
-    expect(ctx.profileConsulted).toBe(false);
-    expect(ctx.history).toBeNull();
-    expect(ctx.profile).toBeNull();
-  });
-});
-
 describe('buildPersonalizationContext — d1 (default when gpc=1, no scope given)', () => {
   test('consults neither history nor profile', async () => {
     const _meta = { gpc: 1 };
@@ -65,7 +54,7 @@ describe('buildPersonalizationContext — d1 (default when gpc=1, no scope given
 describe('buildPersonalizationContext — timing', () => {
   test('records a blocked timing entry for each skipped tool', async () => {
     const timing = [];
-    await buildPersonalizationContext({ user_id: USER_ID, _meta: { gpc: 1, persistence_scope: 'd2' }, timing });
+    await buildPersonalizationContext({ user_id: USER_ID, _meta: { gpc: 1, persistence_scope: 'd1' }, timing });
     const tools = timing.map((t) => t.tool);
     expect(tools).toContain('get_interaction_history');
     expect(tools).toContain('user_profile_lookup');

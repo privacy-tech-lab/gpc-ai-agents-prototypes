@@ -23,7 +23,7 @@ The GPC signal travels between layers via the MCP `_meta` envelope, which is att
 
 Architecture A implements **Category D (Persistence)**, across two mechanisms with different tiers. `storage.js` enforces **D1 (session scope)**: `save_to_profile`, `log_interaction`, and its own `user_profile_lookup` call are all blocked whenever `gpc=1` is present, regardless of `persistence_scope`, so nothing written survives past the interaction. `personalization.js` adds the read-side distinction, consulted before synthesis runs: `get_interaction_history` needs `persistence_scope: 'd3'` (**D3**, long-term profile scope) or it is blocked, and its own `user_profile_lookup` call needs no GPC signal at all (baseline). Asserting `persistence_scope` changes what personalization consults; it does not loosen what storage writes.
 
-Only D1 and D3 have their own enforcement point in the code. `d2` (cross-session scope) is accepted as a `persistence_scope` value and shown in the harness output for completeness, but nothing in `gpc_policy.js` or `storage.js` reads it separately from `d1`: any `persistence_scope` below `d3` fails the same check, so `d2` currently behaves exactly like `d1`. Building a real D2 boundary would mean letting the model use within-session context while still blocking any read that reaches into a past session, which the current tool set (a single request, no session-scoped memory) does not distinguish.
+Only D1 and D3 are modeled. D2 (cross-session scope) is left out on purpose: its defining feature is a within-session/cross-session split, retain during this session, but do not carry it into a future one, and this prototype has no within-session state for that split to apply to. Each call is a single request/response, and "session 2" (see `harness/run_session2.js`) already stands for a separate, later session in the same sense D3 tests for. There is no finer-grained session boundary here for D2 to act on, so it is not part of this demo.
 
 ```mermaid
 flowchart TD
@@ -124,12 +124,12 @@ prototype-1/
 │   ├── run_gpc.js              Demo run: GPC on, sensitive tools blocked (_meta)
 │   ├── compare_results.js      Diff baseline vs GPC run, print report
 │   ├── seed_demo.js            Seed user-42 profile and interaction log
-│   ├── run_session2.js         Follow-up request at a given persistence scope (--scope=d1|d2|d3, or baseline); d1 and d2 give the same result today, see note above
-│   └── compare_persistence.js  Diff the four session-2 runs, print the resulting permission table
+│   ├── run_session2.js         Follow-up request at a given persistence scope (--scope=d1|d3, or baseline)
+│   └── compare_persistence.js  Diff the three session-2 runs, print the resulting permission table
 │
 ├── tests/
 │   ├── gpc_policy.test.js       withGpc() and isAllowed() blocking, passthrough, signal formats
-│   ├── personalization.test.js  buildPersonalizationContext() across baseline, d1, d2, d3
+│   ├── personalization.test.js  buildPersonalizationContext() across baseline, d1, d3
 │   ├── orchestrator.test.js     Full pipeline integration; LLM agents mocked
 │   └── agent_loop.test.js       LLM loop: tool_choice, nudge, arg parsing, errors
 │
@@ -164,7 +164,7 @@ LLM agents are mocked in `orchestrator.test.js` so no Ollama instance is needed.
 | Test file | What it covers |
 |---|---|
 | `gpc_policy.test.js` | `withGpc()` blocking, passthrough, all GPC signal formats (`1`, `true`, `"1"`) |
-| `personalization.test.js` | `buildPersonalizationContext()`: baseline, d1, d2, d3, and blocked timing entries |
+| `personalization.test.js` | `buildPersonalizationContext()`: baseline, d1, d3, and blocked timing entries |
 | `orchestrator.test.js` | Full pipeline: Layer 1 and 2 assertions, timing, storage tested directly |
 | `agent_loop.test.js` | Shared LLM loop: `tool_choice` switching, nudge, arg parsing |
 
@@ -211,12 +211,9 @@ TAVILY_API_KEY=tvly-... npm run demo
 ```bash
 node harness/run_session2.js                 # baseline: full continuity
 node harness/run_session2.js --scope=d3      # raw history ok, no synthesized profile
-node harness/run_session2.js --scope=d2      # writes blocked, no consultation at all (same as d1, see above)
 node harness/run_session2.js --scope=d1      # nothing persists, nothing consulted
-node harness/compare_persistence.js          # print the four-run comparison table
+node harness/compare_persistence.js          # print the three-run comparison table
 ```
-
-The table has four columns because `run_session2.js` accepts four `--scope` values, not because four are behaviorally distinct: `d1` and `d2` produce identical rows.
 
 ### Expected comparison report
 

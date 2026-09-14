@@ -41,7 +41,7 @@ async function shutdown() {
  * @param {string}  options.query
  * @param {string}  options.user_id
  * @param {string}  [options.secGpc]           — value of the Sec-GPC request header ('1' or absent)
- * @param {string}  [options.persistenceScope] — Category D tier ('d1' | 'd2' | 'd3'), only meaningful when secGpc is '1'
+ * @param {string}  [options.persistenceScope] — Category D tier ('d1' | 'd3'), only meaningful when secGpc is '1'
  * @param {Array}   [options.timing]
  */
 async function handleRequest({ query, user_id, secGpc = '', persistenceScope, timing = [] }) {

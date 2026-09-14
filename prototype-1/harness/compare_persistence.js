@@ -1,6 +1,9 @@
 /**
- * Diff the four session-2 scope outputs and print a comparison table
- * showing the Category D permission matrix in practice.
+ * Diff the session-2 scope outputs and print a comparison table showing
+ * the Category D permission matrix in practice.
+ *
+ * Only D1 and D3 are modeled: see prototype-1/README.md,
+ * "Opt-out categories depicted", for why D2 is left out.
  */
 
 const fs   = require('fs');
@@ -10,7 +13,6 @@ const OUTPUT_DIR = path.join(__dirname, '..', 'output');
 const TIERS = [
   { label: 'baseline', file: 'session2_baseline_result.json' },
   { label: 'd3',       file: 'session2_d3_result.json' },
-  { label: 'd2',       file: 'session2_d2_result.json' },
   { label: 'd1',       file: 'session2_d1_result.json' },
 ];
 
@@ -30,8 +32,8 @@ function main() {
   const results = TIERS.map((t) => ({ ...t, data: loadJson(t.file) }));
   const missing = results.filter((r) => !r.data);
   if (missing.length) {
-    console.error('Run all four session-2 tiers first:');
-    console.error('  npm run session2:baseline && npm run session2:d3 && npm run session2:d2 && npm run session2:d1');
+    console.error('Run all three session-2 tiers first:');
+    console.error('  npm run session2:baseline && npm run session2:d3 && npm run session2:d1');
     process.exit(1);
   }
 
@@ -54,9 +56,8 @@ function main() {
     console.log([label.padEnd(COL), ...results.map((r) => getVal(r.data).padEnd(10))].join(' │ '));
   }
 
-  console.log('\nd1 and d2 block everything (no distinct D2 enforcement exists in this codebase today),');
-  console.log('d3 additionally allows raw-history consultation, and baseline additionally allows');
-  console.log('the synthesized behavioral profile.\n');
+  console.log('\nd1 blocks everything, d3 additionally allows raw-history consultation, and baseline');
+  console.log('additionally allows the synthesized behavioral profile.\n');
 }
 
 main();
