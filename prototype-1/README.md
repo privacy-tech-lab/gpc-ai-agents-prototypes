@@ -30,8 +30,8 @@ flowchart TD
     SA -- "MCP _meta.gpc" --> TS["search_web\n(not sensitive)"]
     TS --> SA
     O -- "_meta" --> PC["personalization.js\nbuildPersonalizationContext(), runs alongside search"]
-    PC --> H{"gpc on and scope\nnot d3?"}
-    H -- "yes" --> HBLK["get_interaction_history: blocked"]
+    PC --> H{"Category D3 check:\ngpc on and scope\nnot d3?"}
+    H -- "yes" --> HBLK["get_interaction_history: blocked\n(needs persistence_scope = d3)"]
     H -- "no" --> HOK["get_interaction_history: ok"]
     PC --> P{"gpc on?"}
     P -- "yes" --> PBLK["user_profile_lookup: blocked"]
@@ -42,7 +42,7 @@ flowchart TD
     O --> ST["storage.js"]
     ST -- "MCP _meta.gpc" --> G{"gpc = 1?"}
     G -- "no" --> W["save_to_profile\nlog_interaction\nuser_profile_lookup\nstatus: ok"]
-    G -- "yes" --> B["withGpc() interceptor blocks\nstatus: blocked"]
+    G -- "yes" --> B["Category D1 (session scope):\nwithGpc() interceptor blocks\nnothing survives past this interaction"]
     W --> R["Answer returned to user\n(identical either way)"]
     B --> R
     HOK --> R
@@ -51,9 +51,7 @@ flowchart TD
     PBLK --> R
 
     classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
-    class B,HBLK,PBLK category
-    D1["Category D1 (session scope):\nnothing written survives past this interaction"]:::category -.-> B
-    D3["Category D3 (long-term profile scope):\nraw history needs persistence_scope = d3"]:::category -.-> H
+    class B,H,HBLK,PBLK category
 ```
 
 ---
