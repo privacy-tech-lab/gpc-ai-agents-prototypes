@@ -1,29 +1,29 @@
 # Prototype 3: Consent-Scoped Tool Registry
 
+Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism of opt-out in this prototype.
+
 ## What it demonstrates
 
-A user signs up for an AI productivity assistant and consents to two capability categories: `file_access` (reading documents) and `external_api` (web search). Six months later, a platform update adds two tools to the MCP server: `email_sender` (a `communication` capability) and `behavior_tracker` (an `analytics` capability). Nobody asks the user. On a platform with no registry enforcement, both tools are callable the moment the update ships — the consent given at signup is treated as if it covered them.
+A user signs up for an AI productivity assistant and consents to two capability categories: `file_access` (reading documents) and `external_api` (web search). Six months later, a platform update adds two tools to the MCP server: `email_sender` (a `communication` capability) and `behavior_tracker` (an `analytics` capability). Nobody asks the user. On a platform with no registry enforcement, both tools are callable the moment the update ships; the consent given at signup is treated as if it covered them.
 
 Prototype 3 puts a consent check in front of every tool call. Each call is matched against a versioned consent manifest before it runs. A tool whose category was added after the manifest version is held until the user approves or declines it, and that decision is written to disk so it survives the next update. `file_access` and `external_api`, the two categories the user actually agreed to at signup, are the **primary categories**; `communication` and `analytics`, added later without asking, are **non-primary**. When the user has the GPC signal set, any non-primary category is declined automatically: the signal stands in for the per-tool prompt.
 
-The gate can be driven two ways. The **deterministic core** (`orchestrator.js`) walks a fixed tool sequence with no model — the run is reproducible and the tests need no Ollama. The optional **LLM agent** (`agent.js`, requires Ollama) gives a real model the user-facing tools (`file_read`, `web_search`, `email_sender`) and lets it decide which to call; every call still routes through `withConsentCheck()`, so a blocked or quarantined tool simply comes back to the model as that tool's result. Either way, what is under test is the consent gate, not how the tools are chosen.
-
-`behavior_tracker` is **not** an agent tool. It is ambient analytics a platform fires around a session — a user-task agent would never choose to call its own surveillance — so in the agent path it is invoked as a platform call and gated by the same check. That is the A2 (activation) case made literal.
+`withConsentCheck()` (in `consent_gate.js`) is the one function every tool call has to pass through before it reaches the MCP client: it looks up the tool's category and the consent manifest, then decides whether to execute it, quarantine it (pause and ask the user), or block it outright.
 
 | Mechanism | Where | What it does |
 |---|---|---|
 | **Tool registry** | `tool_registry.js` | Catalog of every tool with its `capability_category` and the platform version it was `added_at`. `getCatalog(version)` returns only the tools that existed at or before a version. |
 | **Consent manifest** | `consent_manifest.js` + `consent_manifest.json` | Per-user record on disk: `manifest_version`, `approved_categories`, `declined_categories`. A tool added after `manifest_version` whose category is undecided requires fresh consent. |
 | **Consent interceptor** | `consent_gate.js` → `withConsentCheck()` | Every call passes through it. Decides execute / quarantine / block before the tool call reaches the MCP server. |
-| **GPC auto-decline** | `consent_gate.js` | `PRIMARY_CATEGORIES` is the fixed set the user consented to at signup (`file_access`, `external_api`); everything else is non-primary. When GPC is on and a tool's category is non-primary, the category is declined with no prompt. |
+| **GPC auto-decline** | `consent_gate.js` | When GPC is on and a tool's category is outside `PRIMARY_CATEGORIES` (`file_access`, `external_api`), the category is declined with no prompt. |
 
-**Result:** in silent mode (no enforcement), `email_sender` and `behavior_tracker` run as soon as the update lands. In the consent-gated modes, both are held until the user decides, and a decline persists into a simulated v3.0 with no second prompt. With GPC on, the signal declines both non-primary categories and writes them to the manifest, exactly as an explicit decline would.
+**Result:** By default, `email_sender` and `behavior_tracker` run as soon as the update lands. In the modes with consent enforcement on (`approve`, `decline`, `--gpc`), both are held until the user decides, and a decline persists into a simulated v3.0 with no second prompt. With GPC on, the signal declines both non-primary categories and writes them to the manifest, exactly as an explicit decline would.
 
 ---
 
-## GPC categories depicted
+## Opt-out categories depicted
 
-Prototype 3 implements **Category A (Presence)** from the opt-out typology. `run_v2.js --mode=silent` vs `--mode=approve` shows **A1 (integration opt-out)**: a new tool becomes callable the instant it ships under silent mode, versus only `after_consent` under the gated modes. `behavior_tracker` — ambient analytics fired by the platform, not the agent — is **A2 (activation opt-out)**: holding or GPC-declining it is a control over unsolicited background AI specifically.
+Prototype 3 implements **Category A (Presence)** from the opt-out typology. `run_v2.js --mode=silent` vs `--mode=approve` shows **A1 (integration opt-out)**: a new tool becomes callable the instant it ships under silent mode, versus only `after_consent` when consent enforcement is on. `behavior_tracker` is **A2 (activation opt-out)**: holding or GPC-declining it is a control over unsolicited background AI specifically.
 
 ```mermaid
 flowchart TD
@@ -52,59 +52,8 @@ flowchart TD
 
 ## Protocol compliance
 
-- **MCP.** All four tools (`file_read`, `web_search`, `email_sender`, `behavior_tracker`) are served by `mcp-server/server.js`, a real `@modelcontextprotocol/sdk` `Server` over stdio, reached by `mcp_client.js`, a real `Client` that spawns it as a child process. The consent decision itself (`withConsentCheck()` in `consent_gate.js`) stays client-side rather than moving into the server: quarantine needs to pause and wait on a human decision (via `event_bus.js` / `consent_prompt.js`, including live interactive stdin), and the MCP server's stdio is already occupied by the JSON-RPC transport, so it can't also read a terminal prompt. `consent_gate.js` calls the real MCP client only once it has already decided a call may proceed.
-- **A2A.** Not applicable. There's a single agent here (the productivity assistant); `behavior_tracker` is platform-fired ambient analytics, not a second agent to hand off to, so there's no inter-agent boundary for A2A to sit at.
-
-### GPC signal integration
-
-Without `--gpc`, the user is prompted for each new tool — the quarantine mechanism in isolation, not yet wired to a global signal. With `--gpc`, the interceptor adds a signal check: when a tool's category is outside `PRIMARY_CATEGORIES` and the tool needs fresh consent, the signal declines the category with no prompt and no `consent_request` event. The global preference becomes a specific capability decision.
-
-```
-Tool needs fresh consent
-        |
-        v
-     GPC on?
-     |     |
-    yes    no
-     |     |
-     v     v
-  category   fire consent_request,
-  primary?   wait for user
-   |    |
-  yes   no
-   |    |
-   v    v
-  run  auto-decline (no prompt),
-       write to declined_categories
-```
-
----
-
-## Pipeline
-
-```
-run_v2.js --mode=approve [--gpc]
-  → orchestrator.js          plain code: fixed tool sequence, filtered by platform version
-      → consent_gate.js      withConsentCheck() — the enforcement point
-          → event_bus.js     emits consent_request when a tool needs a decision
-          → consent_prompt.js  approve / decline / interactive responder, resolves the request
-          → mcp_client.js  ⇄ stdio ⇄  mcp-server/server.js   (tool execution, once allowed)
-```
-
-`orchestrator.js` walks a fixed four-tool sequence (`file_read`, `web_search`, `email_sender`, `behavior_tracker`), filtered to the tools that exist at the platform version. Each call goes through `withConsentCheck()`, which decides in this order:
-
-1. Unknown tool → throw.
-2. Silent mode → run with no check.
-3. Category already declined → block (`previously_declined`).
-4. GPC on and category not primary and consent needed → decline with no prompt (`gpc_auto_decline`).
-5. Consent needed → emit `consent_request`, pause, and wait for the prompt to resolve. Approve → run; decline → quarantine (`user_declined`).
-6. Already approved → run.
-
-`event_bus.js` is a single Node `EventEmitter`. `consent_gate.js` emits `consent_request`; `consent_prompt.js` listens and resolves. Neither imports the other, so the responder (auto-approve, auto-decline, or interactive stdin) can be swapped without touching the interceptor. Every "run" outcome above (steps 2 and 6, and an approved step 5) ends the same way: a real `tools/call` over MCP via `mcp_client.js`.
-
-### Why the manifest version is bumped last
-
-`run_v2.js` raises `manifest_version` to `v2.0` only after every tool in the run has been processed. If it bumped after approving `email_sender`, then `behavior_tracker`'s `requiresFreshConsent()` check would compare `v2.0` against `v2.0`, find nothing new, and skip its prompt. The version must move only once all decisions for the run are recorded.
+- **MCP.** All four tools (`file_read`, `web_search`, `email_sender`, `behavior_tracker`) are served by `mcp-server/server.js`, a `@modelcontextprotocol/sdk` `Server` over stdio, reached by `mcp_client.js`, a `Client` that spawns it as a child process. The consent decision itself (`withConsentCheck()` in `consent_gate.js`) stays client-side rather than moving into the server: quarantine needs to pause and wait on a human decision (via `event_bus.js` / `consent_prompt.js`, including live interactive stdin), and the MCP server's stdio is already occupied by the JSON-RPC transport, so it can't also read a terminal prompt. `consent_gate.js` calls the MCP client only once it has already decided a call may proceed.
+- **A2A.** Not applicable. There's a single agent here (the productivity assistant).
 
 ## File map
 
@@ -144,7 +93,7 @@ prototype-3/
     ├── consent_gate.test.js       withConsentCheck() — silent, approved, hard block,
     │                              quarantine/resume, GPC auto-decline, unknown tool
     ├── orchestrator.test.js       Full sequence per mode; A2 cross-version persistence
-    └── agent.test.js              makeExecutor + firePlatformTracker route through the gate;
+    └── agent.test.js              makeExecutor + firePlatformTracker route through withConsentCheck();
                                    tool defs exclude behavior_tracker
 ```
 
@@ -167,7 +116,7 @@ npm install
 npm test
 ```
 
-They run with `--runInBand` because they share the one `consent_manifest.json` on disk. No Ollama needed — the agent's enforcement seam (`makeExecutor`, `firePlatformTracker`) is tested directly. Allowed tool calls do spawn a real MCP child process (`mcp-server/server.js`), closed via `afterAll` in each test file that exercises one.
+They run with `--runInBand` because they share the one `consent_manifest.json` on disk. No Ollama needed; the agent's enforcement seam (`makeExecutor`, `firePlatformTracker`) is tested directly. Allowed tool calls do spawn a real MCP child process (`mcp-server/server.js`), closed via `afterAll` in each test file that exercises one.
 
 | Test file | What it covers |
 |---|---|
@@ -175,7 +124,7 @@ They run with `--runInBand` because they share the one `consent_manifest.json` o
 | `consent_manifest.test.js` | `reset()`, `isApproved`/`isDeclined`, all `requiresFreshConsent` conditions, `approve`/`decline` idempotency, disk persistence |
 | `consent_gate.test.js` | Silent bypass, approved passthrough, hard block, quarantine pause-and-resume, GPC auto-decline, primary category protection |
 | `orchestrator.test.js` | Full sequence for every mode including GPC; A2 cross-version persistence |
-| `agent.test.js` | `makeExecutor` routes model calls through the gate (silent / primary / GPC auto-decline); `firePlatformTracker` gating; tool defs exclude `behavior_tracker` |
+| `agent.test.js` | `makeExecutor` routes model calls through `withConsentCheck()` (silent / primary / GPC auto-decline); `firePlatformTracker`'s consent check; tool defs exclude `behavior_tracker` |
 
 ### Demo runs
 
@@ -190,14 +139,14 @@ Individual runs:
 ```bash
 npm run v1          # v1.0 baseline — consented tools only, no quarantine
 npm run v2:silent   # v2.0, no enforcement — new tools run immediately
-npm run v2:approve  # v2.0, gated — new tools prompt, then run
-npm run v2:decline  # v2.0, gated — new tools prompt, then block
+npm run v2:approve  # v2.0, consent enforced: new tools prompt, then run
+npm run v2:decline  # v2.0, consent enforced: new tools prompt, then block
 npm run v2:gpc      # v2.0, GPC on — non-primary categories auto-declined
 ```
 
 ### Run as a real agent (requires Ollama)
 
-A live model is given `file_read`, `web_search`, and `email_sender` and decides which to call for the request; every call is gated by `withConsentCheck()`, and the platform fires `behavior_tracker` around the session. The mode and `--gpc` flag set the enforcement — the model never controls them.
+A live model is given `file_read`, `web_search`, and `email_sender` and decides which to call for the request; every call passes through `withConsentCheck()`, and the platform fires `behavior_tracker` around the session. The mode and `--gpc` flag set the enforcement; the model never controls them.
 
 ```bash
 ollama serve                 # start Ollama if it isn't running
@@ -234,4 +183,4 @@ email_sender      | immediately | after_consent | never   | gpc_blocked
 behavior_tracker  | immediately | after_consent | never   | gpc_blocked
 ```
 
-The gap between `immediately` under silent mode and `after_consent` / `gpc_blocked` / `never` under the gated modes is the A1 finding: with no registry, a capability becomes callable the instant it is added, and the user never sees it happen.
+The gap between `immediately` under silent mode and `after_consent` / `gpc_blocked` / `never` when consent enforcement is on is the A1 finding: with no registry, a capability becomes callable the instant it is added, and the user never sees it happen.
