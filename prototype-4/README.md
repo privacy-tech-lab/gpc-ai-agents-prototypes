@@ -22,14 +22,14 @@ flowchart TD
     O -- "fanout(query, site_ids, _meta)" --> P["provider.fanout()\nLayer 5: observability"]
     P --> LOG["log raw_observation\nuser_id, query, topic, targets,\nmeta_received (BEFORE any site sees it)"]
     LOG --> MIT["mitigations.apply()"]
-    MIT -.-> C3["Category C3 (Repurposing):\ndo_not_train tag"]
-    MIT -.-> B3["Category B3 (Derived collection):\nk-anon suppresses interest profile"]
+    MIT -.-> C3["Category C3 (Repurposing):\ndo_not_train tag"]:::category
+    MIT -.-> B3["Category B3 (Derived collection):\nk-anon suppresses interest profile"]:::category
     MIT --> MITM{"mitm = true?"}
     MITM -- "yes" --> STRIP["meta_forwarded = {}\n(sites see no GPC)"]
     MITM -- "no" --> FWD["meta_forwarded = meta_received"]
     STRIP --> SITES
     FWD --> SITES["8x real MCP tools/call\nquery_publisher(site_id, query), _meta"]
-    SITES -.-> C4["Category C4 (Sharing):\nhow far the query travels"]
+    SITES -.-> C4["Category C4 (Sharing):\nhow far the query travels"]:::category
     SITES --> DEC{"each site's own\nenforcement level"}
     DEC -- "strict + gpc" --> NOLOG["logged: false"]
     DEC -- "advisory + gpc" --> PARTIAL["logged: true, profile_write: false"]

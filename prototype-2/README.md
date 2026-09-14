@@ -17,7 +17,7 @@ flowchart TD
     U["Patient request\nSec-GPC / body.gpc / gpc_scope"] --> O["orchestrator.js\nbuildPrivacyContext()"]
     O --> MA["Medical Agent (LLM)\ntool: get_medical_records"]
     MA -- "real MCP tools/call" --> MR["get_medical_records\nnever gated"]
-    MR -.-> C1["Category C1 (Primary use):\nalways proceeds"]
+    MR -.-> C1["Category C1 (Primary use):\nalways proceeds"]:::category
     MR --> ANS["Answer delivered to patient\n(always, regardless of GPC)"]
     ANS --> FO["fanOutSecondaryPurposes()"]
 
