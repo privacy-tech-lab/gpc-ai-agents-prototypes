@@ -1,5 +1,5 @@
 /**
- * Diff the session-2 scope outputs and print a comparison table showing
+ * Diff the run_scope_check.js outputs and print a comparison table showing
  * the Category D permission matrix in practice.
  *
  * Only D1 and D3 are modeled: see prototype-1/README.md,
@@ -11,9 +11,9 @@ const path = require('path');
 
 const OUTPUT_DIR = path.join(__dirname, '..', 'output');
 const TIERS = [
-  { label: 'baseline', file: 'session2_baseline_result.json' },
-  { label: 'd3',       file: 'session2_d3_result.json' },
-  { label: 'd1',       file: 'session2_d1_result.json' },
+  { label: 'baseline', file: 'scope_baseline_result.json' },
+  { label: 'd3',       file: 'scope_d3_result.json' },
+  { label: 'd1',       file: 'scope_d1_result.json' },
 ];
 
 function loadJson(file) {
@@ -32,13 +32,13 @@ function main() {
   const results = TIERS.map((t) => ({ ...t, data: loadJson(t.file) }));
   const missing = results.filter((r) => !r.data);
   if (missing.length) {
-    console.error('Run all three session-2 tiers first:');
-    console.error('  npm run session2:baseline && npm run session2:d3 && npm run session2:d1');
+    console.error('Run all three scope checks first:');
+    console.error('  node harness/run_scope_check.js && node harness/run_scope_check.js --scope=d3 && node harness/run_scope_check.js --scope=d1');
     process.exit(1);
   }
 
   console.log('\n╔══════════════════════════════════════════════════════════════════╗');
-  console.log('║   Category D Permission Matrix — Architecture A, Session 2         ║');
+  console.log('║   Architecture A: Category D Permission Matrix                     ║');
   console.log('╚══════════════════════════════════════════════════════════════════╝\n');
 
   const COL    = 28;

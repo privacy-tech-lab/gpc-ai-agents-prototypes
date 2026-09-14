@@ -23,7 +23,7 @@ The GPC signal travels between layers via the MCP `_meta` envelope, which is att
 
 Architecture A implements **Category D (Persistence)**, across two mechanisms with different tiers. `storage.js` enforces **D1 (session scope)**: `save_to_profile`, `log_interaction`, and its own `user_profile_lookup` call are all blocked whenever `gpc=1` is present, regardless of `persistence_scope`, so nothing written survives past the interaction. `personalization.js` adds the read-side distinction, consulted before synthesis runs: `get_interaction_history` needs `persistence_scope: 'd3'` (**D3**, long-term profile scope) or it is blocked, and its own `user_profile_lookup` call needs no GPC signal at all (baseline). Asserting `persistence_scope` changes what personalization consults; it does not loosen what storage writes.
 
-Only D1 and D3 are modeled. D2 (cross-session scope) is left out on purpose: its defining feature is a within-session/cross-session split, retain during this session, but do not carry it into a future one, and this prototype has no within-session state for that split to apply to. Each call is a single request/response, and "session 2" (see `harness/run_session2.js`) already stands for a separate, later session in the same sense D3 tests for. There is no finer-grained session boundary here for D2 to act on, so it is not part of this demo.
+Only D1 and D3 are modeled. D2 (cross-session scope) is left out on purpose: its defining feature is a within-session/cross-session split, retain during this session, but do not carry it into a future one, and this prototype has no within-session state for that split to apply to. Each call (see `harness/run_scope_check.js`) is a single, independent request/response against the same seeded user, with no server-side session in between. There is no finer-grained session boundary here for D2 to act on, so it is not part of this demo.
 
 ```mermaid
 flowchart TD
@@ -64,21 +64,6 @@ flowchart TD
 - **A2A.** The search and synthesis agents are each served behind a `@a2a-js/sdk` `DefaultRequestHandler`, wired into Express via the SDK's own JSON-RPC handler and agent-card handler. `orchestrator/a2a_client.js` reaches them with the SDK's `ClientFactory`. The GPC signal rides in `Message.metadata.gpc`, A2A's equivalent of MCP's `_meta`.
 
 ---
-
-## Pipeline
-
-```
-HTTP Request (Sec-GPC: 1, persistence_scope)
-  → orchestrator.js               (reads Sec-GPC, builds _meta / A2A metadata envelope)
-      → a2a_client.js  ⇄ JSON-RPC ⇄  search_agent_server.js     (LLM loop, decides how many searches to run)
-      → services/personalization.js  (runs alongside search: consults get_interaction_history and user_profile_lookup, each gated separately)
-      → a2a_client.js  ⇄ JSON-RPC ⇄  synthesis_agent_server.js  (LLM, reasons over raw results, calls no tools)
-      → storage.js                (plain code, enforces GPC before writing)
-          → mcp_client.js  ⇄ stdio ⇄  mcp-server/server.js       (tools/call, GPC-gated at the MCP layer)
-  → HTTP Response
-```
-
-Each agent server and the MCP server start lazily on first request and are memoized for the life of the process; `orchestrator.shutdown()` closes them (used by tests and, if a caller wants a clean exit, by harness scripts).
 
 ### Agent roles
 
@@ -124,8 +109,8 @@ prototype-1/
 │   ├── run_gpc.js              Demo run: GPC on, sensitive tools blocked (_meta)
 │   ├── compare_results.js      Diff baseline vs GPC run, print report
 │   ├── seed_demo.js            Seed user-42 profile and interaction log
-│   ├── run_session2.js         Follow-up request at a given persistence scope (--scope=d1|d3, or baseline)
-│   └── compare_persistence.js  Diff the three session-2 runs, print the resulting permission table
+│   ├── run_scope_check.js      One request at a given persistence scope (--scope=d1|d3, or baseline)
+│   └── compare_scope_check.js  Diff the three scope-check runs, print the resulting permission table
 │
 ├── tests/
 │   ├── gpc_policy.test.js       withGpc() and isAllowed() blocking, passthrough, signal formats
@@ -204,15 +189,15 @@ Use real web search (Tavily free tier, 1000 calls/month):
 TAVILY_API_KEY=tvly-... npm run demo
 ```
 
-### Session 2: the persistence-scope comparison
+### Persistence-scope comparison
 
-`run_session2.js` and `compare_persistence.js` are not wired into `package.json` scripts; run them directly with `node` after the seed step above:
+`run_scope_check.js` and `compare_scope_check.js` are not wired into `package.json` scripts; run them directly with `node` after the seed step above. Each `run_scope_check.js` call is one independent request against the same seeded user (`user-42`); the `--scope` flag is what varies between runs:
 
 ```bash
-node harness/run_session2.js                 # baseline: full continuity
-node harness/run_session2.js --scope=d3      # raw history ok, no synthesized profile
-node harness/run_session2.js --scope=d1      # nothing persists, nothing consulted
-node harness/compare_persistence.js          # print the three-run comparison table
+node harness/run_scope_check.js                 # baseline: full continuity
+node harness/run_scope_check.js --scope=d3      # raw history ok, no synthesized profile
+node harness/run_scope_check.js --scope=d1      # nothing persists, nothing consulted
+node harness/compare_scope_check.js             # print the three-run comparison table
 ```
 
 ### Expected comparison report
