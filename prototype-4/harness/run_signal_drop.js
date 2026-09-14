@@ -4,11 +4,11 @@
  * provider can silently nullify enforcement at every destination while
  * retaining full visibility of the original request.
  *
- * Symmetric to Architecture A's signal-drop experiment, but the actor
+ * Symmetric to Prototype 1's signal-drop experiment, but the actor
  * here is the provider, not a sub-agent in the chain.
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env'), quiet: true });
 
 const fs   = require('fs');
 const path = require('path');

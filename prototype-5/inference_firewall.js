@@ -14,7 +14,7 @@
  *
  * When B3 is off, block() is never called; derive() runs directly.
  *
- * This mirrors Architecture C's withConsentCheck() pattern:
+ * This mirrors Prototype 3's withConsentCheck() pattern:
  *   - no LLM involved — the firewall is pure logic
  *   - deterministic and fully testable
  *   - the user's answer (canned) is still returned regardless of firewall state

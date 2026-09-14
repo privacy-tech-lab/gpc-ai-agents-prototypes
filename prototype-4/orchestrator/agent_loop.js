@@ -1,5 +1,5 @@
 /**
- * Architecture D turn loop.
+ * Prototype 4 turn loop.
  *
  * Drives the LLM through a sequence of publisher queries. Uses
  * tool_choice='required' until the minimum number of distinct tool calls have
@@ -8,7 +8,7 @@
  *
  * The network call lives in core/ollama.js. This file owns only the
  * `minToolCalls` loop semantics and the truncation diagnostic that are specific
- * to Architecture D.
+ * to Prototype 4.
  */
 
 const { callModel, DEFAULT_MODEL } = require('../../core/ollama');

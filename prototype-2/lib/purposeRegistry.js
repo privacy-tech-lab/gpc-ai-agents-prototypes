@@ -5,7 +5,7 @@
  * The PRIMARY purpose — answering the patient's question using their
  * retrieved records — is intentionally NOT in this registry. It is the
  * one purpose that always proceeds, GPC or not. That's the crux of
- * Architecture B: the retrieval tool itself is never blocked; only the
+ * Prototype 2: the retrieval tool itself is never blocked; only the
  * secondary uses of its output are.
  */
 

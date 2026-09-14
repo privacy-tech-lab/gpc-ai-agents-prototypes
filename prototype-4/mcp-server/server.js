@@ -8,7 +8,7 @@
  * single stdio MCP connection instead of an in-process function call.
  * querySite() and decideTracking() in services/site_handlers.js are
  * unchanged — this is a thin transport wrapper around them, same as
- * Architectures A/B/C.
+ * Prototypes 1/2/3.
  */
 
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');

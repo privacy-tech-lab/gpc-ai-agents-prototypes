@@ -2,7 +2,7 @@
  * Real MCP server — exposes the query classifier as one tool.
  *
  * query_classifier.js is unchanged; this is a thin transport wrapper
- * around it, same as Architectures A/B/C/D. The firewall/engine decision
+ * around it, same as Prototypes 1/2/3/4. The firewall/engine decision
  * and the profile store stay client-side (in orchestrator.js / agent.js):
  * that decision needs to accumulate state across all 8 queries in a
  * session, and the extensive existing unit tests exercise that state

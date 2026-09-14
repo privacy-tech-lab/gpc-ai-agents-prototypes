@@ -72,7 +72,7 @@ function main() {
   const aggregate  = loadJson('aggregate_result.json');
 
   console.log('\n╔════════════════════════════════════════════════════════════════════════╗');
-  console.log('║   Site-vs-Provider Visibility Report — Architecture D                  ║');
+  console.log('║   Site-vs-Provider Visibility Report — Prototype 4                  ║');
   console.log('╚════════════════════════════════════════════════════════════════════════╝\n');
 
   const rows = [

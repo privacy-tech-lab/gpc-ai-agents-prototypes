@@ -3,7 +3,7 @@
 /**
  * agent.js
  *
- * The LLM-driven version of Architecture E. Instead of a scripted loop over a
+ * The LLM-driven version of Prototype 5. Instead of a scripted loop over a
  * fixed query list (orchestrator.js), a real model is given a `search` tool and
  * decides to call it for each question the user asks.
  *

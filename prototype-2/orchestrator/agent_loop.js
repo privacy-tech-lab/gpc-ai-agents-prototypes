@@ -1,9 +1,9 @@
 /**
- * Architecture B turn loop.
+ * Prototype 2 turn loop.
  *
  * The network call lives in core/ollama.js. This file owns the per-call _meta
  * envelope construction (Layer 2) and the requiredTools nudging that are
- * specific to Architecture B.
+ * specific to Prototype 2.
  */
 
 const { callModel, DEFAULT_MODEL } = require('../../core/ollama');

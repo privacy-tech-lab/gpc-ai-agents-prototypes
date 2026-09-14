@@ -38,7 +38,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`=== Architecture C — LLM agent | Mode: ${mode}${gpc ? ' | GPC: on' : ''} ===`);
+  console.log(`=== Prototype 3 — LLM agent | Mode: ${mode}${gpc ? ' | GPC: on' : ''} ===`);
   console.log('A real model decides which tools to call; withConsentCheck() gates each call.\n');
 
   const userMessage =

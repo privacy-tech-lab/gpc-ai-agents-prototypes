@@ -15,7 +15,6 @@ The goal is writing that reads plainly and does not look AI-generated.
 
 - This repository holds GPC (Global Privacy Control) reference prototypes for AI agent pipelines, numbered Prototype 1 through Prototype 8. Each one shows a specific opt-out enforcement mechanism.
 - The pipelines run locally on Ollama (default model `qwen2.5:14b`). Keep it local-first. Do not swap in a hosted model.
-- For Prototype 1, generate the JWT keypair from its README after a fresh clone, before running tests. Tests fail with `invalid signature` if `keys/private.pem` is missing.
 - Use a branch and a pull request for changes. Do not commit directly to `main`.
 
 ## Issue and PR conventions

@@ -1,7 +1,7 @@
 /**
  * get_medical_records — the PRIMARY tool/data-layer action.
  *
- * This is the heart of Architecture B's distinction from Architecture A:
+ * This is the heart of Prototype 2's distinction from Prototype 1:
  * this function is NEVER wrapped in withPurposeCheck() and NEVER consults
  * gpc/gpc_scope. It always runs, GPC or not, because retrieving the
  * patient's own records to answer their own question is the primary

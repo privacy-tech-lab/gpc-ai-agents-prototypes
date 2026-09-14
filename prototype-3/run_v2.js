@@ -21,7 +21,7 @@ async function main() {
   manifest.reset();
 
   const gpcLabel = gpc ? ' | GPC: on' : '';
-  console.log(`=== Architecture C — Platform ${PLATFORM_VERSION} | Mode: ${mode}${gpcLabel} ===`);
+  console.log(`=== Prototype 3 — Platform ${PLATFORM_VERSION} | Mode: ${mode}${gpcLabel} ===`);
   console.log('Manifest reset to v1.0. New tools (email_sender, behavior_tracker) not yet consented.\n');
 
   if (gpc) {

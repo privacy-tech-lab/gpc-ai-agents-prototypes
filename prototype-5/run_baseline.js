@@ -3,7 +3,7 @@
 /**
  * run_baseline.js
  *
- * Runs Architecture E with the B3 signal OFF.
+ * Runs Prototype 5 with the B3 signal OFF.
  *
  * Every query is processed by the inference engine, which writes inferred
  * attributes to the shadow profile.  By the end of the session the profile
@@ -17,7 +17,7 @@ const orchestrator = require('./orchestrator');
 const { closeClient } = require('./mcp_client');
 
 async function main() {
-  console.log('=== Architecture E — Inference Firewall | B3: OFF (baseline) ===');
+  console.log('=== Prototype 5 — Inference Firewall | B3: OFF (baseline) ===');
   console.log('Every query is classified and attributes are written to the shadow profile.\n');
 
   const { results, profileSnapshot } = await orchestrator.run(false);

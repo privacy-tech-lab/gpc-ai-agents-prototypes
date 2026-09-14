@@ -38,7 +38,7 @@ async function main() {
   const OUTPUT = path.join(__dirname, '..', 'output', `scope_${label}_result.json`);
   const timing = [];
 
-  console.log(`=== Architecture A: persistence scope = ${label} ===\n`);
+  console.log(`=== Prototype 1: persistence scope = ${label} ===\n`);
 
   const result = await handleRequest({
     query:            'Help me plan a 3-day trip to Osaka and Kyoto',

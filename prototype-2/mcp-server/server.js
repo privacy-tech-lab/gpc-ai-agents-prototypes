@@ -1,8 +1,8 @@
 /**
  * MCP server exposing the primary tool: get_medical_records.
  *
- * Unlike Architecture A's server, there is no policy interceptor here.
- * get_medical_records is Architecture B's whole point: the primary-purpose
+ * Unlike Prototype 1's server, there is no policy interceptor here.
+ * get_medical_records is Prototype 2's whole point: the primary-purpose
  * tool call is never GPC-gated, only what happens to its output afterwards
  * (see orchestrator.js's fanOutSecondaryPurposes). So this server just
  * serves the tool as-is.

@@ -35,7 +35,7 @@ function main() {
   }
 
   console.log('\n╔══════════════════════════════════════════════════════════════╗');
-  console.log('║       GPC Propagation Report — Architecture B                ║');
+  console.log('║       GPC Propagation Report — Prototype 2                ║');
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
   const COL    = 18;

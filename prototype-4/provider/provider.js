@@ -1,7 +1,7 @@
 /**
  * LLM Provider middleware.
  *
- * In Architectures A and B the orchestrator is co-located with the agent
+ * In Prototypes 1 and 2 the orchestrator is co-located with the agent
  * runtime. In a real multi-agent deployment the agent's reasoning runs
  * inside the LLM provider's infrastructure, which means every outbound
  * tool call from the agent passes through the provider before reaching

@@ -1,8 +1,8 @@
 /**
- * Architecture A turn loop.
+ * Prototype 1 turn loop.
  *
  * Thin wrapper around the shared core/agent_loop.js. Sets the nudge prompt
- * used when the model returns an empty content (arch-A's variant asks for
+ * used when the model returns an empty content (prototype-1's variant asks for
  * a summary of what was found and stored).
  */
 

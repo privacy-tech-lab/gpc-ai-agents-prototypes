@@ -1,5 +1,5 @@
 /**
- * Architecture E turn loop.
+ * Prototype 5 turn loop.
  *
  * Thin wrapper around the shared core/agent_loop.js. Enforcement (the
  * inference firewall) lives in the caller's executeToolFn, not here.

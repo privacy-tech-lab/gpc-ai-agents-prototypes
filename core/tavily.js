@@ -1,9 +1,9 @@
 /**
  * Shared Tavily search caller.
  *
- * Owned by every architecture that needs to query Tavily (arch-A, arch-D).
- * Each arch wraps the result in its own envelope (`searchWeb` in arch-A,
- * `querySite` in arch-D); this module owns the network call, response
+ * Owned by every architecture that needs to query Tavily (prototype-1, prototype-4).
+ * Each prototype wraps the result in its own envelope (`searchWeb` in prototype-1,
+ * `querySite` in prototype-4); this module owns the network call, response
  * parsing, the abort timeout, and the fixture-gate.
  *
  * The fixture-gate (TAVILY_FIXTURE env var) short-circuits the live fetch

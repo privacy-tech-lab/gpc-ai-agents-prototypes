@@ -3,7 +3,7 @@
 /**
  * Shared GPC signal reader for Express-style request handlers.
  *
- * Used by arch-B and arch-D. Each architecture has its own HTTP
+ * Used by prototype-2 and prototype-4. Each architecture has its own HTTP
  * orchestrator; this module owns the header and body parsing so both
  * get the same normalization rules.
  *
@@ -21,7 +21,7 @@
  *   3. Otherwise the signal is absent (gpc is undefined).
  *
  * Also reads body.gpc_scope: an optional array of purpose labels for
- * partial opt-out (arch-B feature). When absent or not an array,
+ * partial opt-out (prototype-2 feature). When absent or not an array,
  * gpc_scope is omitted from the returned context.
  *
  * @param {object} req - Express request or any { headers, body } object
