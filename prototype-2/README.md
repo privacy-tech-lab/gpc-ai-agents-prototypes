@@ -8,17 +8,6 @@ A patient asks an AI assistant: *"What does my blood pressure reading mean, and 
 
 The assistant retrieves their records and answers the question. This interaction also feeds an analytics log, a model-training dataset, and a pharma ad-targeting platform: downstream systems the patient never directly interacted with. With opt-outs enabled, each of those secondary data flows is independently gated by its declared purpose.
 
-| Layer | Mechanism | Enforcement point |
-|---|---|---|
-| **1. Transport** | `Sec-GPC: 1` HTTP header or `gpc` in request body; optional `gpc_scope` array for partial opt-out | `buildPrivacyContext()` in `orchestrator.js` reads `gpc` and `gpc_scope` once from the inbound request and builds `privacyContext = { gpc, gpc_scope }`, which is passed as a single object to `runAgentLoop()` and forwarded to every downstream call; nothing below re-reads the header |
-| **2. Agent protocol** | `_meta = {gpc, gpc_scope, purpose}` task envelope | `orchestrator/agent_loop.js` builds a `_meta` envelope before each tool call, setting `purpose: 'patient_response'` to mark the primary task as non-restrictable; the envelope travels alongside `get_medical_records` arguments so the full GPC context is always available at the execution site |
-| **3. Trust boundary** | `evaluatePurpose()` at the ad platform HTTP endpoint | `fanOutSecondaryPurposes()` sends `gpc` and `gpc_scope` in the POST body to the ad platform; the ad platform calls `evaluatePurpose({ gpc, gpc_scope }, 'ad_targeting', registry)` at its HTTP boundary before touching the vector store and returns `status: blocked` without writing if `ad_targeting` is in scope, independent of what the calling code did |
-| **4. Data layer** | `withPurposeCheck()` policy wrapper | Wraps the `logInteraction` and `addTrainingExample` handlers in `analytics.js` and `trainingDataset.js`. A restrictable-purpose registry (`purposeRegistry.js`) defines which pipelines are opt-outable: `analytics`, `model_training`, and `ad_targeting`. If `gpc=1` and no `gpc_scope` is set (all purposes blocked) or the purpose is explicitly listed in `gpc_scope`, the wrapper returns `status: blocked` without executing. `get_medical_records` is not in the registry and always executes. |
-
-**Result:** the patient gets a complete, accurate answer in all scenarios. With full opt-out, nothing is written to any secondary pipeline. With partial opt-out (`gpc_scope: ["ad_targeting"]`), analytics and training proceed while the ad platform is blocked.
-
----
-
 ## Opt-out categories depicted
 
 Prototype 2 implements **Category C (Use)** from the opt-out typology. `get_medical_records` implements **C1 (primary use restriction)** because data stays bound to the task it was collected for. Of the three secondary pipelines, `analytics` is **C2 (secondary use restriction)**, `ad_targeting` is **C2a (targeting)**, and `model_training` is **C3 (data repurposing restriction)**, each independently opt-outable via `gpc_scope`.

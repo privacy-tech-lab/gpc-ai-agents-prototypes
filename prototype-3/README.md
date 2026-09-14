@@ -10,17 +10,6 @@ Prototype 3 puts a consent check in front of every tool call. Each call is match
 
 `withConsentCheck()` (in `consent_gate.js`) is the one function every tool call has to pass through before it reaches the MCP client: it looks up the tool's category and the consent manifest, then decides whether to execute it, quarantine it (pause and ask the user), or block it outright.
 
-| Mechanism | Where | What it does |
-|---|---|---|
-| **Tool registry** | `tool_registry.js` | Catalog of every tool with its `capability_category` and the platform version it was `added_at`. `getCatalog(version)` returns only the tools that existed at or before a version. |
-| **Consent manifest** | `consent_manifest.js` + `consent_manifest.json` | Per-user record on disk: `manifest_version`, `approved_categories`, `declined_categories`. A tool added after `manifest_version` whose category is undecided requires fresh consent. |
-| **Consent interceptor** | `consent_gate.js` → `withConsentCheck()` | Every call passes through it. Decides execute / quarantine / block before the tool call reaches the MCP server. |
-| **GPC auto-decline** | `consent_gate.js` | When GPC is on and a tool's category is outside `PRIMARY_CATEGORIES` (`file_access`, `external_api`), the category is declined with no prompt. |
-
-**Result:** By default, `email_sender` and `behavior_tracker` run as soon as the update lands. In the modes with consent enforcement on (`approve`, `decline`, `--gpc`), both are held until the user decides, and a decline persists into a simulated v3.0 with no second prompt. With GPC on, the signal declines both non-primary categories and writes them to the manifest, exactly as an explicit decline would.
-
----
-
 ## Opt-out categories depicted
 
 Prototype 3 implements **Category A (Presence)** from the opt-out typology. `run_v2.js --mode=silent` vs `--mode=approve` shows **A1 (integration opt-out)**: a new tool becomes callable the instant it ships under silent mode, versus only `after_consent` when consent enforcement is on. `behavior_tracker` is **A2 (activation opt-out)**: holding or GPC-declining it is a control over unsolicited background AI specifically.

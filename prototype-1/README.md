@@ -6,16 +6,7 @@ Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism o
 
 A user with opt-out enabled asks an AI assistant: *"Help me plan a 5-day trip to Japan: what should I see, eat, and know before I go?"*
 
-The assistant searches the web, synthesises an itinerary, and (in a non-GPC world) saves the results to the user's profile, and consults what it already knows about the user before answering. This request exercises two enforcement layers:
-
-| Layer | Mechanism | Enforcement point |
-|---|---|---|
-| **1. Transport** | `Sec-GPC: 1` HTTP header, plus an optional `persistence_scope` | The orchestrator reads the header once and propagates the signal, and the scope, to every downstream call |
-| **2. Data layer** | `withGpc()` policy interceptor plus `isAllowed()` | `gpc_policy.js` centralizes both a sensitive-tool registry (`user_profile_lookup`, `save_to_profile`, `log_interaction`) blocked by a flat `gpc=1` check, and a check for `get_interaction_history` that also reads `persistence_scope`. `search_web` is in neither and always executes. |
-
-The GPC signal travels between layers via the MCP `_meta` envelope, which is attached to every tool call, and via the A2A `Message.metadata` envelope, which is attached to every inter-agent call.
-
-**Result:** the user gets an equally good itinerary whether GPC is on or off. With GPC on, nothing is stored, and what personalization.js is allowed to read back depends on the asserted scope.
+The assistant searches the web, synthesises an itinerary, and (in a non-GPC world) saves the results to the user's profile, and consults what it already knows about the user before answering. This request exercises two enforcement layers.
 
 ---
 
