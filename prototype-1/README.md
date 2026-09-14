@@ -1,15 +1,17 @@
-# Architecture A: GPC Enforcement in a Multi-Agent Pipeline
+# Architecture A: Opt-out Enforcement in a Multi-Agent Pipeline
+
+Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism of opt-out in this prototype.
 
 ## What it demonstrates
 
-A user with GPC enabled asks an AI assistant: *"Help me plan a 5-day trip to Japan: what should I see, eat, and know before I go?"*
+A user with opt-out enabled asks an AI assistant: *"Help me plan a 5-day trip to Japan: what should I see, eat, and know before I go?"*
 
 The assistant searches the web, synthesises an itinerary, and (in a non-GPC world) saves the results to the user's profile, and consults what it already knows about the user before answering. This request exercises two enforcement layers:
 
 | Layer | Mechanism | Enforcement point |
 |---|---|---|
-| **1. Transport** | `Sec-GPC: 1` HTTP header, plus an optional `persistence_scope` (`d1`/`d2`/`d3`) | The orchestrator reads the header once and propagates the signal, and the scope, to every downstream call |
-| **2. Data layer** | `withGpc()` policy interceptor plus `isAllowed()` | `gpc_policy.js` centralises both: a sensitive-tool registry (`user_profile_lookup`, `save_to_profile`, `log_interaction`) blocked by a flat `gpc=1` check, and a scope-aware check for `get_interaction_history` that also reads `persistence_scope`. `search_web` is in neither and always executes. |
+| **1. Transport** | `Sec-GPC: 1` HTTP header, plus an optional `persistence_scope` | The orchestrator reads the header once and propagates the signal, and the scope, to every downstream call |
+| **2. Data layer** | `withGpc()` policy interceptor plus `isAllowed()` | `gpc_policy.js` centralizes both a sensitive-tool registry (`user_profile_lookup`, `save_to_profile`, `log_interaction`) blocked by a flat `gpc=1` check, and a check for `get_interaction_history` that also reads `persistence_scope`. `search_web` is in neither and always executes. |
 
 The GPC signal travels between layers via the MCP `_meta` envelope, which is attached to every tool call, and via the A2A `Message.metadata` envelope, which is attached to every inter-agent call.
 
@@ -17,7 +19,7 @@ The GPC signal travels between layers via the MCP `_meta` envelope, which is att
 
 ---
 
-## GPC categories depicted
+## Opt-out categories depicted
 
 Architecture A implements **Category D (Persistence)**, across two mechanisms with different tiers. `storage.js` enforces **D1 (session scope)**: `save_to_profile`, `log_interaction`, and its own `user_profile_lookup` call are all blocked whenever `gpc=1` is present, regardless of `persistence_scope`, so nothing written survives past the interaction. `personalization.js` adds the read-side distinction, consulted before synthesis runs: `get_interaction_history` needs `persistence_scope: 'd3'` (**D3**, long-term profile scope) or it is blocked, and its own `user_profile_lookup` call needs no GPC signal at all (baseline). Asserting `persistence_scope` changes what personalization consults; it does not loosen what storage writes.
 
@@ -58,10 +60,8 @@ flowchart TD
 
 ## Protocol compliance
 
-Both enforcement points sit on real, spec-compliant transports rather than in-process shortcuts:
-
-- **MCP.** `mcp-server/server.js` is a real `@modelcontextprotocol/sdk` `Server` over stdio. `orchestrator/mcp_client.js` is a real `Client` that spawns it as a child process and calls `tools/call` over the actual wire protocol; the GPC signal rides in `params._meta.gpc`, same as before.
-- **A2A.** The search and synthesis agents are each served behind a real `@a2a-js/sdk` `DefaultRequestHandler`, wired into Express via the SDK's own JSON-RPC handler and agent-card handler. `orchestrator/a2a_client.js` reaches them with the SDK's `ClientFactory`. The GPC signal rides in `Message.metadata.gpc`, A2A's equivalent of MCP's `_meta`.
+- **MCP.** `mcp-server/server.js` uses `@modelcontextprotocol/sdk` `Server` over stdio. `orchestrator/mcp_client.js` is a `Client` that spawns it as a child process and calls `tools/call` over the wire protocol; the GPC signal rides in `params._meta.gpc`.
+- **A2A.** The search and synthesis agents are each served behind a `@a2a-js/sdk` `DefaultRequestHandler`, wired into Express via the SDK's own JSON-RPC handler and agent-card handler. `orchestrator/a2a_client.js` reaches them with the SDK's `ClientFactory`. The GPC signal rides in `Message.metadata.gpc`, A2A's equivalent of MCP's `_meta`.
 
 ---
 
