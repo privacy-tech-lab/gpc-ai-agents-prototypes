@@ -68,13 +68,13 @@ function signal(text, ctx) {
 
 /** The signal or a request crossing a boundary (A2A hop, envelope build, provider). */
 function hop(protocol, target, envelope) {
-  if (!active()) return;
+  if (!active() || suppressed()) return;
   write(`${stepPrefix()}${C.blue}→ ${protocol}${C.reset}  ${target}  ${C.blue}${compact(envelope)}${C.reset}`);
 }
 
 /** A call about to be gated or executed. */
 function call(protocol, name, envelope) {
-  if (!active()) return;
+  if (!active() || suppressed()) return;
   write(`${stepPrefix()}${C.yellow}▸ ${protocol}${C.reset}  ${name}  ${C.dim}${compact(envelope)}${C.reset}`);
 }
 
@@ -89,7 +89,7 @@ const STOPPED = new Set(['blocked', 'declined', 'declined_by_user', 'discarded',
  * tier_source, and any would_have_* field.
  */
 function verdict(result, label) {
-  if (!active()) return;
+  if (!active() || suppressed()) return;
   if (!result || typeof result !== 'object') return;
 
   const status = String(result.status ?? 'unknown');
@@ -116,7 +116,7 @@ function verdict(result, label) {
 
 /** Plain annotation, for context an outsider needs. */
 function note(text) {
-  if (!active()) return;
+  if (!active() || suppressed()) return;
   write(`${C.dim}│    ${text}${C.reset}`);
 }
 
@@ -126,6 +126,24 @@ function alarm(text) {
   write(`${stepPrefix()}${C.red}⚠ ${text}${C.reset}`);
 }
 
+/**
+ * Suppress per-step output for a bulk section (a loop of many identical
+ * fanouts) and print one summary line instead. Returns a release function;
+ * call it with the summary text when the section ends.
+ */
+let folded = 0;
+function fold(label) {
+  if (!active()) return () => {};
+  folded += 1;
+  write(`${stepPrefix()}${C.dim}\u2026 ${label} (per-step trace folded)${C.reset}`);
+  return (summary) => {
+    folded = Math.max(0, folded - 1);
+    if (summary) write(`${stepPrefix()}${C.bold}\u03a3${C.reset}  ${summary}`);
+  };
+}
+
+function suppressed() { return folded > 0; }
+
 /** Footer with takeaway lines. */
 function close(lines = []) {
   if (!active()) return;
@@ -133,4 +151,4 @@ function close(lines = []) {
   write(`${C.dim}└─${C.reset}`);
 }
 
-module.exports = { active, banner, signal, hop, call, verdict, note, alarm, close };
+module.exports = { active, banner, signal, hop, call, verdict, note, alarm, fold, close };
