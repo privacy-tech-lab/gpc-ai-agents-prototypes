@@ -51,7 +51,7 @@ flowchart TD
 
     classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
     class P,DR,DU category
-    E1["Category E1 — Selective delegation:\nstanding granted per tier, never wholesale;\nunassigned and unattended default to the\nmost restrictive treatment"]:::category -.-> P
+    E1["Category E1 (Selective delegation):\nstanding granted per tier, never wholesale;\nunassigned and unattended default to the\nmost restrictive treatment"]:::category -.-> P
 ```
 
 ---

@@ -25,6 +25,10 @@ flowchart TD
     ends --> gate1{"D1 asserted?"}
     gate1 -- "No" --> archived["Transcript and facts archived"]
     gate1 -- "Yes" --> discarded["Everything discarded:<br/>next interaction starts<br/>from a clean slate"]
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    class gate1,discarded category
+    D1cat["Category D1 (Session scope):<br/>nothing persists once the interaction ends"]:::category -.-> gate1
 ```
 
 ## D2 flow: cross-session scope
@@ -36,6 +40,10 @@ flowchart TD
     recall --> tailored["Tailored answer:<br/>vegetarian restaurant, cheap mains"]
     gate2 -- "Yes" --> fresh["Archive exists for the user,<br/>but returns nothing to the system"]
     fresh --> generic["Clean-slate answer:<br/>Aria asks preferences instead"]
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    class gate2,fresh category
+    D2cat["Category D2 (Cross-session scope):<br/>past interactions may not inform future ones"]:::category -.-> gate2
 ```
 
 ## D3 flow: long-term profile scope
@@ -45,6 +53,10 @@ flowchart TD
     archive["Two retained sessions"] --> gate3{"D3 asserted?"}
     gate3 -- "No" --> model["Synthesized into a behavioral model:<br/>vegetarian, price sensitive,<br/>plans weekly"]
     gate3 -- "Yes" --> inert["Sessions stay as inert transcripts:<br/>remembered, never modeled"]
+
+    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
+    class gate3,inert category
+    D3cat["Category D3 (Long-term profile scope):<br/>no behavioral model may be synthesized"]:::category -.-> gate3
 ```
 
 ## How enforcement works

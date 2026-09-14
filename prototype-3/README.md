@@ -33,8 +33,8 @@ flowchart TD
     classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
     class M,AUTO category
     class DEC,Q,QB category
-    A1["Category A1 — Integration opt-out:\nnew capability off until consent resolves"]:::category -.-> M
-    A2["Category A2 — Activation opt-out:\nambient behavior_tracker held/declined"]:::category -.-> AUTO
+    A1["Category A1 (Integration opt-out):\nnew capability off until consent resolves"]:::category -.-> M
+    A2["Category A2 (Activation opt-out):\nambient behavior_tracker held/declined"]:::category -.-> AUTO
 ```
 
 ---

@@ -54,9 +54,9 @@ flowchart TD
 
     classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
     class D1,D2,FW category
-    B1c["B1 — Input collection opt-out:\nsubmission used for the task, then discarded"]:::category -.-> D1
-    B2c["B2 — Behavioral collection opt-out:\npassively generated signals not recorded"]:::category -.-> D2
-    B3c["B3 — Derived collection opt-out:\ninference computed but suppressed at the storage boundary"]:::category -.-> FW
+    B1c["B1 (Input collection opt-out):\nsubmission used for the task, then discarded"]:::category -.-> D1
+    B2c["B2 (Behavioral collection opt-out):\npassively generated signals not recorded"]:::category -.-> D2
+    B3c["B3 (Derived collection opt-out):\ninference computed but suppressed at the storage boundary"]:::category -.-> FW
 ```
 
 ---

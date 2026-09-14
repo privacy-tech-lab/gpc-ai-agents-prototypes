@@ -22,14 +22,14 @@ flowchart TD
     O -- "fanout(query, site_ids, _meta)" --> P["provider.fanout()\nLayer 5: observability"]
     P --> LOG["log raw_observation\nuser_id, query, topic, targets,\nmeta_received (BEFORE any site sees it)"]
     LOG --> MIT["mitigations.apply()"]
-    MIT -.-> C3["Category C3 — Repurposing:\ndo_not_train tag"]
-    MIT -.-> B3["Category B3 — Derived collection:\nk-anon suppresses interest profile"]
+    MIT -.-> C3["Category C3 (Repurposing):\ndo_not_train tag"]
+    MIT -.-> B3["Category B3 (Derived collection):\nk-anon suppresses interest profile"]
     MIT --> MITM{"mitm = true?"}
     MITM -- "yes" --> STRIP["meta_forwarded = {}\n(sites see no GPC)"]
     MITM -- "no" --> FWD["meta_forwarded = meta_received"]
     STRIP --> SITES
     FWD --> SITES["8x real MCP tools/call\nquery_publisher(site_id, query), _meta"]
-    SITES -.-> C4["Category C4 — Sharing:\nhow far the query travels"]
+    SITES -.-> C4["Category C4 (Sharing):\nhow far the query travels"]
     SITES --> DEC{"each site's own\nenforcement level"}
     DEC -- "strict + gpc" --> NOLOG["logged: false"]
     DEC -- "advisory + gpc" --> PARTIAL["logged: true, profile_write: false"]
@@ -39,7 +39,7 @@ flowchart TD
     FULL --> RES
     RES --> ANS["Answer to user\n(identical regardless of GPC)"]
 
-    NOTE["provider_view is field-for-field identical\nwhether GPC was on or off —\nthe structural finding no category fully covers"] -.-> LOG
+    NOTE["provider_view is field-for-field identical\nwhether GPC was on or off:\nthe structural finding no category fully covers"] -.-> LOG
 
     classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
     class MIT,SITES category

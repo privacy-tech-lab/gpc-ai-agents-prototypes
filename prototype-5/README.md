@@ -46,7 +46,7 @@ flowchart TD
 
     classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
     class FW,NW category
-    B3cat["Category B3 — Derived-collection opt-out:\ninference computed but suppressed at the storage boundary"]:::category -.-> FW
+    B3cat["Category B3 (Derived-collection opt-out):\ninference computed but suppressed at the storage boundary"]:::category -.-> FW
 ```
 
 ---
