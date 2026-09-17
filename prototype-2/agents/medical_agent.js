@@ -37,7 +37,7 @@ async function executeToolFn(name, input) {
  */
 async function run({ query, patient_id, privacyContext = {} }) {
   return runAgentLoop({
-    systemPrompt:    SYSTEM_PROMPT,
+    systemPrompt:    `${SYSTEM_PROMPT}\nThe patient you are speaking with has patient_id "${patient_id}". Use that exact id when calling get_medical_records.`,
     userMessage:     query,
     toolDefinitions: TOOL_DEFINITIONS,
     requiredTools:   ['get_medical_records'],
