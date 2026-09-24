@@ -38,7 +38,7 @@ function main() {
   }
 
   console.log('\n╔══════════════════════════════════════════════════════════════════╗');
-  console.log('║   Architecture A: Category D Permission Matrix                     ║');
+  console.log('║   Prototype 1: Category D Permission Matrix                        ║');
   console.log('╚══════════════════════════════════════════════════════════════════╝\n');
 
   const COL    = 28;

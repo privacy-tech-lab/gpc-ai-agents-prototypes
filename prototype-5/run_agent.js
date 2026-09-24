@@ -20,7 +20,7 @@ const { closeClient } = require('./mcp_client');
 async function main() {
   const b3 = process.argv.includes('--b3');
 
-  console.log(`=== Architecture E — LLM agent | B3: ${b3 ? 'ON' : 'OFF'} ===`);
+  console.log(`=== Prototype 5 — LLM agent | B3: ${b3 ? 'ON' : 'OFF'} ===`);
   console.log('A real model decides to call the search tool; the firewall runs inside it.\n');
 
   const { results, profileSnapshot } = await agent.runSession({ b3 });

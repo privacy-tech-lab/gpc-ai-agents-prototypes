@@ -8,7 +8,7 @@
  *
  * In a real system this module would call an embedding model, a named-entity
  * recogniser, or a rules-based tagger.  Here it is a thin pass-through that
- * trusts the classifier's output — the point of Architecture E is what happens
+ * trusts the classifier's output — the point of Prototype 5 is what happens
  * *around* this step (the firewall), not the classifier itself.
  *
  * derive(query, classifiedAttrs, store)
@@ -24,14 +24,19 @@
  *   }
  */
 
+const curtain = require('../core/curtain.js');
+
 function derive(query, classifiedAttrs, store) {
   const { inferred_attributes } = classifiedAttrs;
   store.write(inferred_attributes);
-  return {
+  const outcome = {
     status: 'derived',
     query,
     attributes: JSON.parse(JSON.stringify(inferred_attributes)),
   };
+  curtain.call('inference', `"${query}"`, undefined);
+  curtain.verdict(outcome, `profile += ${Object.keys(inferred_attributes).join(', ')}`);
+  return outcome;
 }
 
 module.exports = { derive };

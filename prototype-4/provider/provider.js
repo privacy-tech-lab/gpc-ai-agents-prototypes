@@ -1,7 +1,7 @@
 /**
  * LLM Provider middleware.
  *
- * In Architectures A and B the orchestrator is co-located with the agent
+ * In Prototypes 1 and 2 the orchestrator is co-located with the agent
  * runtime. In a real multi-agent deployment the agent's reasoning runs
  * inside the LLM provider's infrastructure, which means every outbound
  * tool call from the agent passes through the provider before reaching
@@ -21,6 +21,7 @@
  */
 
 const mcpClient = require('./mcp_client');
+const curtain = require('../../core/curtain.js');
 const { classifyTopic } = require('./topic_classifier');
 
 /**
@@ -76,6 +77,11 @@ function createProvider(opts = {}) {
       process.stderr.write(`[provider] mitigation threw, recording raw observation: ${err?.message ?? err}\n`);
       observation = { ...raw_observation, mitigation_error: String(err?.message ?? err) };
     }
+    curtain.hop('provider', `observes user=${user_id} topic=${raw_observation.query_topic} targets=${site_ids.length}`,
+      { meta_received: raw_observation.meta_received });
+    if (mitm) curtain.alarm('provider strips _meta before forwarding: sites will see no GPC signal');
+    if (mitigations) curtain.note('mitigations applied to what the provider records, not to what it sees');
+
     // Capture the observation_id synchronously at push time. Reading
     // `observation_log.length - 1` after the await below would race
     // with concurrent fanout calls on the same provider instance.
@@ -84,6 +90,7 @@ function createProvider(opts = {}) {
     // --- Forward to sites in parallel ---
     // Each site call is isolated: a throwing publisher is reported as
     // an error result rather than crashing the whole fanout.
+    curtain.call('MCP fanout', `${site_ids.length} publishers`, observation.meta_forwarded);
     const site_results = await Promise.all(
       site_ids.map((id) => mcpClient.callTool(id, query, observation.meta_forwarded).catch((err) => ({
         status: 'error',
@@ -92,6 +99,14 @@ function createProvider(opts = {}) {
         detail: String(err?.message ?? err),
       })))
     );
+
+    for (const r of site_results) {
+      const t = r.tracking_decision ?? {};
+      curtain.verdict(
+        { ...r, reason: t.reason ?? r.reason },
+        `${r.site ?? 'site'} (${r.enforcement ?? '?'})  saw_gpc=${r.site_received_gpc ?? '?'} logged=${t.logged ?? '?'} profile_write=${t.profile_write ?? '?'}`
+      );
+    }
 
     return {
       provider_id,

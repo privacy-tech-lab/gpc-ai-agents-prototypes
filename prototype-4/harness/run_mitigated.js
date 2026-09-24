@@ -2,10 +2,10 @@
  * Mitigated run: gpc=1 with provider-side E2 commitments active.
  * The commitments tag the observation log; they do not change what the
  * provider observes. The user has no protocol-level way to verify they
- * were honored — that is Architecture E's domain.
+ * were honored — that is Prototype 5's domain.
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env'), quiet: true });
 
 const fs   = require('fs');
 const path = require('path');

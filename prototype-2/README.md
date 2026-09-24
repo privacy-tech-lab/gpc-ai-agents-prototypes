@@ -92,6 +92,7 @@ prototype-2/
 │   ├── run_baseline.js          Demo run: no GPC; all pipelines execute, files written
 │   ├── run_gpc.js               Demo run: full opt-out; all pipelines blocked
 │   ├── run_partial.js           Demo run: partial opt-out; only ad_targeting blocked
+│   ├── run_ai.js                Ollama-driven run: model answers, then fan-out; --gpc, --scope
 │   └── compare_results.js       Diff all three runs; print report
 │
 ├── tests/
@@ -148,6 +149,18 @@ npm run gpc       # Full opt-out: all pipelines blocked
 npm run partial   # Partial opt-out: only ad_targeting blocked
 npm run compare   # Print comparison report from existing output files
 ```
+
+### Live model run (Ollama required)
+
+Same three scenarios, but a real model produces the answer and decides to call `get_medical_records`. The fan-out gate is the same one the scripted runs use. Needs Ollama running with the configured model pulled (default `qwen2.5:14b`).
+
+```bash
+npm run ai-baseline   # No GPC: model answers, all pipelines execute
+npm run ai-gpc        # Full opt-out: model answers, all pipelines blocked
+npm run ai-partial    # Partial opt-out: model answers, only ad_targeting blocked
+```
+
+Results land in `output/ai_<mode>_result.json` with the model's tool calls and answer alongside the secondary effects.
 
 ### Expected comparison report
 

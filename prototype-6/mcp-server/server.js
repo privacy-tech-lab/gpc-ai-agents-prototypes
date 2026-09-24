@@ -2,7 +2,7 @@
  * Real MCP server — exposes the inference classifier as one tool.
  *
  * inference_classifier.js is unchanged; this is a thin transport wrapper
- * around it, same as Architectures A/B/C/D/E. The collection gate and the
+ * around it, same as Prototypes 1/2/3/4/5. The collection gate and the
  * three stores stay client-side (in orchestrator.js / agent.js): the gate
  * decision accumulates state across a whole session (one submission, three
  * telemetry events, one derivation sharing one set of stores), and the

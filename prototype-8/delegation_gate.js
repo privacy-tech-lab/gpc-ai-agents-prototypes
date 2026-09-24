@@ -27,8 +27,16 @@
 
 const manifest = require('./delegation_manifest');
 const { executeAction } = require('./mcp_client');
+const curtain = require('../core/curtain.js');
 
 async function requestAction(actionDef, ctx = {}) {
+  curtain.call('delegation gate', actionDef.action, actionDef.dimensions);
+  const result = await decideAndExecute(actionDef, ctx);
+  curtain.verdict(result, actionDef.action);
+  return result;
+}
+
+async function decideAndExecute(actionDef, ctx = {}) {
   const { mode, gpc = false, userPresent = true, respond = 'approve' } = ctx;
   const { action, args, dimensions } = actionDef;
 

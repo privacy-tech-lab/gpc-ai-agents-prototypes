@@ -15,6 +15,7 @@ const registry = require('./tool_registry');
 const manifest = require('./consent_manifest');
 const bus = require('./event_bus');
 const mcpClient = require('./mcp_client');
+const curtain = require('../core/curtain.js');
 
 // Categories the user explicitly consented to at signup.
 // GPC auto-decline applies only to categories outside this set.
@@ -83,7 +84,11 @@ async function withConsentCheck(toolName, args, mode, gpc = false) {
 }
 
 async function invokeTool(toolName, args, mode, gpc = false) {
-  return withConsentCheck(toolName, args, mode, gpc);
+  const tool = registry.getTool(toolName);
+  curtain.call('consent gate', `${toolName} (category=${tool ? tool.capability_category : 'unknown'})`, { mode, gpc });
+  const result = await withConsentCheck(toolName, args, mode, gpc);
+  curtain.verdict(result, toolName);
+  return result;
 }
 
 module.exports = { invokeTool, PRIMARY_CATEGORIES };

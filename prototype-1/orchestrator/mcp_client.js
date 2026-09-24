@@ -11,6 +11,8 @@ const path = require('path');
 const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
 const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
 
+const curtain = require('../../core/curtain.js');
+
 const SERVER_PATH = path.join(__dirname, '..', 'mcp-server', 'server.js');
 
 let clientPromise = null;
@@ -41,12 +43,14 @@ async function closeClient() {
  */
 async function callTool(toolName, args, _meta = {}, timing = null) {
   const client = await getClient();
+  curtain.call('MCP tools/call', toolName, _meta);
   const start = Date.now();
 
   const response = await client.callTool({ name: toolName, arguments: args, _meta });
   const [content] = response.content ?? [];
   const result = content?.type === 'text' ? JSON.parse(content.text) : response;
 
+  curtain.verdict(result, toolName);
   const elapsed = Date.now() - start;
   if (timing) {
     timing.push({ tool: toolName, durationMs: elapsed, status: result.status });

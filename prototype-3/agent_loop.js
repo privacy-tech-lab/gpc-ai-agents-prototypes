@@ -1,5 +1,5 @@
 /**
- * Architecture C turn loop.
+ * Prototype 3 turn loop.
  *
  * Thin wrapper around the shared core/agent_loop.js. Enforcement (the
  * consent check) lives in the caller's executeToolFn, not here.

@@ -12,7 +12,7 @@
  *
  * Tavily IO lives in core/tavily.js. This file owns the per-publisher
  * tracking decision, the canned fragment fallback, and the snippet
- * formatting that is specific to Architecture D.
+ * formatting that is specific to Prototype 4.
  *
  * When TAVILY_API_KEY is set, the review snippet is fetched live from
  * the publisher's domain via Tavily; otherwise the fallback canned

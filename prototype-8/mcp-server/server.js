@@ -2,10 +2,10 @@
  * Real MCP server — exposes the six trip actions as tools.
  *
  * action_handlers.js is unchanged; this is a thin transport wrapper around
- * it, same as Architectures A/B/C/D/E. Execution is the piece that belongs
+ * it, same as Prototypes 1/2/3/4/5. Execution is the piece that belongs
  * server-side: it is stateless and is genuinely "a tool the platform
  * calls." The delegation decision stays client-side in delegation_gate.js,
- * mirroring Architecture C, where the consent gate decides and only then
+ * mirroring Prototype 3, where the consent gate decides and only then
  * does the call reach the MCP server. Tier resolution is policy the user
  * owns, not something a tool server should be trusted to enforce.
  */

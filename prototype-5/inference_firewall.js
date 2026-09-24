@@ -14,7 +14,7 @@
  *
  * When B3 is off, block() is never called; derive() runs directly.
  *
- * This mirrors Architecture C's withConsentCheck() pattern:
+ * This mirrors Prototype 3's withConsentCheck() pattern:
  *   - no LLM involved — the firewall is pure logic
  *   - deterministic and fully testable
  *   - the user's answer (canned) is still returned regardless of firewall state
@@ -32,15 +32,20 @@
  *   }
  */
 
+const curtain = require('../core/curtain.js');
+
 function block(query, classifiedAttrs, store) {
   const { inferred_attributes } = classifiedAttrs;
   store.incrementBlocked();
-  return {
+  const outcome = {
     status: 'blocked',
     reason: 'b3_inference_firewall',
     query,
     would_have_written: JSON.parse(JSON.stringify(inferred_attributes)),
   };
+  curtain.call('inference', `"${query}"`, undefined);
+  curtain.verdict(outcome, 'firewall at the classify-to-store boundary');
+  return outcome;
 }
 
 module.exports = { block };

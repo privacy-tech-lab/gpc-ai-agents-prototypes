@@ -56,7 +56,7 @@ function main() {
   const allTools = [...new Set([...Object.keys(bStatuses), ...Object.keys(gStatuses)])];
 
   console.log('\n╔══════════════════════════════════════════════════════╗');
-  console.log('║      GPC Propagation Report — Architecture A         ║');
+  console.log('║      GPC Propagation Report — Prototype 1         ║');
   console.log('╚══════════════════════════════════════════════════════╝\n');
   if (baseline?.model) console.log(`Model: ${baseline.model}\n`);
 

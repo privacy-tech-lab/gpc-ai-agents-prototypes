@@ -6,11 +6,12 @@
  * identical figures for paper artifacts.
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env'), quiet: true });
 
 const fs   = require('fs');
 const path = require('path');
 const { createProvider }   = require('../provider/provider');
+const curtain = require('../../core/curtain.js');
 const { closeClient }      = require('../provider/mcp_client');
 const { fanoutAll }        = require('../orchestrator/orchestrator');
 const {
@@ -50,6 +51,7 @@ const GPC_ADOPTION_TARGET = 0.40;
 
 async function main() {
   const provider = createProvider();
+  const unfold = curtain.fold(`${USER_COUNT} users, mixed GPC, every fanout observed by the provider`);
 
   console.log(`Running aggregate (${USER_COUNT} users; mixed GPC; seed=${SEED})...\n`);
 
@@ -64,6 +66,9 @@ async function main() {
   }
 
   const providerView = provider.getProviderView();
+  unfold(`provider log holds ${providerView.length} observations across ${USER_COUNT} users`);
+  curtain.alarm(`provider computed GPC adoption rate = ${gpcAdoptionRate(providerView)} without any site or user knowing the number exists`);
+  curtain.note('opted-out users are still in this log: opt-out changed what sites kept, not what the provider saw');
   const out = {
     mode:                            'aggregate',
     description:                     `${USER_COUNT}-user simulation; mixed GPC; deterministic seed=${SEED}.`,

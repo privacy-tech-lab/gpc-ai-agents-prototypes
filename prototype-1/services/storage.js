@@ -8,6 +8,7 @@
  */
 
 const { callTool } = require('../orchestrator/mcp_client.js');
+const curtain = require('../../core/curtain.js');
 
 /**
  * @param {object} opts
@@ -30,6 +31,9 @@ async function store({ user_id, query, answer, _meta, timing = [] }) {
     const blocked = { status: 'blocked', reason: 'gpc_opt_out' };
     results.save_to_profile = blocked;
     results.log_interaction  = blocked;
+    curtain.verdict({ ...blocked, tool: 'save_to_profile' });
+    curtain.verdict({ ...blocked, tool: 'log_interaction' });
+    curtain.note('blocked in code before the call left the client; withGpc() at the MCP layer would block it again');
     timing.push(
       { tool: 'save_to_profile', durationMs: 0, status: 'blocked' },
       { tool: 'log_interaction',  durationMs: 0, status: 'blocked' },

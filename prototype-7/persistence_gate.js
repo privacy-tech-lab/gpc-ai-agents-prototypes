@@ -167,11 +167,23 @@ function synthesizeProfile(candidate, memory, optouts) {
   };
 }
 
+const curtain = require('../core/curtain.js');
+
+// The checkpoint functions stay pure; the curtain wrapper renders each
+// decision from the structured result they already return.
+function traced(fn) {
+  return (...args) => {
+    const result = fn(...args);
+    curtain.verdict(result, `${result.subtype ?? ''} ${result.checkpoint ?? ''}`.trim());
+    return result;
+  };
+}
+
 module.exports = {
   resolveScope,
-  endSession,
-  recallForSession,
-  synthesizeProfile,
+  endSession: traced(endSession),
+  recallForSession: traced(recallForSession),
+  synthesizeProfile: traced(synthesizeProfile),
   VALID_SUBTYPES,
   REASONS,
 };

@@ -9,6 +9,9 @@
     "partial":  "node harness/run_partial.js",
     "compare":  "node harness/compare_results.js",
     "demo":     "node harness/run_baseline.js && node harness/run_gpc.js && node harness/run_partial.js && node harness/compare_results.js",
+    "ai-baseline": "node harness/run_ai.js",
+    "ai-gpc":   "node harness/run_ai.js --gpc",
+    "ai-partial": "node harness/run_ai.js --gpc --scope=ad_targeting",
     "start":    "node orchestrator/orchestrator.js",
     "test":     "jest tests/"
   },

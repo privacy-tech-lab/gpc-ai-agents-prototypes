@@ -3,7 +3,7 @@
 /**
  * agent.js
  *
- * The LLM-driven version of Architecture C. Instead of a scripted TOOL_SEQUENCE
+ * The LLM-driven version of Prototype 3. Instead of a scripted TOOL_SEQUENCE
  * (orchestrator.js), a real model is given the user-facing tools and decides which
  * to call to satisfy a request.
  *

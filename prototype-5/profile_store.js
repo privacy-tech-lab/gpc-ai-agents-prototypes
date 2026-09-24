@@ -12,7 +12,7 @@
  *   blocked_count — how many inference attempts were intercepted by the firewall
  *
  * Design note: the store is deliberately simple — no persistence between runs —
- * because Architecture E's point is to show what accumulates *within* a session
+ * because Prototype 5's point is to show what accumulates *within* a session
  * when B3 is off vs. what is suppressed when B3 is on.
  */
 

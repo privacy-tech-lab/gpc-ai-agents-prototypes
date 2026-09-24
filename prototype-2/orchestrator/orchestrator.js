@@ -7,10 +7,13 @@ const medicalAgent = require('../agents/medical_agent.js');
 const { logInteraction } = require('../services/analytics.js');
 const { addTrainingExample } = require('../services/trainingDataset.js');
 const { buildPrivacyContext } = require('../../core/gpc');
+const curtain = require('../../core/curtain.js');
 
 const AD_PLATFORM_URL = process.env.AD_PLATFORM_URL ?? 'http://localhost:4002/target';
 
 async function fanOutSecondaryPurposes({ privacyContext, patient_id, query, response }) {
+  curtain.call('HTTP POST', 'ad platform, a third party that re-checks the signal at its own boundary',
+    { gpc: privacyContext.gpc, gpc_scope: privacyContext.gpc_scope });
   const [analyticsResult, trainingResult, adResult] = await Promise.all([
     logInteraction({ patient_id, query }, privacyContext),
 
@@ -30,6 +33,8 @@ async function fanOutSecondaryPurposes({ privacyContext, patient_id, query, resp
       .then((r) => r.json())
       .catch((err) => ({ status: 'error', layer: 'ad_platform_storage', error: String(err) })),
   ]);
+
+  curtain.verdict(adResult, 'ad platform decision (made server-side, not by the caller)');
 
   return {
     analytics:     analyticsResult,

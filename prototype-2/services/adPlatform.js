@@ -1,11 +1,11 @@
 /**
- * Mock Ad Platform — B2 Storage layer stub (Architecture B variant).
+ * Mock Ad Platform — B2 Storage layer stub (Prototype 2 variant).
  *
- * Same role as Architecture A's ad_platform: a pharma ad-targeting vendor
+ * Same role as Prototype 1's ad_platform: a pharma ad-targeting vendor
  * with a vector store of derived patient interest profiles, enforcing
  * purpose-based GPC at its HTTP boundary (layer 3 of the table).
  *
- * Difference from Architecture A: this endpoint is now reached via the
+ * Difference from Prototype 1: this endpoint is now reached via the
  * agent loop's secondary-purpose fan-out (see lib/agentLoop.js), AFTER
  * get_medical_records has already run unconditionally. The GPC check here
  * is a second, independent enforcement point — defense in depth alongside

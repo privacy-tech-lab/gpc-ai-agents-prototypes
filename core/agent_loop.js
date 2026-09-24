@@ -1,22 +1,22 @@
 /**
  * Shared LLM turn loop.
  *
- * The loop is identical in shape across arch-A, arch-C, and arch-E:
+ * The loop is identical in shape across prototype-1, prototype-3, and prototype-5:
  * tool_choice stays "required" until every requiredTool has been
  * attempted at least once, then switches to "auto" so the model can
- * write a final response. arch-A, arch-C, and arch-E differ only in
+ * write a final response. prototype-1, prototype-3, and prototype-5 differ only in
  * the cosmetic nudge string used when the model returns an empty
  * response, which is exposed as `emptyResponseNudge` on the opts.
  *
  * Enforcement does NOT live here. Every tool the model calls is run
  * through the caller's executeToolFn, which is where each architecture
  * routes the call through its own enforcement layer (GPC interceptor
- * in arch-A, consent check in arch-C, inference firewall in arch-E).
+ * in prototype-1, consent check in prototype-3, inference firewall in prototype-5).
  * The model only ever sees what executeToolFn returns.
  *
- * arch-B keeps its own loop because it threads a privacyContext through
+ * prototype-2 keeps its own loop because it threads a privacyContext through
  * executeToolFn and decorates each toolCallLog entry with a _meta envelope.
- * arch-D keeps its own loop because its semantics differ: it uses
+ * prototype-4 keeps its own loop because its semantics differ: it uses
  * `minToolCalls` rather than a `requiredTools` set, and it surfaces a
  * `truncated` flag in the return value.
  */
