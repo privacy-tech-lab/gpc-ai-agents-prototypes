@@ -20,11 +20,11 @@
     "test":        "jest tests/ --runInBand"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "dotenv":  "^18.0.0",
+    "@modelcontextprotocol/sdk": "^1.30.1",
+    "dotenv":  "^18.0.3",
     "express": "^5.2.1"
   },
   "devDependencies": {
-    "jest": "^30.5.1"
+    "jest": "^30.5.2"
   }
 }
