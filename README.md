@@ -29,7 +29,7 @@ This repo contains experimental prototypes exploring how the [Global Privacy Con
 | 1         | [prototype-1](prototype-1) | Tool-level blocking via an MCP interceptor                         | Category D, D1                                                     |
 | 2         | [prototype-2](prototype-2) | Secondary pipeline gating after the agent                          | Category C, C1 to C3                                               |
 | 3         | [prototype-3](prototype-3) | Consent-scoped tool registry                                       | Category A, A1 and A2                                              |
-| 4         | [prototype-4](prototype-4) | Signal propagation and the provider visibility gap                 | A gap the typology does not cover; its mechanisms touch C4, C3, B3 |
+| 4         | [prototype-4](prototype-4) | Signal propagation and the provider visibility gap                 | Addressees X1 and X2; B2a, S1, S2; mitigations touch C4, C3, B3    |
 | 5         | [prototype-5](prototype-5) | Inference firewall for derived attributes                          | Category B, B3                                                     |
 | 6         | [prototype-6](prototype-6) | Collection gate at input, behavioral, and derived boundaries       | Category B, B1 to B3                                               |
 | 7         | [prototype-7](prototype-7) | Retention boundaries at session end, recall, and profile synthesis | Category D, D1 to D3                                               |
@@ -79,7 +79,7 @@ See [prototype-3/README.md](prototype-3/README.md) for setup, demo, and test ins
 
 **What it prevents:** tracking at individual publisher sites that honor the signal.
 
-**What it does not prevent:** the provider layer from observing every query. The provider sits between the user's agent and the publishers and records each fanout regardless of the GPC bit. This is the prototype's finding: the AI provider is a structural new privacy boundary that GPC as currently specified does not reach. The signal propagates downstream to sites, but the platform operating the agent sees everything.
+**What it does not prevent:** the provider layer from observing every query. The provider sits between the user's agent and the publishers and records each fanout regardless of the GPC bit. This is the prototype's finding: GPC is addressed to destinations (X1 in the typology), but the provider is the orchestrator (X2), which sees every call across every site and every user. An opt-out honored at every X1 leaves the X2 view unchanged. The typology covers this with opt-outs asserted against X2 (such as B2a for the provider's log of delegated actions) and with two signal obligations: S1 (do not record the signal state) and S2 (forward the signal intact). Signal-drop mode shows an S2 violation, which makes every site's opt-out unenforceable.
 
 See [prototype-4/README.md](prototype-4/README.md) for setup, demo, and test instructions.
 

@@ -14,7 +14,24 @@ Prototype 4 introduces a **provider middleware** (`provider/provider.js`) that s
 
 ## Opt-out categories depicted
 
-Prototype 4's core finding — the provider's cross-request visibility is structural and doesn't shrink no matter how well sites enforce GPC — is mostly a gap the opt-out typology names but doesn't cover: it has no frame for cumulative, aggregate visibility at a structural intermediary, since categories A–D describe per-call constraints and the typology's own limitations note that it has "no frame for cumulative or aggregate harms." Where D's individual mechanisms do map: the fanout to multiple publishers is **Category C (Use), C4 (sharing restriction)** — how far a query travels across connected systems. The mitigations layer maps to **C3 (data repurposing restriction)** for the `do_not_train` tag and **B3 (derived-collection opt-out)** for k-anonymity suppressing an inferred interest profile below a cohort threshold.
+Prototype 4's core finding is that the provider's view does not shrink, no matter how well sites enforce GPC. The typology now covers this through its **opt-out addressees** axis. Every opt-out is a pair: an object (what is opted out of) and an addressee (who it is directed to).
+
+- **X1 (Destination):** the eight publishers. GPC as it exists today is addressed here, and each publisher sees only the call routed to it. Strict and advisory sites honor the signal, but the user cannot see their servers, so this is a **D (Degraded)** opt-out.
+- **X2 (Orchestrator):** the provider middleware. It carries the signal rather than receiving it, and it sees every call, across every publisher, for every user. An opt-out honored at every X1 leaves the X2 view unchanged, which is why compliance has to be checked per addressee. In this prototype the user's signal is only addressed to X1, so nothing constrains X2.
+
+What the provider does with that view maps to object categories and signal obligations asserted against X2:
+
+| Provider behavior | Where it maps |
+|---|---|
+| Logs which publishers it called, in what order, and the sub-queries it wrote | **B2a (delegated action collection)** |
+| Records the GPC state of every call and computes adoption rates and topic-by-GPC matrices | Violates **S1 (signal confidentiality)** |
+| Builds per-user interest profiles from the observation log | **B3 (derived collection)**, and **D3 (long-term profile scope)** across sessions |
+| Strips `_meta` before forwarding (signal-drop mode) | Violates **S2 (signal propagation)**. Each publisher's opt-out drops to **U (Unenforceable)**, however well the site behaves (the weakest-link rule) |
+| Fans the query out to eight publishers | **C4 (sharing restriction)**: how far a query travels across connected systems |
+| `do_not_train` tag (mitigated mode) | **C3 (data repurposing restriction)** |
+| k-anonymity on interest profiles (mitigated mode) | **B3 (derived collection)**, suppressing profiles below a cohort threshold |
+
+One part of the finding is still outside the typology. The cross-user derivations in `npm run aggregate` are aggregate harms, and the typology's limitations note it has "no frame for cumulative or aggregate harms." S1 covers recording the signal state, but not the wider systemic effect of one party seeing the union of all users' traffic.
 
 ```mermaid
 flowchart TD
@@ -39,7 +56,7 @@ flowchart TD
     FULL --> RES
     RES --> ANS["Answer to user\n(identical regardless of GPC)"]
 
-    NOTE["provider_view is field-for-field identical\nwhether GPC was on or off:\nthe structural finding no category fully covers"] -.-> LOG
+    NOTE["provider_view is field-for-field identical\nwhether GPC was on or off:\nGPC reaches X1 (sites), not X2 (provider)"] -.-> LOG
 
     classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
     class MIT,SITES category
