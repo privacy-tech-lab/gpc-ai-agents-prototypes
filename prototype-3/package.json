@@ -17,7 +17,7 @@
     "test": "jest tests/ --runInBand"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.31.0"
+    "@modelcontextprotocol/sdk": "^1.32.1"
   },
   "devDependencies": {
     "jest": "^30.5.2"
