@@ -1,4 +1,4 @@
-# Architecture A: Opt-out Enforcement in a Multi-Agent Pipeline
+# Prototype 1: Opt-out Enforcement in a Multi-Agent Pipeline
 
 Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism of opt-out in this prototype.
 
