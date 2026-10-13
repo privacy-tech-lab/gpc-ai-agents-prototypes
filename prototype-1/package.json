@@ -30,5 +30,10 @@
     "transformIgnorePatterns": [
       "node_modules/(?!(jose)/)"
     ]
+  },
+  "overrides": {
+    "@istanbuljs/load-nyc-config": {
+      "js-yaml": "^4.1.1"
+    }
   }
 }
