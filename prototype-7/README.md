@@ -1,4 +1,5 @@
 # Prototype 7: Persistence
+Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism of opt-out in this prototype.
 
 Opting out of how long data survives.
 
