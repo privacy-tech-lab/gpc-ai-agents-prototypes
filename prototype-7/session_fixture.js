@@ -3,16 +3,16 @@
 /**
  * Two synthetic sessions with Aria, a memory-enabled assistant, plus the
  * profile the platform would synthesize afterward. This single example
- * carries all three persistence scopes of Category D:
+ * carries all three persistence scopes:
  *
- *  D1 (session): does anything survive once a session ends?
- *  D2 (cross-session): may past sessions inform this one?
- *  D3 (long-term profile): may retained sessions be synthesized into a
+ *  Session: does anything survive once a session ends?
+ *  Cross-session: may past sessions inform this one?
+ *  Long-term profile: may retained sessions be synthesized into a
  *      behavioral model?
  *
  * Within-session context is never gated: Aria may use facts from earlier in
  * the same session in every mode, which is the operational coherence the
- * typology explicitly permits under D1.
+ * session scope still permits.
  */
 
 const SESSIONS = [

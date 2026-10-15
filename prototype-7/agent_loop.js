@@ -1,5 +1,5 @@
 /**
- * Category D turn loop.
+ * Persistence prototype turn loop.
  *
  * Thin wrapper around the shared core/agent_loop.js. Enforcement (the
  * persistence gate) lives in the platform code around the session, not here.

@@ -3,7 +3,7 @@
 /**
  * run_optout.js
  *
- * Runs the trip with E1 enforced through the delegation manifest.
+ * Runs the trip with delegation enforced through the delegation manifest.
  *
  *   node run_optout.js                          # user present, approves surfaced asks
  *   node run_optout.js --respond=decline        # user present, declines surfaced asks
@@ -27,7 +27,7 @@ async function main() {
   ]
     .filter(Boolean)
     .join(' | ');
-  console.log(`=== Category E (Delegation): TripPilot | E1 enforced | ${label} ===\n`);
+  console.log(`=== Delegation: TripPilot | delegation enforced | ${label} ===\n`);
 
   const output = await orchestrator.run({ gpc, userPresent: !unattended, respond });
   console.log(JSON.stringify(output, null, 2));

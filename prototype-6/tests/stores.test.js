@@ -1,5 +1,5 @@
 /**
- * Unit tests for stores.js: the log stores (B1, B2) and the profile store (B3).
+ * Unit tests for stores.js: the log stores (input, behavior) and the profile store (derived).
  */
 
 const { createStores, createLogStore, createProfileStore } = require('../stores');

@@ -10,9 +10,9 @@ Prototype 3 puts a consent check in front of every tool call. Each call is match
 
 `withConsentCheck()` (in `consent_gate.js`) is the one function every tool call has to pass through before it reaches the MCP client: it looks up the tool's category and the consent manifest, then decides whether to execute it, quarantine it (pause and ask the user), or block it outright.
 
-## Opt-out categories depicted
+## What the modes show
 
-Prototype 3 implements **Category A (Presence)** from the opt-out typology. `run_v2.js --mode=silent` vs `--mode=approve` shows **A1 (integration opt-out)**: a new tool becomes callable the instant it ships under silent mode, versus only `after_consent` when consent enforcement is on. `behavior_tracker` is **A2 (activation opt-out)**: holding or GPC-declining it is a control over unsolicited background AI specifically.
+`run_v2.js --mode=silent` vs `--mode=approve` shows the integration gap: a new tool becomes callable the instant it ships under silent mode, versus only `after_consent` when consent enforcement is on. `behavior_tracker` shows the background case: it is ambient analytics the platform fires on its own, and holding or GPC-declining it keeps unsolicited background AI from running.
 
 ```mermaid
 flowchart TD
@@ -30,11 +30,9 @@ flowchart TD
     FRESH -- "no (already approved)" --> EX
     EX -- "MCP tools/call" --> SRV["mcp-server/server.js\n(real MCP, no policy)"]
 
-    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
-    class M,AUTO category
-    class DEC,Q,QB category
-    A1["Category A1 (Integration opt-out):\nnew capability off until consent resolves"]:::category -.-> M
-    A2["Category A2 (Activation opt-out):\nambient behavior_tracker held/declined"]:::category -.-> AUTO
+    classDef enforced fill:#5b8def,stroke:#2f5fce,color:#fff
+    class M,AUTO enforced
+    class DEC,Q,QB enforced
 ```
 
 ---
@@ -81,7 +79,7 @@ prototype-3/
     │                              approve/decline idempotency, disk persistence
     ├── consent_gate.test.js       withConsentCheck() — silent, approved, hard block,
     │                              quarantine/resume, GPC auto-decline, unknown tool
-    ├── orchestrator.test.js       Full sequence per mode; A2 cross-version persistence
+    ├── orchestrator.test.js       Full sequence per mode; declined-tool persistence across versions
     └── agent.test.js              makeExecutor + firePlatformTracker route through withConsentCheck();
                                    tool defs exclude behavior_tracker
 ```
@@ -112,7 +110,7 @@ They run with `--runInBand` because they share the one `consent_manifest.json` o
 | `tool_registry.test.js` | Catalog contents, version filtering, `isNewerThan()` |
 | `consent_manifest.test.js` | `reset()`, `isApproved`/`isDeclined`, all `requiresFreshConsent` conditions, `approve`/`decline` idempotency, disk persistence |
 | `consent_gate.test.js` | Silent bypass, approved passthrough, hard block, quarantine pause-and-resume, GPC auto-decline, primary category protection |
-| `orchestrator.test.js` | Full sequence for every mode including GPC; A2 cross-version persistence |
+| `orchestrator.test.js` | Full sequence for every mode including GPC; declined-tool persistence across versions |
 | `agent.test.js` | `makeExecutor` routes model calls through `withConsentCheck()` (silent / primary / GPC auto-decline); `firePlatformTracker`'s consent check; tool defs exclude `behavior_tracker` |
 
 ### Demo runs
@@ -172,4 +170,4 @@ email_sender      | immediately | after_consent | never   | gpc_blocked
 behavior_tracker  | immediately | after_consent | never   | gpc_blocked
 ```
 
-The gap between `immediately` under silent mode and `after_consent` / `gpc_blocked` / `never` when consent enforcement is on is the A1 finding: with no registry, a capability becomes callable the instant it is added, and the user never sees it happen.
+The gap between `immediately` under silent mode and `after_consent` / `gpc_blocked` / `never` when consent enforcement is on is the main finding: with no registry, a capability becomes callable the instant it is added, and the user never sees it happen.

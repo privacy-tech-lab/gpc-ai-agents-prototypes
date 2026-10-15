@@ -7,10 +7,10 @@
  *  - polished_email: the task output, returned to the user in every mode
  *  - inferred_attributes: what an inference engine would derive
  *  - attribute_sources: whether each attribute derives from the submitted
- *    input (B1 material) or from passive behavior (B2 material)
+ *    input or from passive behavior
  *
- * The sources map is the point of the B3 subtype: derivation is only possible
- * because B1 or B2 collection happened first. A production system would run
+ * The sources map is the point of the derived scope: derivation is only possible
+ * because input or behavior collection happened first. A production system would run
  * an embedding model or a rules tagger here; a plain lookup keeps tests
  * deterministic.
  */

@@ -32,9 +32,9 @@ describe('buildPersonalizationContext — baseline (no signal)', () => {
   });
 });
 
-describe('buildPersonalizationContext — d3 (raw history ok, no synthesized profile)', () => {
+describe('buildPersonalizationContext — profile scope (raw history ok, no synthesized profile)', () => {
   test('consults history but not the profile', async () => {
-    const _meta = { gpc: 1, persistence_scope: 'd3' };
+    const _meta = { gpc: 1, persistence_scope: 'profile' };
     const ctx = await buildPersonalizationContext({ user_id: USER_ID, _meta, timing: [] });
     expect(ctx.historyConsulted).toBe(true);
     expect(ctx.profileConsulted).toBe(false);
@@ -42,7 +42,7 @@ describe('buildPersonalizationContext — d3 (raw history ok, no synthesized pro
   });
 });
 
-describe('buildPersonalizationContext — d1 (default when gpc=1, no scope given)', () => {
+describe('buildPersonalizationContext — session scope (default when gpc=1, no scope given)', () => {
   test('consults neither history nor profile', async () => {
     const _meta = { gpc: 1 };
     const ctx = await buildPersonalizationContext({ user_id: USER_ID, _meta, timing: [] });
@@ -54,7 +54,7 @@ describe('buildPersonalizationContext — d1 (default when gpc=1, no scope given
 describe('buildPersonalizationContext — timing', () => {
   test('records a blocked timing entry for each skipped tool', async () => {
     const timing = [];
-    await buildPersonalizationContext({ user_id: USER_ID, _meta: { gpc: 1, persistence_scope: 'd1' }, timing });
+    await buildPersonalizationContext({ user_id: USER_ID, _meta: { gpc: 1, persistence_scope: 'session' }, timing });
     const tools = timing.map((t) => t.tool);
     expect(tools).toContain('get_interaction_history');
     expect(tools).toContain('user_profile_lookup');

@@ -34,7 +34,7 @@ const TOOL_DEFINITIONS = [
 
 async function main() {
   const server = new Server(
-    { name: 'category-b-classifier-server', version: '1.0.0' },
+    { name: 'collection-classifier-server', version: '1.0.0' },
     { capabilities: { tools: {} } }
   );
 

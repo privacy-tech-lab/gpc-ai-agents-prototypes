@@ -131,11 +131,11 @@ function main() {
   row('Scope of a block', 'Entire tool blocked',               'Only the declared purpose blocked');
   row('Example',          'user_profile_lookup blocked wholly','get_medical_records runs for primary_task;');
   row('',                 '',                                  'blocked only for personalization purpose');
-  row('Purpose taxonomy', 'None — tool identity only',         'B2: analytics|model_training|personalization');
-  row('',                 '',                                  'C: cross_context_sale|cross_context_sharing');
-  row('',                 '',                                  'D: sensitive_data_inference');
-  row('B2 layer coverage','None',                              'Collection → Processing → Inference → Storage');
-  row('C/D layer coverage','None',                             'Cross-context sale/sharing + temporal inference');
+  row('Purposes',         'None — tool identity only',         'analytics|model_training|personalization');
+  row('',                 '',                                  'cross_context_sale|cross_context_sharing');
+  row('',                 '',                                  'sensitive_data_inference');
+  row('Pipeline coverage','None',                              'Collection → Processing → Inference → Storage');
+  row('Sale/inference',  'None',                             'Cross-context sale/sharing + temporal inference');
 
   divider('Signal-drop failure modes');
   const sdA = archASignalDrop();
@@ -196,8 +196,8 @@ function main() {
   console.log('  Architecture B demonstrates that purpose-scoped enforcement produces');
   console.log('  finer-grained control: the same tool behaves differently depending on');
   console.log('  the declared downstream use, and a user can opt out of cross-context');
-  console.log('  sale (C) or sensitive inference (D) without disrupting operational');
-  console.log('  analytics (B2).  This is structurally impossible with tool-level blocking.');
+  console.log('  sale or sensitive inference without disrupting operational analytics.');
+  console.log('  This is structurally impossible with tool-level blocking.');
   console.log();
   console.log('  Architecture B also shows that its additional required field (purpose)');
   console.log('  introduces a second failure mode.  The dangerous mode — stripping gpc —');

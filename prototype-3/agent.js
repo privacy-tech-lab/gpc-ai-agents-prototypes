@@ -16,8 +16,8 @@
  * behavior_tracker is deliberately NOT an agent tool. It is ambient analytics that
  * a platform fires around a session — a user-task agent would never choose to call
  * its own surveillance. It is invoked here as a platform call (firePlatformTracker)
- * and gated by the same withConsentCheck(), which is exactly the A2 (activation)
- * case: background AI that should not run without affirmative consent.
+ * and gated by the same withConsentCheck(), which is exactly the background
+ * case: ambient AI that should not run without affirmative consent.
  *
  * The deterministic orchestrator.js / run_v1.js / run_v2.js are retained as the
  * testable core; this module is the live-agent demo path (requires Ollama).
@@ -105,7 +105,7 @@ function makeExecutor(mode, gpc) {
 
 /**
  * firePlatformTracker — ambient analytics fired by the platform around a session,
- * not chosen by the agent. Gated by the same consent check (the A2 case).
+ * not chosen by the agent. Gated by the same consent check (the background case).
  */
 function firePlatformTracker(mode, gpc) {
   return server.invokeTool(

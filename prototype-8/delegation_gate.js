@@ -1,15 +1,15 @@
 'use strict';
 
 /**
- * delegation_gate.js: the Category E enforcement seam.
+ * delegation_gate.js: the delegation enforcement seam.
  *
- * E1 (selective delegation) governs which decisions the agent may resolve
+ * Selective delegation governs which decisions the agent may resolve
  * on its own versus which must come back to the user. Every action request
  * passes through requestAction() with the run's context:
  *
  *  mode 'silent': the violation baseline. The platform treats every vendor
  *  default as consent and runs everything. Actions that lacked an explicit
- *  autonomous grant from the user are annotated as E1 violations.
+ *  autonomous grant from the user are annotated as violations.
  *
  *  Enforced modes resolve the effective tier through the manifest
  *  precedence (user assignment beats vendor proposal; GPC voids vendor
@@ -18,7 +18,7 @@
  *   - 'ask_user' with the user present surfaces the decision and follows
  *     their answer.
  *   - 'ask_user' with nobody available declines rather than proceeds: the
- *     most restrictive default E1 requires.
+ *     most restrictive default the user is owed.
  *
  * Execution happens over real MCP (mcp_client.js), and only ever after the
  * gate has decided. That ordering is the point: the tool server never sees
@@ -47,7 +47,7 @@ async function decideAndExecute(actionDef, ctx = {}) {
       status: 'executed',
       tier: 'vendor_assumed_autonomous',
       dimensions,
-      violations: userGrantedAutonomy ? [] : ['E1'],
+      violations: userGrantedAutonomy ? [] : ['no_user_grant'],
       ...(await executeAction(action, args)),
     };
   }

@@ -3,11 +3,11 @@
 /**
  * One synthetic ComposeMate session: the user asks the assistant to polish an
  * email to their manager. This single example carries all three collection
- * surfaces of Category B:
+ * collection surfaces:
  *
- *  B1 (input): the instruction and draft the user knowingly submits.
- *  B2 (behavioral): telemetry the user unknowingly produces while composing.
- *  B3 (derived): what a classifier could conclude from B1 and B2 combined.
+ *  Input: the instruction and draft the user knowingly submits.
+ *  Behavioral: telemetry the user unknowingly produces while composing.
+ *  Derived: what a classifier could conclude from input and behavior combined.
  */
 
 const SESSION = {

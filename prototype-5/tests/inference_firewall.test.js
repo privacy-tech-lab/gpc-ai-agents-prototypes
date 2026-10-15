@@ -1,14 +1,14 @@
 /**
  * Unit tests for inference_firewall.js and inference_engine.js
  *
- * Covers the firewall (B3 on):
- *  - block() returns status=blocked with reason=b3_inference_firewall
+ * Covers the firewall (firewall on):
+ *  - block() returns status=blocked with reason=inference_firewall
  *  - block() records what would have been written
  *  - block() does NOT write any attributes to the store
  *  - block() increments the store's blocked_count
  *  - block() includes the query in the result
  *
- * Covers the engine (B3 off):
+ * Covers the engine (firewall off):
  *  - derive() returns status=derived
  *  - derive() writes attributes to the store
  *  - derive() returns the attributes that were written
@@ -28,7 +28,7 @@ function classified(query) {
   return classifier.classify(query);
 }
 
-// ─── Firewall (B3 on) ────────────────────────────────────────────────────────
+// ─── Firewall (firewall on) ────────────────────────────────────────────────────────
 
 describe('inference_firewall.block() — status and reason', () => {
   test('returns status=blocked', () => {
@@ -37,10 +37,10 @@ describe('inference_firewall.block() — status and reason', () => {
     expect(result.status).toBe('blocked');
   });
 
-  test('returns reason=b3_inference_firewall', () => {
+  test('returns reason=inference_firewall', () => {
     const store = createProfileStore();
     const result = firewall.block(METFORMIN_QUERY, classified(METFORMIN_QUERY), store);
-    expect(result.reason).toBe('b3_inference_firewall');
+    expect(result.reason).toBe('inference_firewall');
   });
 
   test('includes the query string in the result', () => {
@@ -111,7 +111,7 @@ describe('inference_firewall.block() — deep copy isolation', () => {
   });
 });
 
-// ─── Engine (B3 off) ─────────────────────────────────────────────────────────
+// ─── Engine (firewall off) ─────────────────────────────────────────────────────────
 
 describe('inference_engine.derive() — status and return value', () => {
   test('returns status=derived', () => {

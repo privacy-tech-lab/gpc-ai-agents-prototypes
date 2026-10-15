@@ -19,7 +19,7 @@ let clientPromise = null;
 
 function getClient() {
   if (!clientPromise) {
-    const client = new Client({ name: 'category-e-orchestrator', version: '1.0.0' });
+    const client = new Client({ name: 'delegation-orchestrator', version: '1.0.0' });
     const transport = new StdioClientTransport({ command: 'node', args: [SERVER_PATH] });
     clientPromise = client.connect(transport).then(() => client);
   }

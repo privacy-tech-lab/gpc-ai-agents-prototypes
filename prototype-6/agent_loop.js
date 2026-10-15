@@ -1,5 +1,5 @@
 /**
- * Category B turn loop.
+ * Collection prototype turn loop.
  *
  * Thin wrapper around the shared core/agent_loop.js. Enforcement (the
  * collection gate) lives in the platform code around the session, not here.

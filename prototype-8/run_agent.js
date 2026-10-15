@@ -33,7 +33,7 @@ async function main() {
   const label = [unattended ? 'unattended' : 'attended', gpc ? 'GPC: on' : null]
     .filter(Boolean)
     .join(' | ');
-  console.log(`=== Category E (Delegation): LLM agent | ${label} ===`);
+  console.log(`=== Delegation: LLM agent | ${label} ===`);
   console.log('A real model plans; the delegation manifest decides its standing.\n');
 
   const { agentResult, delegationLog } = await agent.runSession({

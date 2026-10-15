@@ -3,11 +3,11 @@
 /**
  * delegation_manifest.js
  *
- * The two tiering sources of E1, and the precedence between them.
+ * The two tiering sources, and the precedence between them.
  *
  * VENDOR_PROPOSAL: the platform's suggested default tiering. Aggressive on
  * purpose: the vendor proposes running almost everything autonomously.
- * E1 permits a system to propose defaults like these.
+ * A system may propose defaults like these.
  *
  * USER_ASSIGNMENTS: the tiers the user explicitly asserted, partitioning
  * actions by reversibility, sensitivity, and consequence. Search and holds
@@ -15,7 +15,7 @@
  * surfaced first. The user said nothing about price alert tracking or the
  * newsletter.
  *
- * effectiveTier() encodes the E1 precedence:
+ * effectiveTier() encodes the precedence:
  *  1. The user's explicit assignment always wins.
  *  2. Otherwise the vendor proposal applies, UNLESS the GPC signal is
  *     active: a global opt-out means consent to a tier may not be inferred

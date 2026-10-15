@@ -3,11 +3,11 @@
 /**
  * run_optout.js
  *
- * Runs the session with Category B opt-outs asserted.
+ * Runs the session with collection opt-outs asserted.
  *
- *   node run_optout.js --gpc              # assert the whole category (B1+B2+B3)
- *   node run_optout.js --scope=b3         # assert one subtype
- *   node run_optout.js --scope=b1,b2      # assert any subset
+ *   node run_optout.js --gpc                     # assert all three (input + behavior + derived)
+ *   node run_optout.js --scope=derived           # assert one scope
+ *   node run_optout.js --scope=input,behavior    # assert any subset
  *
  * The task output is identical in every mode; only what the platform keeps
  * changes.
@@ -22,12 +22,12 @@ async function main() {
   const scope = scopeArg ? scopeArg.split('=')[1].split(',').filter(Boolean) : [];
 
   if (!gpc && scope.length === 0) {
-    console.error('Usage: node run_optout.js --gpc | --scope=b1,b2,b3');
+    console.error('Usage: node run_optout.js --gpc | --scope=input,behavior,derived');
     process.exit(1);
   }
 
-  const label = scope.length > 0 ? `scope: ${scope.join(', ')}` : 'GPC: full category';
-  console.log(`=== Category B (Collection): ComposeMate | ${label} ===\n`);
+  const label = scope.length > 0 ? `scope: ${scope.join(', ')}` : 'GPC: all scopes';
+  console.log(`=== Collection: ComposeMate | ${label} ===\n`);
 
   const output = await orchestrator.run({ gpc, scope });
   console.log(JSON.stringify(output, null, 2));

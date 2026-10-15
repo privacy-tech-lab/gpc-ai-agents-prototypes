@@ -1,6 +1,6 @@
 /**
  * Unit tests for delegation_manifest.js and delegation_gate.js, the
- * Category E enforcement seam.
+ * delegation enforcement seam.
  *
  * Covers:
  *  - effectiveTier precedence: user assignment beats vendor proposal; the
@@ -10,7 +10,7 @@
  *    surface and follow the user's answer; without a user available they
  *    decline before anything reaches the wire
  *  - silent baseline: everything executes, and actions without an explicit
- *    user autonomous grant are annotated as E1 violations
+ *    user autonomous grant are annotated as violations
  */
 
 const manifest = require('../delegation_manifest');
@@ -116,7 +116,7 @@ describe('requestAction: silent baseline', () => {
     }
   });
 
-  test('actions without a user autonomous grant carry an E1 violation', async () => {
+  test('actions without a user autonomous grant carry a violation', async () => {
     const violating = [];
     for (const a of fixture.getActions()) {
       const r = await gate.requestAction(a, { mode: 'silent' });

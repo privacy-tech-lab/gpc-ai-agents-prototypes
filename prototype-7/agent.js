@@ -3,15 +3,15 @@
 /**
  * agent.js
  *
- * The LLM-driven version of the Category D prototype. A real model plays
- * Aria in session 2: session 1 has already ended (through the D1 gate), and
+ * The LLM-driven version of the persistence prototype. A real model plays
+ * Aria in session 2: session 1 has already ended (through the session gate), and
  * the model may call recall_memory to ask for cross-session context.
  *
  * The gate is not in the prompt. recall_memory is routed through
  * recallForSession(), so what the model can remember is decided by the
- * persistence gate, not by the model. With D2 asserted the tool returns no
+ * persistence gate, not by the model. With the cross_session scope asserted the tool returns no
  * facts and the model has to treat the user as new. After the session, the
- * platform runs the D1 boundary for session 2 and the D3 synthesis attempt.
+ * platform runs the session boundary for session 2 and the profile synthesis attempt.
  *
  * The deterministic orchestrator.js / run_baseline.js / run_optout.js remain
  * the testable core; this module is the live-agent demo path (requires
@@ -51,7 +51,7 @@ function makeExecutor(memory, optouts, checkpoints) {
 }
 
 /**
- * runSession: session 1 ends through the D1 gate first, then the model runs
+ * runSession: session 1 ends through the session gate first, then the model runs
  * session 2 live, then the platform closes session 2 and attempts synthesis.
  */
 async function runSession({ gpc = false, scope = [] } = {}) {
@@ -60,7 +60,7 @@ async function runSession({ gpc = false, scope = [] } = {}) {
   const [s1, s2] = fixture.getSessions();
   const checkpoints = [];
 
-  // Session 1 already happened; close it through the D1 boundary.
+  // Session 1 already happened; close it through the session boundary.
   memory.setContext('facts', s1.facts_disclosed);
   checkpoints.push(gate.endSession(s1, memory, optouts));
 
@@ -72,7 +72,7 @@ async function runSession({ gpc = false, scope = [] } = {}) {
     executeToolFn: makeExecutor(memory, optouts, checkpoints),
   });
 
-  // Session 2 ends: D1. Then the D3 synthesis attempt.
+  // Session 2 ends: session boundary. Then the profile synthesis attempt.
   memory.setContext('facts', s2.facts_disclosed);
   checkpoints.push(gate.endSession(s2, memory, optouts));
   checkpoints.push(gate.synthesizeProfile(fixture.getProfileSynthesis(), memory, optouts));
@@ -80,7 +80,7 @@ async function runSession({ gpc = false, scope = [] } = {}) {
   return {
     agentResult,
     checkpoints,
-    optouts: [...optouts].sort(),
+    optouts: gate.VALID_SCOPES.filter(s => optouts.has(s)),
     memory_snapshot: {
       archive: memory.archive.snapshot(),
       profile: memory.profile.snapshot(),

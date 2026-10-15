@@ -8,8 +8,8 @@
  * never controls them.
  *
  *   node run_agent.js                 # no opt-outs, everything collected
- *   node run_agent.js --gpc           # whole category asserted
- *   node run_agent.js --scope=b3      # single subtype asserted
+ *   node run_agent.js --gpc           # all three scopes asserted
+ *   node run_agent.js --scope=derived # single scope asserted
  *
  * Needs Ollama running (`ollama serve`) with the model pulled
  * (`ollama pull qwen2.5:14b`). Override with OLLAMA_MODEL.
@@ -29,7 +29,7 @@ async function main() {
   const scope = scopeArg ? scopeArg.split('=')[1].split(',').filter(Boolean) : [];
 
   const label = scope.length > 0 ? `scope: ${scope.join(',')}` : gpc ? 'GPC: on' : 'no opt-outs';
-  console.log(`=== Category B (Collection): LLM agent | ${label} ===`);
+  console.log(`=== Collection: LLM agent | ${label} ===`);
   console.log('A real model polishes the email; the platform collects around it.\n');
 
   const { agentResult, collectionLog, stores_snapshot } = await agent.runSession({ gpc, scope });

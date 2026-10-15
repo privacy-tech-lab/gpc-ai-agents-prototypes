@@ -1,5 +1,5 @@
 /**
- * Mock Ad Platform — B2 Storage layer stub (Prototype 2 variant).
+ * Mock Ad Platform — storage layer stub (Prototype 2 variant).
  *
  * Same role as Prototype 1's ad_platform: a pharma ad-targeting vendor
  * with a vector store of derived patient interest profiles, enforcing

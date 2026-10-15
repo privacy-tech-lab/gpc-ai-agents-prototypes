@@ -3,16 +3,16 @@
 /**
  * run_baseline.js
  *
- * No opt-outs. The platform keeps everything: the raw submission (B1), the
- * composition telemetry (B2), and the derived attributes (B3). This is the
- * failure case the category exists to prevent.
+ * No opt-outs. The platform keeps everything: the raw submission, the
+ * composition telemetry, and the derived attributes. This is the
+ * failure case the opt-outs exist to prevent.
  */
 
 const orchestrator = require('./orchestrator');
 const { closeClient } = require('./mcp_client');
 
 async function main() {
-  console.log('=== Category B (Collection): ComposeMate | no opt-outs ===');
+  console.log('=== Collection: ComposeMate | no opt-outs ===');
   console.log('The user polishes one email. The platform collects on all three surfaces.\n');
 
   const output = await orchestrator.run({});

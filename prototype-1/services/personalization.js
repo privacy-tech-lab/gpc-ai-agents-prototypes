@@ -1,14 +1,14 @@
 /**
  * Personalization — deterministic, no LLM. Reads (not writes) past user
  * data to feed into the synthesis agent, gated at two different
- * Category D boundaries:
+ * persistence boundaries:
  *
- *   - get_interaction_history (raw past interactions) needs D3
+ *   - get_interaction_history (raw past interactions) needs the 'profile' scope
  *   - user_profile_lookup (synthesized behavioral profile) needs baseline
  *
- * This is what actually makes D3 observable: without a real consultation
- * step to gate, blocking storage alone (D1) is the only distinction that
- * shows up in behavior. Runs before the synthesis agent, replacing the
+ * This is what actually makes the 'profile' scope observable: without a real
+ * consultation step to gate, blocking storage alone (the 'session' scope) is
+ * the only distinction that shows up in behavior. Runs before the synthesis agent, replacing the
  * old dead-end user_profile_lookup call that used to happen post-hoc
  * inside storage.js and go unused.
  */
@@ -34,7 +34,7 @@ async function buildPersonalizationContext({ user_id, _meta, timing = [] }) {
     if (result.status === 'ok') history = result.result;
   } else {
     timing.push({ tool: 'get_interaction_history', durationMs: 0, status: 'blocked' });
-    curtain.verdict({ status: 'blocked', tool: 'get_interaction_history', reason: 'persistence scope below d3, checked before sending' });
+    curtain.verdict({ status: 'blocked', tool: 'get_interaction_history', reason: 'persistence scope is not profile, checked before sending' });
   }
 
   const profileAllowed = isAllowed('user_profile_lookup', _meta);

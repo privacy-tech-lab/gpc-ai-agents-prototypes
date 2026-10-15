@@ -2,7 +2,7 @@
 
 /**
  * One synthetic TripPilot task: book a weekend trip to Chicago. The agent
- * encounters six action types spanning the dimensions E1 says a user may
+ * encounters six action types spanning the dimensions a user may
  * tier actions by: reversibility, sensitivity of the information involved,
  * and magnitude of consequence.
  */

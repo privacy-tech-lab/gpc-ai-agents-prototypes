@@ -9,10 +9,10 @@
  *
  * The firewall is NOT in the prompt. It lives inside executeSearch — the tool the
  * model calls. The model proposes (calls `search`); the firewall disposes (blocks
- * the write when B3 is on). The model only ever receives the answer, never the
+ * the write when the firewall is on). The model only ever receives the answer, never the
  * inferred attributes, so it cannot route around the firewall.
  *
- * The deterministic orchestrator.js / run_baseline.js / run_b3.js are retained as
+ * The deterministic orchestrator.js / run_baseline.js / run_firewall.js are retained as
  * the testable core; this module is the live-agent demo path (requires Ollama).
  */
 
@@ -48,7 +48,7 @@ the answer. Pass the user's question to the search tool exactly as they asked it
  * executeSearch — the tool the model calls, and the firewall boundary.
  *
  * Runs the classifier (which produces BOTH the answer and the inferred attributes),
- * routes the attributes through the firewall (B3 on) or the engine (B3 off), and
+ * routes the attributes through the firewall (firewall on) or the engine (firewall off), and
  * returns ONLY the answer to the model. The inference happens as a side effect on
  * the store; the model never sees what was inferred.
  *
@@ -57,10 +57,10 @@ the answer. Pass the user's question to the search tool exactly as they asked it
  *
  * @param {{query: string}} input
  * @param {object} store   profile store for this session
- * @param {boolean} b3     whether the B3 firewall is active
+ * @param {boolean} firewallOn   whether the firewall is active
  * @returns {Promise<{ answer: string }>}
  */
-async function executeSearch({ query }, store, b3) {
+async function executeSearch({ query }, store, firewallOn) {
   let classified;
   try {
     classified = await mcpClient.classify(query);
@@ -68,7 +68,7 @@ async function executeSearch({ query }, store, b3) {
     return { answer: "I couldn't find specific information on that question." };
   }
 
-  if (b3) {
+  if (firewallOn) {
     firewall.block(query, classified, store);   // record + suppress; no write
   } else {
     engine.derive(query, classified, store);    // write inferred attributes
@@ -83,10 +83,10 @@ async function executeSearch({ query }, store, b3) {
  * @param {object} opts
  * @param {string} opts.question
  * @param {object} opts.store
- * @param {boolean} [opts.b3=false]
+ * @param {boolean} [opts.firewallOn=false]
  * @returns {Promise<{ finalResponse: string, toolCalls: Array }>}
  */
-async function ask({ question, store, b3 = false }) {
+async function ask({ question, store, firewallOn = false }) {
   return runAgentLoop({
     systemPrompt:    SYSTEM_PROMPT,
     userMessage:     question,
@@ -94,7 +94,7 @@ async function ask({ question, store, b3 = false }) {
     requiredTools:   ['search'],
     executeToolFn:   (name, input) =>
       name === 'search'
-        ? executeSearch(input, store, b3)
+        ? executeSearch(input, store, firewallOn)
         : { error: 'unknown_tool', name },
   });
 }
@@ -105,16 +105,16 @@ async function ask({ question, store, b3 = false }) {
  * deterministic orchestrator.
  *
  * @param {object} [opts]
- * @param {boolean} [opts.b3=false]
+ * @param {boolean} [opts.firewallOn=false]
  * @returns {Promise<{ results: Array, profileSnapshot: object }>}
  */
-async function runSession({ b3 = false } = {}) {
+async function runSession({ firewallOn = false } = {}) {
   const store = createProfileStore();
   const questions = classifier.allQueries();
   const results = [];
 
   for (const question of questions) {
-    const { finalResponse, toolCalls } = await ask({ question, store, b3 });
+    const { finalResponse, toolCalls } = await ask({ question, store, firewallOn });
     results.push({ question, finalResponse, toolCalls });
   }
 

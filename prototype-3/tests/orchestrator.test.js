@@ -7,7 +7,7 @@
  *  - v2.0 approve: new tools execute with consent_required=true, v1.0 tools are unaffected
  *  - v2.0 decline: new tools are quarantined, quarantine events recorded, manifest updated
  *  - v2.0 GPC: non-primary categories auto-blocked by signal, primary categories unaffected
- *  - A2 persistence: a declined tool is hard-blocked in a subsequent invocation
+ *  - Declined-tool persistence: a declined tool is hard-blocked in a subsequent invocation
  */
 
 const orchestrator = require('../orchestrator');
@@ -230,7 +230,7 @@ describe('v2.0 — GPC mode (signal auto-declines non-primary categories)', () =
   });
 });
 
-describe('A2 — persistence across sessions', () => {
+describe('declined tools — persistence across sessions', () => {
   test('a declined tool is hard-blocked in a subsequent invocation with no prompt', async () => {
     // Session 1: decline the communication category
     bus.on('consent_request', ({ tool, resolve }) => {

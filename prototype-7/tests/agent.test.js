@@ -32,12 +32,12 @@ describe('the recall_memory boundary', () => {
     expect(checkpoints[0].status).toBe('recalled');
   });
 
-  test('returns nothing under D2 even with an archived session', async () => {
+  test('returns nothing under cross_session even with an archived session', async () => {
     const memory = createMemory();
     const [s1] = fixture.getSessions();
     gate.endSession(s1, memory, new Set());
     const checkpoints = [];
-    const exec = agent.makeExecutor(memory, gate.resolveScope({ scope: ['d2'] }), checkpoints);
+    const exec = agent.makeExecutor(memory, gate.resolveScope({ scope: ['cross_session'] }), checkpoints);
     const result = await exec('recall_memory', {});
     expect(result.known_facts).toEqual({});
     expect(checkpoints[0].status).toBe('blocked');

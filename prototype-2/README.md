@@ -8,16 +8,15 @@ A patient asks an AI assistant: *"What does my blood pressure reading mean, and 
 
 The assistant retrieves their records and answers the question. This interaction also feeds an analytics log, a model-training dataset, and a pharma ad-targeting platform: downstream systems the patient never directly interacted with. With opt-outs enabled, each of those secondary data flows is independently gated by its declared purpose.
 
-## Opt-out categories depicted
+## Purposes gated
 
-Prototype 2 implements **Category C (Use)** from the opt-out typology. `get_medical_records` implements **C1 (primary use restriction)** because data stays bound to the task it was collected for. Of the three secondary pipelines, `analytics` is **C2 (secondary use restriction)**, `ad_targeting` is **C2a (targeting)**, and `model_training` is **C3 (data repurposing restriction)**, each independently opt-outable via `gpc_scope`.
+`get_medical_records` serves the primary purpose (answering the patient's question) and always runs, so the data is used for the task it was collected for. The three secondary pipelines each have a declared purpose: `analytics`, `ad_targeting`, and `model_training`. Each one can be opted out of independently via `gpc_scope`, and a full GPC signal blocks all three.
 
 ```mermaid
 flowchart TD
     U["Patient request\nSec-GPC / body.gpc / gpc_scope"] --> O["orchestrator.js\nbuildPrivacyContext()"]
     O --> MA["Medical Agent (LLM)\ntool: get_medical_records"]
     MA -- "real MCP tools/call" --> MR["get_medical_records\nnever gated"]
-    MR -.-> C1["Category C1 (Primary use):\nalways proceeds"]:::category
     MR --> ANS["Answer delivered to patient\n(always, regardless of GPC)"]
     ANS --> FO["fanOutSecondaryPurposes()"]
 
@@ -32,13 +31,10 @@ flowchart TD
     TR -- "in gpc_scope?" --> TRB["blocked"]
     TR -- "not in scope" --> TRO["ok: training_dataset.jsonl"]
 
-    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
-    class AN,ANB,ANO category
-    class AD,ADB,ADO category
-    class TR,TRB,TRO category
-    C2["Category C2 (Secondary use)"]:::category -.-> AN
-    C2a["Category C2a (Targeting)"]:::category -.-> AD
-    C3["Category C3 (Repurposing)"]:::category -.-> TR
+    classDef enforced fill:#5b8def,stroke:#2f5fce,color:#fff
+    class AN,ANB,ANO enforced
+    class AD,ADB,ADO enforced
+    class TR,TRB,TRO enforced
 ```
 
 ---

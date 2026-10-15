@@ -2,17 +2,17 @@
  * Integration tests for orchestrator.js
  *
  * Covers:
- *  - Baseline (B3 off): all 8 queries return status=derived
+ *  - Baseline (firewall off): all 8 queries return status=derived
  *  - Baseline: shadow profile accumulates attributes from every query
  *  - Baseline: profile is non-empty and blocked_count is 0
  *  - Baseline: specific attribute values match classifier output
- *  - B3 on: all 8 queries return status=blocked
- *  - B3 on: blocked reason is b3_inference_firewall for every result
- *  - B3 on: shadow profile stays completely empty
- *  - B3 on: blocked_count equals 8
- *  - B3 on: would_have_written is present on every result
- *  - B3 on: answers are still returned (inference blocked, answers not)
- *  - Baseline: answers are still returned (identical to B3 on)
+ *  - firewall on: all 8 queries return status=blocked
+ *  - firewall on: blocked reason is inference_firewall for every result
+ *  - firewall on: shadow profile stays completely empty
+ *  - firewall on: blocked_count equals 8
+ *  - firewall on: would_have_written is present on every result
+ *  - firewall on: answers are still returned (inference blocked, answers not)
+ *  - Baseline: answers are still returned (identical to firewall on)
  *  - Structural: results array has 8 entries in both modes
  */
 
@@ -24,9 +24,9 @@ afterAll(async () => {
   await closeClient();
 });
 
-// ─── Baseline (B3 off) ───────────────────────────────────────────────────────
+// ─── Baseline (firewall off) ───────────────────────────────────────────────────────
 
-describe('baseline — B3 off', () => {
+describe('baseline — firewall off', () => {
   let run;
 
   beforeEach(async () => {
@@ -90,9 +90,9 @@ describe('baseline — B3 off', () => {
   });
 });
 
-// ─── B3 enforced ─────────────────────────────────────────────────────────────
+// ─── Firewall enforced ─────────────────────────────────────────────────────────────
 
-describe('B3 enforced — b3=true', () => {
+describe('firewall enforced — firewall=true', () => {
   let run;
 
   beforeEach(async () => {
@@ -109,9 +109,9 @@ describe('B3 enforced — b3=true', () => {
     }
   });
 
-  test('all results have reason=b3_inference_firewall', () => {
+  test('all results have reason=inference_firewall', () => {
     for (const r of run.results) {
-      expect(r.reason).toBe('b3_inference_firewall');
+      expect(r.reason).toBe('inference_firewall');
     }
   });
 
@@ -160,29 +160,29 @@ describe('B3 enforced — b3=true', () => {
 
 // ─── Comparison between modes ────────────────────────────────────────────────
 
-describe('baseline vs B3 — answer parity', () => {
+describe('baseline vs firewall — answer parity', () => {
   test('the answer for each query is identical in both modes', async () => {
     const baseline = await orchestrator.run(false);
-    const b3       = await orchestrator.run(true);
+    const enforced = await orchestrator.run(true);
 
     for (let i = 0; i < baseline.results.length; i++) {
-      expect(b3.results[i].answer).toBe(baseline.results[i].answer);
+      expect(enforced.results[i].answer).toBe(baseline.results[i].answer);
     }
   });
 
-  test('baseline profile has attributes; B3 profile does not', async () => {
+  test('baseline profile has attributes; firewall profile does not', async () => {
     const baseline = await orchestrator.run(false);
-    const b3       = await orchestrator.run(true);
+    const enforced = await orchestrator.run(true);
 
     expect(Object.keys(baseline.profileSnapshot.attributes).length).toBeGreaterThan(0);
-    expect(Object.keys(b3.profileSnapshot.attributes).length).toBe(0);
+    expect(Object.keys(enforced.profileSnapshot.attributes).length).toBe(0);
   });
 
-  test('baseline blocked_count is 0; B3 blocked_count is 8', async () => {
+  test('baseline blocked_count is 0; firewall blocked_count is 8', async () => {
     const baseline = await orchestrator.run(false);
-    const b3       = await orchestrator.run(true);
+    const enforced = await orchestrator.run(true);
 
     expect(baseline.profileSnapshot.blocked_count).toBe(0);
-    expect(b3.profileSnapshot.blocked_count).toBe(8);
+    expect(enforced.profileSnapshot.blocked_count).toBe(8);
   });
 });

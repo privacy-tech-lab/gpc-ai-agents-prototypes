@@ -1,19 +1,20 @@
 /**
  * Diff the run_scope_check.js outputs and print a comparison table showing
- * the Category D permission matrix in practice.
+ * the persistence permission matrix in practice.
  *
- * Only D1 and D3 are modeled: see prototype-1/README.md,
- * "Opt-out categories depicted", for why D2 is left out.
+ * Only the 'session' and 'profile' scopes are modeled: see
+ * prototype-1/README.md, "Persistence scopes", for why a cross-session
+ * scope is left out.
  */
 
 const fs   = require('fs');
 const path = require('path');
 
 const OUTPUT_DIR = path.join(__dirname, '..', 'output');
-const TIERS = [
+const SCOPES = [
   { label: 'baseline', file: 'scope_baseline_result.json' },
-  { label: 'd3',       file: 'scope_d3_result.json' },
-  { label: 'd1',       file: 'scope_d1_result.json' },
+  { label: 'profile',  file: 'scope_profile_result.json' },
+  { label: 'session',  file: 'scope_session_result.json' },
 ];
 
 function loadJson(file) {
@@ -29,16 +30,16 @@ function fmt(val) {
 }
 
 function main() {
-  const results = TIERS.map((t) => ({ ...t, data: loadJson(t.file) }));
+  const results = SCOPES.map((t) => ({ ...t, data: loadJson(t.file) }));
   const missing = results.filter((r) => !r.data);
   if (missing.length) {
     console.error('Run all three scope checks first:');
-    console.error('  node harness/run_scope_check.js && node harness/run_scope_check.js --scope=d3 && node harness/run_scope_check.js --scope=d1');
+    console.error('  node harness/run_scope_check.js && node harness/run_scope_check.js --scope=profile && node harness/run_scope_check.js --scope=session');
     process.exit(1);
   }
 
   console.log('\n╔══════════════════════════════════════════════════════════════════╗');
-  console.log('║   Prototype 1: Category D Permission Matrix                        ║');
+  console.log('║   Prototype 1: Persistence Permission Matrix                       ║');
   console.log('╚══════════════════════════════════════════════════════════════════╝\n');
 
   const COL    = 28;
@@ -48,7 +49,7 @@ function main() {
 
   const rows = [
     ['Writes (save_to_profile)',      (r) => fmt(r.storageResult.stored.includes('save_to_profile'))],
-    ['Raw history consulted (D3)',    (r) => fmt(r.personalization.historyConsulted)],
+    ['Raw history consulted',         (r) => fmt(r.personalization.historyConsulted)],
     ['Synthesized profile used',      (r) => fmt(r.personalization.profileConsulted)],
   ];
 
@@ -56,7 +57,7 @@ function main() {
     console.log([label.padEnd(COL), ...results.map((r) => getVal(r.data).padEnd(10))].join(' │ '));
   }
 
-  console.log('\nd1 blocks everything, d3 additionally allows raw-history consultation, and baseline');
+  console.log('\nsession blocks everything, profile additionally allows raw-history consultation, and baseline');
   console.log('additionally allows the synthesized behavioral profile.\n');
 }
 

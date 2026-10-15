@@ -3,12 +3,12 @@
 /**
  * stores.js
  *
- * The three collection stores of Category B, one per subtype. All in-memory
+ * The three collection stores of the prototype, one per opt-out scope. All in-memory
  * and created fresh per run via createStores() so tests stay isolated.
  *
- *  inputLog       (B1): raw user submissions the platform retains.
- *  behaviorLog    (B2): passively generated telemetry the platform records.
- *  derivedProfile (B3): inferences the platform writes about the user.
+ *  inputLog       (input):    raw user submissions the platform retains.
+ *  behaviorLog    (behavior): passively generated telemetry the platform records.
+ *  derivedProfile (derived):  inferences the platform writes about the user.
  *
  * Each store counts suppressed writes so runs can show what the opt-out
  * stopped, not just an empty store.

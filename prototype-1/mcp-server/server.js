@@ -51,7 +51,7 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: 'get_interaction_history',
-    description: 'Read raw past interactions for a user. Category D, needs persistence_scope d3 or better.',
+    description: 'Read raw past interactions for a user. Needs persistence_scope profile when GPC is on.',
     inputSchema: {
       type: 'object',
       properties: { user_id: { type: 'string' } },

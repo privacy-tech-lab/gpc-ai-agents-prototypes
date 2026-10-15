@@ -10,8 +10,8 @@
  *
  * Key properties under test:
  *   - executeSearch returns ONLY the answer (the model never sees inferred attrs)
- *   - B3 off writes attributes to the store; B3 on suppresses the write
- *   - the answer is identical regardless of B3
+ *   - firewall off writes attributes to the store; firewall on suppresses the write
+ *   - the answer is identical regardless of the firewall
  *   - unknown queries degrade gracefully with no inference
  */
 
@@ -36,14 +36,14 @@ describe('executeSearch — return shape', () => {
     expect(result.would_have_written).toBeUndefined();
   });
 
-  test('answer is identical whether B3 is on or off', async () => {
+  test('answer is identical whether the firewall is on or off', async () => {
     const off = await executeSearch({ query: KNOWN_QUERY }, createProfileStore(), false);
     const on  = await executeSearch({ query: KNOWN_QUERY }, createProfileStore(), true);
     expect(on.answer).toBe(off.answer);
   });
 });
 
-describe('executeSearch — B3 off (engine writes)', () => {
+describe('executeSearch — firewall off (engine writes)', () => {
   test('writes the inferred attributes to the store', async () => {
     const store = createProfileStore();
     await executeSearch({ query: KNOWN_QUERY }, store, false);
@@ -55,7 +55,7 @@ describe('executeSearch — B3 off (engine writes)', () => {
   });
 });
 
-describe('executeSearch — B3 on (firewall blocks)', () => {
+describe('executeSearch — firewall on (firewall blocks)', () => {
   test('does not write, increments blocked_count', async () => {
     const store = createProfileStore();
     await executeSearch({ query: KNOWN_QUERY }, store, true);
