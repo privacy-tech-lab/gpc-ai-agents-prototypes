@@ -13,7 +13,7 @@
  *
  * Design note: the store is deliberately simple — no persistence between runs —
  * because Prototype 5's point is to show what accumulates *within* a session
- * when B3 is off vs. what is suppressed when B3 is on.
+ * when the firewall is off vs. what is suppressed when the firewall is on.
  */
 
 function createProfileStore() {

@@ -79,7 +79,7 @@ describe('firePlatformTracker — ambient analytics, gated like any tool', () =>
     expect(r.tool).toBe('behavior_tracker');
   });
 
-  test('GPC auto-declines the tracker (the A2 case)', async () => {
+  test('GPC auto-declines the tracker (the background case)', async () => {
     const r = await agent.firePlatformTracker('approve', true);
     expect(r.status).toBe('blocked');
     expect(r.reason).toBe('gpc_auto_decline');

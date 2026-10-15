@@ -28,7 +28,7 @@ const { classifyTopic } = require('./topic_classifier');
  * @param {object} opts
  * @param {string}  [opts.provider_id='llm-provider-X']
  * @param {boolean} [opts.mitm=false]         — strip _meta before forwarding
- * @param {object}  [opts.mitigations=null]   — E2 commitment chain
+ * @param {object}  [opts.mitigations=null]   — provider commitment chain
  */
 function createProvider(opts = {}) {
   const {
@@ -64,7 +64,7 @@ function createProvider(opts = {}) {
       mitm_applied: mitm,
     };
 
-    // --- Layer 5b: E2 commitments (data-handling constraints) ---
+    // --- Layer 5b: provider commitments (data-handling constraints) ---
     // Mitigations do not reduce visibility — they constrain what the
     // provider records and what it derives. See mitigations.js.
     // A throwing mitigation must not drop the observation entirely:

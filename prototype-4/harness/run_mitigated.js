@@ -1,5 +1,5 @@
 /**
- * Mitigated run: gpc=1 with provider-side E2 commitments active.
+ * Mitigated run: gpc=1 with provider-side commitments active.
  * The commitments tag the observation log; they do not change what the
  * provider observes. The user has no protocol-level way to verify they
  * were honored — that is Prototype 5's domain.
@@ -27,7 +27,7 @@ async function main() {
   const mitigations  = chain(noTrainCommitment(), kAnonymity(5), dpNoise(1.0));
   const provider     = createProvider({ mitigations });
 
-  console.log('Running mitigated run (GPC on; E2 commitments active)...\n');
+  console.log('Running mitigated run (GPC on; provider commitments active)...\n');
 
   const result = await handleRequest({
     user_id:       userId,

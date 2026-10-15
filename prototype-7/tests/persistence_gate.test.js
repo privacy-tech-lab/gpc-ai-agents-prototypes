@@ -1,14 +1,14 @@
 /**
- * Unit tests for persistence_gate.js, the Category D enforcement seam.
+ * Unit tests for persistence_gate.js, the persistence enforcement seam.
  *
  * Covers:
- *  - resolveScope: the hierarchy (d1 implies d2 and d3, d2 implies d3, d3
- *    stands alone); bare GPC asserts the strictest scope; invalid names drop
- *  - endSession: archives by default, discards under D1, always clears the
+ *  - resolveScope: the hierarchy (session implies cross_session and profile,
+ *    cross_session implies profile, profile stands alone); bare GPC asserts the strictest scope; invalid names drop
+ *  - endSession: archives by default, discards under session, always clears the
  *    transient session context
- *  - recallForSession: recalls merged facts, blocks under D2 even when the
+ *  - recallForSession: recalls merged facts, blocks under cross_session even when the
  *    archive has entries, reports nothing_to_recall on an empty archive
- *  - synthesizeProfile: writes the model, blocks under D3, reports
+ *  - synthesizeProfile: writes the model, blocks under profile, reports
  *    nothing_to_synthesize when nothing was retained
  */
 
@@ -30,28 +30,28 @@ describe('resolveScope: the hierarchy', () => {
     expect(gate.resolveScope({})).toEqual(new Set());
   });
 
-  test('d1 implies d2 and d3', () => {
-    expect(gate.resolveScope({ scope: ['d1'] })).toEqual(new Set(['d1', 'd2', 'd3']));
+  test('session implies cross_session and profile', () => {
+    expect(gate.resolveScope({ scope: ['session'] })).toEqual(new Set(['session', 'cross_session', 'profile']));
   });
 
-  test('d2 implies d3 but not d1', () => {
-    expect(gate.resolveScope({ scope: ['d2'] })).toEqual(new Set(['d2', 'd3']));
+  test('cross_session implies profile but not session', () => {
+    expect(gate.resolveScope({ scope: ['cross_session'] })).toEqual(new Set(['cross_session', 'profile']));
   });
 
-  test('d3 stands alone', () => {
-    expect(gate.resolveScope({ scope: ['d3'] })).toEqual(new Set(['d3']));
+  test('profile stands alone', () => {
+    expect(gate.resolveScope({ scope: ['profile'] })).toEqual(new Set(['profile']));
   });
 
   test('bare GPC asserts the strictest scope', () => {
-    expect(gate.resolveScope({ gpc: true })).toEqual(new Set(['d1', 'd2', 'd3']));
+    expect(gate.resolveScope({ gpc: true })).toEqual(new Set(['session', 'cross_session', 'profile']));
   });
 
   test('invalid names are dropped', () => {
-    expect(gate.resolveScope({ scope: ['d3', 'd9'] })).toEqual(new Set(['d3']));
+    expect(gate.resolveScope({ scope: ['profile', 'bogus'] })).toEqual(new Set(['profile']));
   });
 });
 
-describe('endSession: the D1 boundary', () => {
+describe('endSession: the session boundary', () => {
   test('archives the transcript and facts by default', () => {
     const result = gate.endSession(s1, memory, new Set());
     expect(result.status).toBe('archived');
@@ -60,10 +60,10 @@ describe('endSession: the D1 boundary', () => {
     expect(snap.entries[0].facts).toEqual({ diet: 'vegetarian', budget: 'tight' });
   });
 
-  test('discards everything under D1 and records what was lost', () => {
-    const result = gate.endSession(s1, memory, new Set(['d1', 'd2', 'd3']));
+  test('discards everything under session and records what was lost', () => {
+    const result = gate.endSession(s1, memory, new Set(['session', 'cross_session', 'profile']));
     expect(result.status).toBe('discarded');
-    expect(result.reason).toBe('d1_session_scope');
+    expect(result.reason).toBe('session_scope');
     expect(result.would_have_archived.facts.diet).toBe('vegetarian');
     expect(memory.archive.isEmpty()).toBe(true);
     expect(memory.archive.snapshot().blocked_count).toBe(1);
@@ -74,12 +74,12 @@ describe('endSession: the D1 boundary', () => {
     gate.endSession(s1, memory, new Set());
     expect(memory.getContext()).toEqual({});
     memory.setContext('facts', s1.facts_disclosed);
-    gate.endSession(s1, memory, new Set(['d1', 'd2', 'd3']));
+    gate.endSession(s1, memory, new Set(['session', 'cross_session', 'profile']));
     expect(memory.getContext()).toEqual({});
   });
 });
 
-describe('recallForSession: the D2 boundary', () => {
+describe('recallForSession: the cross-session boundary', () => {
   test('recalls merged facts from archived sessions', () => {
     gate.endSession(s1, memory, new Set());
     const result = gate.recallForSession(memory, new Set());
@@ -88,11 +88,11 @@ describe('recallForSession: the D2 boundary', () => {
     expect(result.from_sessions).toEqual(['s1_recipes']);
   });
 
-  test('blocks recall under D2 even when the archive has entries', () => {
+  test('blocks recall under cross_session even when the archive has entries', () => {
     gate.endSession(s1, memory, new Set());
-    const result = gate.recallForSession(memory, new Set(['d2', 'd3']));
+    const result = gate.recallForSession(memory, new Set(['cross_session', 'profile']));
     expect(result.status).toBe('blocked');
-    expect(result.reason).toBe('d2_cross_session_scope');
+    expect(result.reason).toBe('cross_session_scope');
     expect(result.archived_sessions_present).toBe(1);
     expect(result.recalled_facts).toEqual({});
   });
@@ -104,7 +104,7 @@ describe('recallForSession: the D2 boundary', () => {
   });
 });
 
-describe('synthesizeProfile: the D3 boundary', () => {
+describe('synthesizeProfile: the profile boundary', () => {
   const candidate = fixture.getProfileSynthesis();
 
   test('writes the behavioral model from a retained archive', () => {
@@ -114,11 +114,11 @@ describe('synthesizeProfile: the D3 boundary', () => {
     expect(memory.profile.snapshot().entry_count).toBe(1);
   });
 
-  test('blocks synthesis under D3 and records the model it stopped', () => {
+  test('blocks synthesis under profile and records the model it stopped', () => {
     gate.endSession(s1, memory, new Set());
-    const result = gate.synthesizeProfile(candidate, memory, new Set(['d3']));
+    const result = gate.synthesizeProfile(candidate, memory, new Set(['profile']));
     expect(result.status).toBe('blocked');
-    expect(result.reason).toBe('d3_profile_scope');
+    expect(result.reason).toBe('profile_scope');
     expect(result.would_have_synthesized.dietary_pattern).toBe('vegetarian');
     expect(memory.profile.isEmpty()).toBe(true);
     expect(memory.profile.snapshot().blocked_count).toBe(1);

@@ -7,10 +7,10 @@ const SENSITIVE_TOOLS = new Set([
   'log_interaction',
 ]);
 
-// get_interaction_history reads raw past interactions and needs D3
-// (persistence_scope: 'd3'); any other scope, or no scope, leaves it
-// blocked, same as the sensitive-tool registry. Only D1 and D3 are
-// modeled — see prototype-1/README.md, "Opt-out categories depicted".
+// get_interaction_history reads raw past interactions and needs
+// persistence_scope: 'profile' (the user opted out of the long-term profile
+// only); any other scope, or no scope, leaves it blocked, same as the
+// sensitive-tool registry. See prototype-1/README.md, "Persistence scopes".
 function hasGpcSignal(_meta = {}) {
   return _meta?.gpc === true || _meta?.gpc === 1 || _meta?.gpc === '1';
 }
@@ -26,7 +26,7 @@ function isAllowed(toolName, _meta = {}) {
   if (!hasGpcSignal(_meta)) return true;
 
   if (toolName === 'get_interaction_history') {
-    return _meta?.persistence_scope === 'd3';
+    return _meta?.persistence_scope === 'profile';
   }
 
   return !SENSITIVE_TOOLS.has(toolName);

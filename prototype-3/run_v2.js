@@ -82,7 +82,7 @@ function printPersistenceCheck() {
   for (const cat of mf.declined_categories) {
     console.log(`  [BLOCKED] category="${cat}" — declined in v2.0, still blocked in v3.0`);
   }
-  console.log('\nThis satisfies A2 (opt-in only): a declined tool remains blocked through');
+  console.log('\nOpt-in only: a declined tool remains blocked through');
   console.log('further platform updates until the user actively reverses the decision.');
 }
 

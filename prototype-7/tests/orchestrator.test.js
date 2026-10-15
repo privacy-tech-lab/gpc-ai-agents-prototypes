@@ -31,14 +31,14 @@ describe('baseline: no opt-outs', () => {
   });
 });
 
-describe('d1: nothing survives a session end', () => {
+describe('session: nothing survives a session end', () => {
   let run;
   beforeEach(async () => {
-    run = await orchestrator.run({ scope: ['d1'] });
+    run = await orchestrator.run({ scope: ['session'] });
   });
 
   test('the whole hierarchy is active', () => {
-    expect(run.optouts).toEqual(['d1', 'd2', 'd3']);
+    expect(run.optouts).toEqual(['session', 'cross_session', 'profile']);
   });
 
   test('the archive stays empty and both discards are counted', () => {
@@ -64,14 +64,14 @@ describe('d1: nothing survives a session end', () => {
   });
 });
 
-describe('d2: retained but not carried forward', () => {
+describe('cross_session: retained but not carried forward', () => {
   let run;
   beforeEach(async () => {
-    run = await orchestrator.run({ scope: ['d2'] });
+    run = await orchestrator.run({ scope: ['cross_session'] });
   });
 
-  test('d2 implies d3', () => {
-    expect(run.optouts).toEqual(['d2', 'd3']);
+  test('cross_session implies profile', () => {
+    expect(run.optouts).toEqual(['cross_session', 'profile']);
   });
 
   test('the archive keeps both sessions for the user', () => {
@@ -91,14 +91,14 @@ describe('d2: retained but not carried forward', () => {
   });
 });
 
-describe('d3: remembered but never modeled', () => {
+describe('profile: remembered but never modeled', () => {
   let run;
   beforeEach(async () => {
-    run = await orchestrator.run({ scope: ['d3'] });
+    run = await orchestrator.run({ scope: ['profile'] });
   });
 
-  test('only d3 is active', () => {
-    expect(run.optouts).toEqual(['d3']);
+  test('only profile is active', () => {
+    expect(run.optouts).toEqual(['profile']);
   });
 
   test('cross-session recall still works and tailors session 2', () => {
@@ -115,9 +115,9 @@ describe('d3: remembered but never modeled', () => {
 });
 
 describe('GPC asserts the strictest scope', () => {
-  test('bare GPC behaves like d1', async () => {
+  test('bare GPC behaves like session', async () => {
     const run = await orchestrator.run({ gpc: true });
-    expect(run.optouts).toEqual(['d1', 'd2', 'd3']);
+    expect(run.optouts).toEqual(['session', 'cross_session', 'profile']);
     expect(run.memory_snapshot.archive.entry_count).toBe(0);
   });
 });

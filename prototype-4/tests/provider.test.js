@@ -22,7 +22,7 @@ describe('provider middleware', () => {
     expect(log[1].meta_received.gpc).toBe(1);
   });
 
-  test('observation captures all fields needed for E1 derivations', async () => {
+  test('observation captures all fields needed for visibility derivations', async () => {
     const p = createProvider();
     await p.fanout('u1', 'iPhone 17', ['the-verge', 'cnet'], { gpc: 1 });
     const o = p.getProviderView()[0];

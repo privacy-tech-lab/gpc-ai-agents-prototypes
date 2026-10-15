@@ -26,7 +26,7 @@ describe('silent baseline', () => {
     expect(run.tally.executed).toBe(6);
   });
 
-  test('four E1 violations are recorded', () => {
+  test('four violations are recorded', () => {
     expect(run.violations).toEqual([
       'book_flight',
       'share_passport',

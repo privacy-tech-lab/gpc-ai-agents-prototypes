@@ -1,5 +1,5 @@
 /**
- * Category E turn loop.
+ * Delegation prototype turn loop.
  *
  * Thin wrapper around the shared core/agent_loop.js. Enforcement (the
  * delegation gate) lives in the caller's executeToolFn, not here.

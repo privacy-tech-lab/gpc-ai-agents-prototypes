@@ -1,58 +1,58 @@
 'use strict';
 
 /**
- * persistence_gate.js: the Category D enforcement seam.
+ * persistence_gate.js: the persistence enforcement seam.
  *
- * Category D governs how far data travels through time. Three checkpoints,
- * one per subtype, sitting at the three moments retention happens:
+ * Persistence opt-outs govern how far data travels through time. Three checkpoints,
+ * one per scope, sitting at the three moments retention happens:
  *
- *  D1 endSession: when a session closes, its transcript and disclosed facts
- *  either enter the archive or vanish. With D1 asserted nothing survives;
+ *  endSession: when a session closes, its transcript and disclosed facts
+ *  either enter the archive or vanish. With the session scope asserted nothing survives;
  *  every new interaction starts from a clean slate.
  *
- *  D2 recallForSession: when a new session starts, the system either reads
- *  the archive to build continuity or starts fresh. With D2 asserted the
+ *  recallForSession: when a new session starts, the system either reads
+ *  the archive to build continuity or starts fresh. With the cross_session scope asserted the
  *  archive may exist (the user keeps their history) but may not inform the
  *  new session.
  *
- *  D3 synthesizeProfile: retained sessions either get synthesized into a
- *  durable behavioral model or stay as inert transcripts. With D3 asserted
+ *  synthesizeProfile: retained sessions either get synthesized into a
+ *  durable behavioral model or stay as inert transcripts. With the profile scope asserted
  *  the system may remember interactions but not compress them into a
  *  profile.
  *
- * The subtypes form a hierarchy: asserting D1 implies D2 and D3, and
- * asserting D2 implies D3. resolveScope() encodes that expansion. What is
+ * The scopes form a hierarchy: asserting session implies cross_session and profile,
+ * and asserting cross_session implies profile. resolveScope() encodes that expansion. What is
  * never gated: within-session context. Aria may always use what the user
- * said earlier in the same session; that is the operational coherence D1
- * explicitly permits.
+ * said earlier in the same session; that is the operational coherence the session
+ * scope explicitly permits.
  */
 
-const VALID_SUBTYPES = ['d1', 'd2', 'd3'];
+const VALID_SCOPES = ['session', 'cross_session', 'profile'];
 
 const REASONS = {
-  d1: 'd1_session_scope',
-  d2: 'd2_cross_session_scope',
-  d3: 'd3_profile_scope',
+  session: 'session_scope',
+  cross_session: 'cross_session_scope',
+  profile: 'profile_scope',
 };
 
 /**
  * resolveScope({ gpc, scope })
  *
- * Bare GPC asserts the strictest subtype (D1), which implies the whole
- * hierarchy. A scope list expands downward: d1 implies d2 and d3, d2
- * implies d3.
+ * Bare GPC asserts the strictest scope (session), which implies the whole
+ * hierarchy. A scope list expands downward: session implies cross_session
+ * and profile, cross_session implies profile.
  */
 function resolveScope({ gpc = false, scope = [] } = {}) {
-  const cleaned = scope.filter(s => VALID_SUBTYPES.includes(s));
-  const seed = cleaned.length > 0 ? new Set(cleaned) : gpc ? new Set(['d1']) : new Set();
+  const cleaned = scope.filter(s => VALID_SCOPES.includes(s));
+  const seed = cleaned.length > 0 ? new Set(cleaned) : gpc ? new Set(['session']) : new Set();
 
   const active = new Set(seed);
-  if (active.has('d1')) {
-    active.add('d2');
-    active.add('d3');
+  if (active.has('session')) {
+    active.add('cross_session');
+    active.add('profile');
   }
-  if (active.has('d2')) {
-    active.add('d3');
+  if (active.has('cross_session')) {
+    active.add('profile');
   }
   return active;
 }
@@ -60,20 +60,20 @@ function resolveScope({ gpc = false, scope = [] } = {}) {
 /**
  * endSession(session, memory, optouts)
  *
- * The D1 boundary. Clears the transient session context in every mode, then
+ * The session boundary. Clears the transient session context in every mode, then
  * either archives the transcript or discards it.
  */
 function endSession(session, memory, optouts) {
   memory.clearContext();
 
-  if (optouts.has('d1')) {
+  if (optouts.has('session')) {
     memory.archive.incrementBlocked();
     return {
       checkpoint: 'session_end',
-      subtype: 'D1',
+      scope: 'session',
       session_id: session.session_id,
       status: 'discarded',
-      reason: REASONS.d1,
+      reason: REASONS.session,
       would_have_archived: {
         turns: session.turns.length,
         facts: session.facts_disclosed,
@@ -88,7 +88,7 @@ function endSession(session, memory, optouts) {
   });
   return {
     checkpoint: 'session_end',
-    subtype: 'D1',
+    scope: 'session',
     session_id: session.session_id,
     status: 'archived',
   };
@@ -97,16 +97,16 @@ function endSession(session, memory, optouts) {
 /**
  * recallForSession(memory, optouts)
  *
- * The D2 boundary. Returns the facts from archived sessions that may inform
+ * The cross-session boundary. Returns the facts from archived sessions that may inform
  * the new session, or nothing.
  */
 function recallForSession(memory, optouts) {
-  if (optouts.has('d2')) {
+  if (optouts.has('cross_session')) {
     return {
       checkpoint: 'session_start',
-      subtype: 'D2',
+      scope: 'cross_session',
       status: 'blocked',
-      reason: REASONS.d2,
+      reason: REASONS.cross_session,
       archived_sessions_present: memory.archive.snapshot().entry_count,
       recalled_facts: {},
     };
@@ -116,7 +116,7 @@ function recallForSession(memory, optouts) {
   if (snap.entry_count === 0) {
     return {
       checkpoint: 'session_start',
-      subtype: 'D2',
+      scope: 'cross_session',
       status: 'nothing_to_recall',
       recalled_facts: {},
     };
@@ -125,7 +125,7 @@ function recallForSession(memory, optouts) {
   const facts = Object.assign({}, ...snap.entries.map(e => e.facts));
   return {
     checkpoint: 'session_start',
-    subtype: 'D2',
+    scope: 'cross_session',
     status: 'recalled',
     recalled_facts: facts,
     from_sessions: snap.entries.map(e => e.session_id),
@@ -135,17 +135,17 @@ function recallForSession(memory, optouts) {
 /**
  * synthesizeProfile(candidate, memory, optouts)
  *
- * The D3 boundary. Either writes the behavioral model or refuses to compress
+ * The profile boundary. Either writes the behavioral model or refuses to compress
  * the archive into one.
  */
 function synthesizeProfile(candidate, memory, optouts) {
-  if (optouts.has('d3')) {
+  if (optouts.has('profile')) {
     memory.profile.incrementBlocked();
     return {
       checkpoint: 'profile_synthesis',
-      subtype: 'D3',
+      scope: 'profile',
       status: 'blocked',
-      reason: REASONS.d3,
+      reason: REASONS.profile,
       would_have_synthesized: JSON.parse(JSON.stringify(candidate)),
     };
   }
@@ -153,7 +153,7 @@ function synthesizeProfile(candidate, memory, optouts) {
   if (memory.archive.isEmpty()) {
     return {
       checkpoint: 'profile_synthesis',
-      subtype: 'D3',
+      scope: 'profile',
       status: 'nothing_to_synthesize',
     };
   }
@@ -161,7 +161,7 @@ function synthesizeProfile(candidate, memory, optouts) {
   memory.profile.store(candidate);
   return {
     checkpoint: 'profile_synthesis',
-    subtype: 'D3',
+    scope: 'profile',
     status: 'synthesized',
     attributes: JSON.parse(JSON.stringify(candidate)),
   };
@@ -174,7 +174,7 @@ const curtain = require('../core/curtain.js');
 function traced(fn) {
   return (...args) => {
     const result = fn(...args);
-    curtain.verdict(result, `${result.subtype ?? ''} ${result.checkpoint ?? ''}`.trim());
+    curtain.verdict(result, `${result.scope ?? ''} ${result.checkpoint ?? ''}`.trim());
     return result;
   };
 }
@@ -184,6 +184,6 @@ module.exports = {
   endSession: traced(endSession),
   recallForSession: traced(recallForSession),
   synthesizeProfile: traced(synthesizeProfile),
-  VALID_SUBTYPES,
+  VALID_SCOPES,
   REASONS,
 };

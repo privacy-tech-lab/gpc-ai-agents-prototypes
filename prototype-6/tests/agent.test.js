@@ -19,21 +19,21 @@ describe('agent tool surface', () => {
   });
 });
 
-describe('the read_draft boundary fires the B1 checkpoint', () => {
-  test('without B1, the submission is logged as it crosses the boundary', async () => {
+describe('the read_draft boundary fires the input checkpoint', () => {
+  test('without the input opt-out, the submission is logged as it crosses the boundary', async () => {
     const stores = createStores();
     const log = [];
     const exec = agent.makeExecutor(stores, new Set(), log);
     await exec('read_draft', {});
-    expect(log[0].stage).toBe('B1');
+    expect(log[0].stage).toBe('input');
     expect(log[0].status).toBe('stored');
     expect(stores.inputLog.snapshot().entry_count).toBe(1);
   });
 
-  test('with B1 asserted, the submission crosses but is not retained', async () => {
+  test('with the input opt-out asserted, the submission crosses but is not retained', async () => {
     const stores = createStores();
     const log = [];
-    const exec = agent.makeExecutor(stores, gate.resolveOptouts({ scope: ['b1'] }), log);
+    const exec = agent.makeExecutor(stores, gate.resolveOptouts({ scope: ['input'] }), log);
     const result = await exec('read_draft', {});
     expect(log[0].status).toBe('discarded');
     expect(stores.inputLog.isEmpty()).toBe(true);

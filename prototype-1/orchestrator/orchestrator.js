@@ -42,7 +42,7 @@ async function shutdown() {
  * @param {string}  options.query
  * @param {string}  options.user_id
  * @param {string}  [options.secGpc]           — value of the Sec-GPC request header ('1' or absent)
- * @param {string}  [options.persistenceScope] — Category D tier ('d1' | 'd3'), only meaningful when secGpc is '1'
+ * @param {string}  [options.persistenceScope] — persistence scope ('session' | 'profile'), only meaningful when secGpc is '1'
  * @param {Array}   [options.timing]
  */
 async function handleRequest({ query, user_id, secGpc = '', persistenceScope, timing = [] }) {
@@ -60,7 +60,7 @@ async function handleRequest({ query, user_id, secGpc = '', persistenceScope, ti
   const { search, synthesis } = await getRuntime();
 
   // Agent 1: retrieval — reached over A2A; the LLM decides how many searches to run.
-  // Personalization consultation (Category D tiers) runs alongside it, before synthesis.
+  // Personalization consultation (persistence scopes) runs alongside it, before synthesis.
   curtain.hop('A2A', 'search-agent via Message.metadata', _meta);
   const [searchReply, personalization] = await Promise.all([
     callAgent({ baseUrl: search.url, text: query, metadata: _meta }),

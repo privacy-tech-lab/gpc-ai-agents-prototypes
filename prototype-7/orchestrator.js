@@ -3,18 +3,18 @@
 /**
  * orchestrator.js
  *
- * The scripted two-session run, walking every Category D checkpoint in
+ * The scripted two-session run, walking every persistence checkpoint in
  * time order:
  *
  *  1. Session 1: the user discloses facts, and Aria answers turn 2 using
  *     turn 1 context from the SAME session. Never gated; identical in every
  *     mode.
- *  2. Session 1 ends: the D1 boundary (archive or discard).
- *  3. Session 2 starts: the D2 boundary (recall the archive or start
+ *  2. Session 1 ends: the session boundary (archive or discard).
+ *  3. Session 2 starts: the cross-session boundary (recall the archive or start
  *     fresh). The recall outcome decides whether the restaurant answer is
  *     tailored or generic.
- *  4. Session 2 ends: the D1 boundary again.
- *  5. Profile synthesis: the D3 boundary.
+ *  4. Session 2 ends: the session boundary again.
+ *  5. Profile synthesis: the profile boundary.
  */
 
 const gate = require('./persistence_gate');
@@ -35,30 +35,30 @@ async function run({ gpc = false, scope = [] } = {}) {
   const session1Turn2Answer = s1.turns[1].assistant;
   checkpoints.push({
     checkpoint: 'in_session_context',
-    subtype: null,
+    scope: null,
     status: 'allowed',
     context_available: contextAvailable,
-    note: 'Same-session coherence is permitted in every mode, including D1.',
+    note: 'Same-session coherence is permitted in every mode, including the session scope.',
   });
 
-  // Session 1 ends: D1.
+  // Session 1 ends: session boundary.
   checkpoints.push(gate.endSession(s1, memory, optouts));
 
-  // Session 2 starts: D2.
+  // Session 2 starts: cross-session boundary.
   const recall = gate.recallForSession(memory, optouts);
   checkpoints.push(recall);
   const session2Answer =
     recall.status === 'recalled' ? s2.tailored_answer : s2.generic_answer;
 
-  // Session 2 ends: D1.
+  // Session 2 ends: session boundary.
   memory.setContext('facts', s2.facts_disclosed);
   checkpoints.push(gate.endSession(s2, memory, optouts));
 
-  // Profile synthesis: D3.
+  // Profile synthesis: profile boundary.
   checkpoints.push(gate.synthesizeProfile(fixture.getProfileSynthesis(), memory, optouts));
 
   return {
-    optouts: [...optouts].sort(),
+    optouts: gate.VALID_SCOPES.filter(s => optouts.has(s)),
     session1_turn2_answer: session1Turn2Answer,
     session2_answer: session2Answer,
     checkpoints,

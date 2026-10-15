@@ -1,5 +1,5 @@
 /**
- * E2 commitments — provider-side data-handling constraints.
+ * Provider commitments — provider-side data-handling constraints.
  *
  * These do not change what the provider can see (visibility is
  * structural and unaffected by the protocol). They constrain what the
@@ -55,7 +55,7 @@ function kAnonymity(k = 5) {
  * time. Laplace mechanism with scale 1/epsilon.
  *
  * NOTE: `Math.random()` is not a cryptographically secure PRNG. This
- * implementation is illustrative — it demonstrates the shape of the E2
+ * implementation is illustrative — it demonstrates the shape of the provider
  * commitment, not a deployable DP mechanism. A real implementation
  * would use `crypto.randomBytes` (or a vetted DP library) and audit
  * the floating-point rounding behavior described in Mironov, 2012.

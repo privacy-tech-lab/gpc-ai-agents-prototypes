@@ -24,112 +24,94 @@ This repo contains experimental prototypes exploring how the [Global Privacy Con
 
 ## 1. Prototypes
 
-| Prototype | Folder                     | What it enforces                                                   | Typology coverage                                                  |
-| --------- | -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| 1         | [prototype-1](prototype-1) | Tool-level blocking via an MCP interceptor                         | Category D, D1                                                     |
-| 2         | [prototype-2](prototype-2) | Secondary pipeline gating after the agent                          | Category C, C1 to C3                                               |
-| 3         | [prototype-3](prototype-3) | Consent-scoped tool registry                                       | Category A, A1 and A2                                              |
-| 4         | [prototype-4](prototype-4) | Signal propagation and the provider visibility gap                 | Addressees X1 and X2; B2a, S1, S2; mitigations touch C4, C3, B3    |
-| 5         | [prototype-5](prototype-5) | Inference firewall for derived attributes                          | Category B, B3                                                     |
-| 6         | [prototype-6](prototype-6) | Collection gate at input, behavioral, and derived boundaries       | Category B, B1 to B3                                               |
-| 7         | [prototype-7](prototype-7) | Retention boundaries at session end, recall, and profile synthesis | Category D, D1 to D3                                               |
-| 8         | [prototype-8](prototype-8) | Delegation tiering with a decline-by-default fallback              | Category E, E1                                                     |
+| Prototype | Folder                     | What it shows                                                       |
+| --------- | -------------------------- | ------------------------------------------------------------------- |
+| 1         | [prototype-1](prototype-1) | Tool-level blocking via an MCP interceptor                          |
+| 2         | [prototype-2](prototype-2) | Purpose-based gating of secondary pipelines after the agent answers |
+| 3         | [prototype-3](prototype-3) | Per-call consent checks for tools added after signup                |
+| 4         | [prototype-4](prototype-4) | Signal propagation and the provider visibility gap                  |
+| 5         | [prototype-5](prototype-5) | Inference firewall for derived attributes                           |
+| 6         | [prototype-6](prototype-6) | Collection gates for input, behavior, and derived data              |
+| 7         | [prototype-7](prototype-7) | Retention limits at session end, recall, and profile synthesis      |
+| 8         | [prototype-8](prototype-8) | Delegation tiers with a decline-by-default fallback                 |
 
 ### 1.1 Prototype 1: Tool-Level Blocking via MCP Interceptor
 
-**Scenario:** a user asks an AI assistant to plan a 5-day trip to Japan. The assistant searches the web, synthesizes an itinerary, and (without GPC) saves the result to the user's profile and syncs to a third-party vendor.
+**Scenario:** a user asks an AI assistant to plan a 5-day trip to Japan. A search agent and a synthesis agent (reached over A2A) research the trip and write an itinerary. Without GPC, the assistant also reads the user's past interactions and profile to personalize the answer, then saves the result to the user's profile and logs the interaction.
 
-**Enforcement:** the GPC signal is read from the `Sec-GPC` header and placed into a `_meta` envelope that travels with every MCP tool call. An interceptor at the MCP layer checks the envelope before each tool executes. Sensitive storage tools (`save_to_profile`, `log_interaction`) are blocked mid-call; the agent tries to invoke them and is stopped. Search still runs because it is not a sensitive tool.
+**How it works:** the GPC signal is read from the `Sec-GPC` header and placed into a `_meta` envelope that travels with every MCP tool call and A2A message. A `withGpc()` interceptor at the MCP layer checks the envelope before each tool runs. Sensitive tools (`user_profile_lookup`, `save_to_profile`, `log_interaction`) are blocked; `search_web` is not sensitive and always runs. An optional `persistence_scope` of `profile` lets the assistant read raw past interactions while still blocking the profile and all writes.
 
-**What it prevents:** the agent completing storage actions against user data.
-
-**What it does not prevent:** the agent from running or from returning an answer.
+**What it shows:** the agent tries to call the storage tools and is stopped mid-call, so nothing about the user is read from or written to storage. The answer is returned either way.
 
 See [prototype-1/README.md](prototype-1/README.md) for setup, demo, and test instructions.
 
-### 1.2 Prototype 2: Secondary Pipeline Gating After the Agent
+### 1.2 Prototype 2: Purpose-Based Gating After the Agent
 
 **Scenario:** a patient asks a medical assistant what their blood pressure reading means. The same interaction also feeds an analytics log, a model-training dataset, and a pharma ad-targeting platform.
 
-**Enforcement:** the agent runs to completion and the patient always gets an answer. After the agent finishes, the orchestrator fans out to secondary pipelines. A `withPurposeCheck` wrapper gates each pipeline against the GPC signal and the declared purpose of that pipeline. Full opt-out blocks all three; partial opt-out (via `gpc_scope`) lets the user block specific purposes while allowing others.
+**How it works:** the agent retrieves the patient's records over MCP and answers. That primary use is never gated. After the agent finishes, the orchestrator fans out to the three secondary pipelines, each tagged with a declared purpose (`analytics`, `model_training`, `ad_targeting`). Analytics and training are wrapped with `withPurposeCheck`; the ad platform runs the same check at its own HTTP boundary. A full GPC signal blocks all three. A partial opt-out (via `gpc_scope`) blocks only the listed purposes.
 
-**What it prevents:** secondary uses of the agent's output (analytics, training, ad targeting).
-
-**What it does not prevent:** the primary task. The retrieval tool and the answer are never gated.
+**What it shows:** the patient always gets an answer, while each secondary use of the conversation can be turned off on its own. The partial run blocks ad targeting and leaves analytics and training running.
 
 See [prototype-2/README.md](prototype-2/README.md) for setup, demo, and test instructions.
 
-### 1.3 Prototype 3: Consent-Scoped Tool Registry
+### 1.3 Prototype 3: Per-Call Consent for New Tools
 
 **Scenario:** a user consents to file access and web search when signing up for an AI productivity platform. A later platform update silently adds an email sender and a behavior tracker to the MCP server.
 
-**Enforcement:** before the agent starts, the tool registry filters the available catalog based on the user's consent state and GPC signal. Tools the user has not consented to are removed from the catalog. The agent never sees them and cannot call them. With GPC active, expansion tools added after signup are quarantined even if the user previously approved the platform.
+**How it works:** every tool call goes through `withConsentCheck()` before it reaches the MCP server. The check compares the tool's capability category against a versioned consent manifest. A tool from a category added after signup is quarantined: the call pauses and the user is asked to approve or decline. Declines are saved to disk, so a declined tool stays blocked through later platform updates. With GPC on, new non-primary categories are declined automatically with no prompt. Silent mode turns the check off to show what happens with no enforcement.
 
-**What it prevents:** the agent from accessing capabilities the user did not consent to, including tools added after initial consent.
-
-**What it does not prevent:** tools that were in scope at the time of consent.
+**What it shows:** without the check, new tools are callable the moment they ship. With it, they only run after the user approves, and with GPC they never run. The behavior tracker, which the platform fires on its own rather than the agent choosing it, goes through the same check.
 
 See [prototype-3/README.md](prototype-3/README.md) for setup, demo, and test instructions.
 
 ### 1.4 Prototype 4: Signal Propagation and the Provider Visibility Gap
 
-**Scenario:** a user asks an AI assistant to research the iPhone 17 across eight tech publishers simultaneously.
+**Scenario:** a user asks an AI assistant to research the iPhone 17 across eight tech publishers at once.
 
-**Enforcement:** the GPC signal travels in a W3C baggage header from the orchestrator through a provider middleware layer to each publisher. Sites with strict enforcement stop logging the visit. Sites with advisory enforcement stop writing to the visitor profile. Sites that do not support GPC track normally.
+**How it works:** the GPC signal enters as a W3C baggage header (or `Sec-GPC`) and rides in a `_meta` envelope. Every publisher call goes through a provider middleware layer, which logs the call and then forwards it over MCP. Each publisher applies its own enforcement level: strict sites stop logging the visit, advisory sites stop writing to the visitor profile, and sites without GPC support track normally. Extra modes show the provider applying data-handling commitments (`no_train`, k-anonymity, differential privacy noise), the provider stripping the signal before forwarding, and an 80-user simulation.
 
-**What it prevents:** tracking at individual publisher sites that honor the signal.
-
-**What it does not prevent:** the provider layer from observing every query. The provider sits between the user's agent and the publishers and records each fanout regardless of the GPC bit. This is the prototype's finding: GPC is addressed to destinations (X1 in the typology), but the provider is the orchestrator (X2), which sees every call across every site and every user. An opt-out honored at every X1 leaves the X2 view unchanged. The typology covers this with opt-outs asserted against X2 (such as B2a for the provider's log of delegated actions) and with two signal obligations: S1 (do not record the signal state) and S2 (forward the signal intact). Signal-drop mode shows an S2 violation, which makes every site's opt-out unenforceable.
+**What it shows:** publishers that honor GPC do stop tracking, but the provider's observation log is the same with GPC on or off. The provider sees every query, every publisher, and every user's GPC state, and can build interest profiles and GPC adoption stats from it. Commitments limit what the provider does with that view, not what it can see. If the provider strips the signal, no publisher can honor it.
 
 See [prototype-4/README.md](prototype-4/README.md) for setup, demo, and test instructions.
 
 ### 1.5 Prototype 5: Inference Firewall for Derived Attributes
 
-**Scenario:** a user runs eight ordinary search queries. Each query is fed through a classifier that infers personal attributes (health conditions, financial situation, employment status) without the user ever disclosing them explicitly.
+**Scenario:** a user runs eight ordinary search queries. A classifier reads each query and infers personal attributes (health conditions, financial situation, employment status) the user never disclosed.
 
-**Enforcement:** when the GPC B3 signal is active, the inference engine is replaced by a firewall that refuses to write derived attributes to the user profile. The agent still runs the same queries against the same sources. The difference is what the platform does internally with the traffic it observes: without GPC, it builds a profile; with GPC, the firewall blocks that step.
+**How it works:** with the GPC signal on, the inference engine is replaced by a firewall that refuses to write derived attributes to the user's profile. The classifier still runs, because it also produces the answer, and the firewall records what it would have written. In the live agent version, the firewall runs inside the search tool, so the model only ever sees the answer.
 
-**What it prevents:** the platform from accumulating an inferred profile from the user's query traffic.
-
-**What it does not prevent:** the queries from reaching external sources, or the platform from observing the queries themselves.
+**What it shows:** without GPC, eight queries leave eleven inferred attributes in a shadow profile. With GPC, the profile stays empty and all eight inferences are recorded as blocked. The answers are the same in both modes.
 
 See [prototype-5/README.md](prototype-5/README.md) for setup, demo, and test instructions.
 
-Prototypes 1 through 5 are each organized around one enforcement mechanism. Prototypes 6 through 8 are organized the other way, by the opt-out typology: one prototype per category, covering that category's subtypes exactly. They complement the first five rather than replacing them.
-
-### 1.6 Prototype 6: Collection
+### 1.6 Prototype 6: Collection Gates for Input, Behavior, and Derived Data
 
 **Scenario:** a user asks an AI writing assistant to polish one email to their manager about a raise. While composing, they deleted a sentence about treatment costs before submitting, paused 42 seconds over the salary line, and rewrote the opening three times.
 
-**Enforcement:** a collection gate at three boundaries. B1 (input): the submission completes the task and is then discarded instead of logged. B2 (behavioral): passively generated telemetry is suppressed. B3 (derived): the inference firewall blocks profile writes, with each attribute labeled by whether it came from submitted input or from behavior. A bare GPC signal asserts all three; a scope list asserts any subset.
+**How it works:** a collection gate sits at three points. Input: the submitted draft is used for the task, then discarded instead of logged. Behavior: the deletion, pause, and rewrites are not recorded. Derived: the inference firewall blocks profile writes, and each inferred attribute is labeled by whether it came from the submitted text or from behavior. A bare GPC signal turns on all three; a `--scope` list turns on any subset.
 
-**What it prevents:** the platform retaining what the user submitted, recording what they unknowingly produced, and writing inferences derived from either. Two of the four inferred attributes come from a sentence the user chose not to send.
-
-**What it does not prevent:** the task. The polished email is returned identically in every mode.
+**What it shows:** without opt-outs, one email leaves a stored draft, three telemetry events, and four inferred attributes, two of them drawn from a sentence the user chose not to send. With all three opt-outs, every store is empty and each suppression is recorded. Blocking input and behavior alone does not stop the inference, which is why the derived gate exists. The polished email is identical in every mode.
 
 See [prototype-6/README.md](prototype-6/README.md) for setup, demo, flowchart, and test instructions.
 
-### 1.7 Prototype 7: Persistence
+### 1.7 Prototype 7: Retention Limits Across Sessions
 
-**Scenario:** a user talks to Aria, a memory-enabled assistant, across two sessions. In session 1 they mention being vegetarian on a tight budget while asking for dinner recipes. Session 2 tests whether any of that carries forward.
+**Scenario:** a user talks to Aria, a memory-enabled assistant, across two sessions. In session 1 they mention being vegetarian on a tight budget while asking for dinner recipes. Session 2 asks for a restaurant and tests whether any of that carries forward.
 
-**Enforcement:** three retention boundaries. D1 (session scope): at session end, transcripts and disclosed facts are discarded instead of archived. D2 (cross-session scope): at session start, the archive exists but returns nothing to the new session. D3 (long-term profile scope): the synthesis step is skipped and sessions stay inert transcripts. The subtypes form a hierarchy, so a bare GPC signal asserts the strictest scope.
+**How it works:** a persistence gate sits at three points. `session`: at session end, transcripts and disclosed facts are discarded instead of archived. `cross_session`: at the start of a new session, the archive exists but returns nothing. `profile`: the step that turns past sessions into a behavioral profile is skipped. The scopes nest, so `session` also applies the other two and `cross_session` also applies `profile`. A bare GPC signal applies `session`.
 
-**What it prevents:** data surviving the session, past sessions informing future ones, and a durable behavioral model being built from what is retained.
-
-**What it does not prevent:** within-session coherence. Aria still uses what the user said earlier in the same session, in every mode including D1.
+**What it shows:** with no opt-outs, session 2 gets a tailored vegetarian suggestion and a profile is built. With `profile`, recall still works but no profile is built. With `cross_session`, Aria has to ask for preferences again. With `session`, nothing survives at all. Aria still uses what the user said earlier in the same session in every mode.
 
 See [prototype-7/README.md](prototype-7/README.md) for setup, demo, and test instructions.
 
-### 1.8 Prototype 8: Delegation
+### 1.8 Prototype 8: Delegation Tiers with Decline by Default
 
-**Scenario:** a user asks a travel agent to book a weekend trip. Finishing the job takes six actions: search flights, hold a hotel room, buy a non-refundable ticket with the card on file, send passport details to the airline, and around the session, enable fare tracking and a newsletter. The six are not equivalent in reversibility, sensitivity, or consequence.
+**Scenario:** a user asks a travel agent to book a weekend trip. Finishing the job takes six actions: search flights, hold a hotel room, buy a non-refundable ticket with the card on file, send passport details to the airline, and, around the session, enable fare tracking and a newsletter. The six differ in how reversible, sensitive, and costly they are.
 
-**Enforcement:** the user partitions actions into tiers and grants the agent standing in some while withholding it in others. A user assignment always beats the vendor's proposed tiering, and anything nobody assigned falls to the most restrictive treatment. The GPC signal does not set tiers; it voids the vendor's proposed ones, on the grounds that a global opt-out means consent to a tier may not be inferred from a platform default.
+**How it works:** each action is assigned a tier: `autonomous` (the agent may just do it) or `ask_user` (the user must approve). The user's own assignments always win over the vendor's proposed defaults, and any action nobody assigned is treated as `ask_user`. If no user is available to answer, an `ask_user` action is declined rather than assumed. The GPC signal voids the vendor's proposed defaults, so consent is never inferred from a platform default. Every action passes through the gate before it reaches the MCP server.
 
-**What it prevents:** the agent charging a card, sending passport data, enabling tracking, and subscribing the user, four actions it had no standing for.
-
-**What it does not prevent:** the searches and the hotel hold, which the user granted and which still run unattended.
+**What it shows:** the silent baseline charges the card, sends the passport, enables tracking, and subscribes the user, four actions the user never granted. With enforcement, those actions are surfaced for approval or declined, while the searches and the hotel hold still run on their own.
 
 See [prototype-8/README.md](prototype-8/README.md) for setup, demo, and test instructions.
 

@@ -1,4 +1,4 @@
-# Prototype 8: Delegation
+# Prototype 8: Delegation Gate
 Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism of opt-out in this prototype.
 
 ## What it demonstrates
@@ -7,11 +7,11 @@ A user asks a travel agent to book a weekend trip. To finish the job the agent h
 
 Those six actions are not equivalent. A flight search is reversible and costs nothing. A hotel hold with free cancellation is reversible. Charging a card is not (easy) reversible. Sending a passport number is not reversible, and the information is sensitive. "Let the agent book my trip" is not "let the agent spend my money and ship my identity documents."
 
-Category E lets the user partition actions into tiers and grant the agent standing in some while withholding it in others. The vendor may propose defaults, but the user's assignment overrides them, and where nobody assigned a tier the action falls to the most restrictive treatment. When no user is available to answer, a decision that needs them is declined rather than assumed.
+Prototype 8 lets the user partition actions into tiers and grant the agent standing in some while withholding it in others. The vendor may propose defaults, but the user's assignment overrides them, and where nobody assigned a tier the action falls to the most restrictive treatment. When no user is available to answer, a decision that needs them is declined rather than assumed.
 
-## Opt-out category depicted
+## Selective delegation
 
-This prototype implements **Category E (Delegation)** and its single subtype, **E1 (selective delegation)**: opting out of the agent resolving choices on the user's behalf, calibrated to reversibility, sensitivity, and magnitude of consequence.
+The opt-out here is selective delegation: the user opts out of the agent resolving certain choices on their behalf, calibrated to reversibility, sensitivity, and magnitude of consequence. Standing is granted per tier, never wholesale, and anything unassigned or unattended defaults to the most restrictive treatment.
 
 The GPC signal voids the vendor's *proposed* tiers, on the grounds that a global opt-out means consent to a delegation tier may not be inferred from a platform default. Explicit user assignments are untouched by it.
 
@@ -19,10 +19,10 @@ The GPC signal voids the vendor's *proposed* tiers, on the grounds that a global
 |---|---|---|---|---|---|---|
 | `search_flights` | yes | no | executed | executed | executed | executed |
 | `hold_reservation` | yes | no | executed | executed | executed | executed |
-| `book_flight` | no | no | executed (E1) | after approval | **declined** | **declined** |
-| `share_passport` | no | yes | executed (E1) | after approval | **declined** | **declined** |
-| `price_alerts_tracking` | yes | yes | executed (E1) | executed (vendor default) | executed (vendor default) | **declined** |
-| `newsletter_signup` | yes | no | executed (E1) | after approval | **declined** | **declined** |
+| `book_flight` | no | no | executed (violation) | after approval | **declined** | **declined** |
+| `share_passport` | no | yes | executed (violation) | after approval | **declined** | **declined** |
+| `price_alerts_tracking` | yes | yes | executed (violation) | executed (vendor default) | executed (vendor default) | **declined** |
+| `newsletter_signup` | yes | no | executed (violation) | after approval | **declined** | **declined** |
 
 ```mermaid
 flowchart TD
@@ -38,9 +38,8 @@ flowchart TD
     ANS -- "no" --> DU["declined_by_user\nnothing reaches the wire"]
     P -- "no user available" --> DR["declined\nreason: default_restrictive_no_user"]
 
-    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
-    class P,DR,DU category
-    E1["Category E1 (Selective delegation):\nstanding granted per tier, never wholesale;\nunassigned and unattended default to the\nmost restrictive treatment"]:::category -.-> P
+    classDef enforced fill:#5b8def,stroke:#2f5fce,color:#fff
+    class P,DR,DU enforced
 ```
 
 ---
@@ -60,7 +59,7 @@ prototype-8/
 ├── delegation_manifest.js   VENDOR_PROPOSAL, USER_ASSIGNMENTS, effectiveTier()
 ├── action_handlers.js       The six simulated action implementations
 ├── mcp_client.js            Real MCP client (stdio) — spawns mcp-server/server.js
-├── delegation_gate.js       requestAction(): the E1 enforcement seam
+├── delegation_gate.js       requestAction(): the delegation enforcement seam
 │
 ├── mcp-server/
 │   └── server.js            MCP server entry point (real @modelcontextprotocol/sdk Server, stdio);
@@ -68,8 +67,8 @@ prototype-8/
 │
 │  Deterministic core (no model — what the tests run):
 ├── orchestrator.js          run({silent, gpc, userPresent, respond}): all six actions in order
-├── run_baseline.js          Silent baseline — everything runs, four E1 violations
-├── run_optout.js            E1 enforced; --gpc, --unattended, --respond=decline
+├── run_baseline.js          Silent baseline: everything runs, four violations
+├── run_optout.js            Delegation enforced; --gpc, --unattended, --respond=decline
 │
 │  LLM agent path (requires Ollama):
 ├── agent_loop.js            Shared LLM turn loop (thin wrapper over core/agent_loop.js)
@@ -115,7 +114,7 @@ npm test
 ### Demo runs (deterministic, no model)
 
 ```bash
-npm run baseline            # vendor defaults as consent — four E1 violations
+npm run baseline            # vendor defaults as consent: four violations
 npm run optout              # attended, surfaced asks approved
 npm run optout:decline      # attended, surfaced asks declined
 npm run optout:unattended   # nobody available — surfaced asks declined, not assumed

@@ -10,11 +10,11 @@ The assistant searches the web, synthesises an itinerary, and (in a non-GPC worl
 
 ---
 
-## Opt-out categories depicted
+## Persistence scopes
 
-Architecture A implements **Category D (Persistence)**, across two mechanisms with different tiers. `storage.js` enforces **D1 (session scope)**: `save_to_profile`, `log_interaction`, and its own `user_profile_lookup` call are all blocked whenever `gpc=1` is present, regardless of `persistence_scope`, so nothing written survives past the interaction. `personalization.js` adds the read-side distinction, consulted before synthesis runs: `get_interaction_history` needs `persistence_scope: 'd3'` (**D3**, long-term profile scope) or it is blocked, and its own `user_profile_lookup` call needs no GPC signal at all (baseline). Asserting `persistence_scope` changes what personalization consults; it does not loosen what storage writes.
+The prototype enforces persistence limits in two places. `storage.js` handles writes: `save_to_profile`, `log_interaction`, and its own `user_profile_lookup` call are all blocked whenever `gpc=1` is present, regardless of `persistence_scope`, so nothing written survives past the interaction. `personalization.js` handles reads, consulted before synthesis runs: `get_interaction_history` needs `persistence_scope: 'profile'` (the user opted out of the long-term profile only) or it is blocked, and its own `user_profile_lookup` call needs no GPC signal at all (baseline). With GPC on and no scope given, the default is `'session'`: nothing persists and nothing is consulted. Asserting `persistence_scope` changes what personalization consults; it does not loosen what storage writes.
 
-Only D1 and D3 are modeled. D2 (cross-session scope) is left out on purpose: its defining feature is a within-session/cross-session split, retain during this session, but do not carry it into a future one, and this prototype has no within-session state for that split to apply to. Each call (see `harness/run_scope_check.js`) is a single, independent request/response against the same seeded user, with no server-side session in between. There is no finer-grained session boundary here for D2 to act on, so it is not part of this demo.
+Only the `session` and `profile` scopes are modeled. A cross-session scope is left out on purpose: its defining feature is a within-session/cross-session split, retain during this session, but do not carry it into a future one, and this prototype has no within-session state for that split to apply to. Each call (see `harness/run_scope_check.js`) is a single, independent request/response against the same seeded user, with no server-side session in between. There is no finer-grained session boundary here for a cross-session scope to act on, so it is not part of this demo.
 
 ```mermaid
 flowchart TD
@@ -23,8 +23,8 @@ flowchart TD
     SA -- "MCP _meta.gpc" --> TS["search_web\n(not sensitive)"]
     TS --> SA
     O -- "_meta" --> PC["personalization.js\nbuildPersonalizationContext(), runs alongside search"]
-    PC --> H{"Category D3 check:\ngpc on and scope\nnot d3?"}
-    H -- "yes" --> HBLK["get_interaction_history: blocked\n(needs persistence_scope = d3)"]
+    PC --> H{"gpc on and scope\nnot profile?"}
+    H -- "yes" --> HBLK["get_interaction_history: blocked\n(needs persistence_scope = profile)"]
     H -- "no" --> HOK["get_interaction_history: ok"]
     PC --> P{"gpc on?"}
     P -- "yes" --> PBLK["user_profile_lookup: blocked"]
@@ -35,7 +35,7 @@ flowchart TD
     O --> ST["storage.js"]
     ST -- "MCP _meta.gpc" --> G{"gpc = 1?"}
     G -- "no" --> W["save_to_profile\nlog_interaction\nuser_profile_lookup\nstatus: ok"]
-    G -- "yes" --> B["Category D1 (session scope):\nwithGpc() interceptor blocks\nnothing survives past this interaction"]
+    G -- "yes" --> B["withGpc() interceptor blocks\nnothing survives past this interaction"]
     W --> R["Answer returned to user\n(identical either way)"]
     B --> R
     HOK --> R
@@ -43,8 +43,8 @@ flowchart TD
     POK --> R
     PBLK --> R
 
-    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
-    class B,H,HBLK,PBLK category
+    classDef enforced fill:#5b8def,stroke:#2f5fce,color:#fff
+    class B,H,HBLK,PBLK enforced
 ```
 
 ---
@@ -64,7 +64,7 @@ flowchart TD
 
 ### Supporting services
 
-**Personalization** (`services/personalization.js`): Deterministic, no LLM. Reads (not writes) past user data, gated at two different Category D boundaries as described above. Runs before the synthesis agent, in parallel with the search agent call.
+**Personalization** (`services/personalization.js`): Deterministic, no LLM. Reads (not writes) past user data, gated at two different persistence boundaries as described above. Runs before the synthesis agent, in parallel with the search agent call.
 
 **Storage** (`services/storage.js`): Calls three storage operations in fixed order over the real MCP client. MCP-sensitive writes are double-guarded: explicit code check plus `withGpc()` interceptor at the MCP layer.
 
@@ -87,8 +87,8 @@ prototype-1/
 │   └── synthesis_agent_server.js    A2A server (Express + DefaultRequestHandler) for the synthesis agent
 │
 ├── services/
-│   ├── personalization.js  Reads get_interaction_history (D3) and user_profile_lookup (baseline)
-│   └── storage.js          Storage: profile, log, GPC-gated via code + MCP (D1)
+│   ├── personalization.js  Reads get_interaction_history ('profile' scope) and user_profile_lookup (baseline)
+│   └── storage.js          Storage: profile, log, GPC-gated via code + MCP
 │
 ├── mcp-server/
 │   ├── server.js           MCP server entry point (real @modelcontextprotocol/sdk Server, stdio)
@@ -100,12 +100,12 @@ prototype-1/
 │   ├── run_gpc.js              Demo run: GPC on, sensitive tools blocked (_meta)
 │   ├── compare_results.js      Diff baseline vs GPC run, print report
 │   ├── seed_demo.js            Seed user-42 profile and interaction log
-│   ├── run_scope_check.js      One request at a given persistence scope (--scope=d1|d3, or baseline)
+│   ├── run_scope_check.js      One request at a given persistence scope (--scope=session|profile, or baseline)
 │   └── compare_scope_check.js  Diff the three scope-check runs, print the resulting permission table
 │
 ├── tests/
 │   ├── gpc_policy.test.js       withGpc() and isAllowed() blocking, passthrough, signal formats
-│   ├── personalization.test.js  buildPersonalizationContext() across baseline, d1, d3
+│   ├── personalization.test.js  buildPersonalizationContext() across baseline, session, profile
 │   ├── orchestrator.test.js     Full pipeline integration; LLM agents mocked
 │   └── agent_loop.test.js       LLM loop: tool_choice, nudge, arg parsing, errors
 │
@@ -140,7 +140,7 @@ LLM agents are mocked in `orchestrator.test.js` so no Ollama instance is needed.
 | Test file | What it covers |
 |---|---|
 | `gpc_policy.test.js` | `withGpc()` blocking, passthrough, all GPC signal formats (`1`, `true`, `"1"`) |
-| `personalization.test.js` | `buildPersonalizationContext()`: baseline, d1, d3, and blocked timing entries |
+| `personalization.test.js` | `buildPersonalizationContext()`: baseline, session, profile, and blocked timing entries |
 | `orchestrator.test.js` | Full pipeline: Layer 1 and 2 assertions, timing, storage tested directly |
 | `agent_loop.test.js` | Shared LLM loop: `tool_choice` switching, nudge, arg parsing |
 
@@ -186,8 +186,8 @@ TAVILY_API_KEY=tvly-... npm run demo
 
 ```bash
 node harness/run_scope_check.js                 # baseline: full continuity
-node harness/run_scope_check.js --scope=d3      # raw history ok, no synthesized profile
-node harness/run_scope_check.js --scope=d1      # nothing persists, nothing consulted
+node harness/run_scope_check.js --scope=profile # raw history ok, no synthesized profile
+node harness/run_scope_check.js --scope=session # nothing persists, nothing consulted
 node harness/compare_scope_check.js             # print the three-run comparison table
 ```
 

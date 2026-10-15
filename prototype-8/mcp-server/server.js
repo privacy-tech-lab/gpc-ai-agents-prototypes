@@ -73,7 +73,7 @@ const TOOL_NAMES = new Set(TOOL_DEFINITIONS.map(t => t.name));
 
 async function main() {
   const server = new Server(
-    { name: 'category-e-action-server', version: '1.0.0' },
+    { name: 'delegation-action-server', version: '1.0.0' },
     { capabilities: { tools: {} } }
   );
 

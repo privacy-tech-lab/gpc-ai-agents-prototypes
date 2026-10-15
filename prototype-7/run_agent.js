@@ -7,10 +7,10 @@
  * is decided by the persistence gate behind the recall_memory tool. Flags set
  * the enforcement config; the model never controls them.
  *
- *   node run_agent.js                 # no opt-outs: tailored suggestion
- *   node run_agent.js --gpc           # strictest (d1): clean slate
- *   node run_agent.js --scope=d2      # archive exists, recall refused
- *   node run_agent.js --scope=d3      # recall works, no profile synthesis
+ *   node run_agent.js                       # no opt-outs: tailored suggestion
+ *   node run_agent.js --gpc                 # strictest (session): clean slate
+ *   node run_agent.js --scope=cross_session # archive exists, recall refused
+ *   node run_agent.js --scope=profile       # recall works, no profile synthesis
  *
  * Needs Ollama running (`ollama serve`) with the model pulled
  * (`ollama pull qwen2.5:14b`). Override with OLLAMA_MODEL.
@@ -29,8 +29,8 @@ async function main() {
   const scopeArg = process.argv.find(a => a.startsWith('--scope='));
   const scope = scopeArg ? scopeArg.split('=')[1].split(',').filter(Boolean) : [];
 
-  const label = scope.length > 0 ? `scope: ${scope.join(',')}` : gpc ? 'GPC: on (d1)' : 'no opt-outs';
-  console.log(`=== Category D (Persistence): LLM agent | ${label} ===`);
+  const label = scope.length > 0 ? `scope: ${scope.join(',')}` : gpc ? 'GPC: on (session)' : 'no opt-outs';
+  console.log(`=== Persistence: LLM agent | ${label} ===`);
   console.log('A real model asks the persistence gate what it may remember.\n');
 
   const { agentResult, checkpoints, memory_snapshot } = await agent.runSession({ gpc, scope });

@@ -3,7 +3,7 @@
 /**
  * agent.js
  *
- * The LLM-driven version of the Category E prototype. A real model plays
+ * The LLM-driven version of the delegation prototype. A real model plays
  * TripPilot: it plans the trip and calls the task tools it thinks the job
  * needs. Every call runs through the delegation gate; the model proposes,
  * the manifest disposes. A declined action comes back as that call's
@@ -13,7 +13,7 @@
  * price_alerts_tracking and newsletter_signup are deliberately NOT agent
  * tools. They are platform actions fired around the session; a user-task
  * agent would not choose them. They pass through the same gate, which is
- * where the vendor-default and unassigned paths of E1 show up.
+ * where the vendor-default and unassigned paths show up.
  *
  * The deterministic orchestrator.js / run_baseline.js / run_optout.js
  * remain the testable core; this module is the live-agent demo path

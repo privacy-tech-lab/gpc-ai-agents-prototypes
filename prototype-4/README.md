@@ -12,26 +12,26 @@ Prototype 4 introduces a **provider middleware** (`provider/provider.js`) that s
 
 **Result:** in baseline mode every site logs and writes a profile entry. In GPC mode the strict sites suppress both, but the provider observation log is substantively identical to baseline. In mitigated mode the provider applies data-handling commitments (`no_train`, `k`-anonymity, DP noise). These do not change what the provider can see; they constrain what it does with what it sees. In signal-drop mode the provider acts as adversary and strips `_meta` before forwarding, surfacing the property that a hostile provider can silently nullify enforcement at every destination while retaining full visibility itself.
 
-## Opt-out categories depicted
+## What the provider sees
 
-Prototype 4's core finding is that the provider's view does not shrink, no matter how well sites enforce GPC. The typology now covers this through its **opt-out addressees** axis. Every opt-out is a pair: an object (what is opted out of) and an addressee (who it is directed to).
+Prototype 4's core finding is that the provider's view does not shrink, no matter how well sites enforce GPC. Two parties are involved:
 
-- **X1 (Destination):** the eight publishers. GPC as it exists today is addressed here, and each publisher sees only the call routed to it. Strict and advisory sites honor the signal, but the user cannot see their servers, so this is a **D (Degraded)** opt-out.
-- **X2 (Orchestrator):** the provider middleware. It carries the signal rather than receiving it, and it sees every call, across every publisher, for every user. An opt-out honored at every X1 leaves the X2 view unchanged, which is why compliance has to be checked per addressee. In this prototype the user's signal is only addressed to X1, so nothing constrains X2.
+- **The publishers (destinations).** GPC as it exists today is addressed here, and each publisher sees only the call routed to it. Strict and advisory sites honor the signal, but the user cannot see their servers to confirm it.
+- **The provider (orchestrator).** It carries the signal rather than receiving it, and it sees every call, across every publisher, for every user. An opt-out honored at every publisher leaves the provider's view unchanged, so compliance has to be checked for each party separately. In this prototype the user's signal is only addressed to the publishers, so nothing constrains the provider.
 
-What the provider does with that view maps to object categories and signal obligations asserted against X2:
+What the provider does with that view:
 
-| Provider behavior | Where it maps |
+| Provider behavior | What it means |
 |---|---|
-| Logs which publishers it called, in what order, and the sub-queries it wrote | **B2a (delegated action collection)** |
-| Records the GPC state of every call and computes adoption rates and topic-by-GPC matrices | Violates **S1 (signal confidentiality)** |
-| Builds per-user interest profiles from the observation log | **B3 (derived collection)**, and **D3 (long-term profile scope)** across sessions |
-| Strips `_meta` before forwarding (signal-drop mode) | Violates **S2 (signal propagation)**. Each publisher's opt-out drops to **U (Unenforceable)**, however well the site behaves (the weakest-link rule) |
-| Fans the query out to eight publishers | **C4 (sharing restriction)**: how far a query travels across connected systems |
-| `do_not_train` tag (mitigated mode) | **C3 (data repurposing restriction)** |
-| k-anonymity on interest profiles (mitigated mode) | **B3 (derived collection)**, suppressing profiles below a cohort threshold |
+| Logs which publishers it called, in what order, and the sub-queries it wrote | Collects a record of the actions it took on the user's behalf |
+| Records the GPC state of every call and computes adoption rates and topic-by-GPC matrices | Treats the opt-out signal itself as data to keep and analyze |
+| Builds per-user interest profiles from the observation log | Derives new information about the user and keeps it across sessions |
+| Strips `_meta` before forwarding (signal-drop mode) | Each publisher never sees the opt-out, so none of them can honor it, however well the site behaves |
+| Fans the query out to eight publishers | Controls how far the query travels across connected systems |
+| `do_not_train` tag (mitigated mode) | Limits reuse of the logged data for model training |
+| k-anonymity on interest profiles (mitigated mode) | Suppresses interest profiles below a cohort threshold |
 
-One part of the finding is still outside the typology. The cross-user derivations in `npm run aggregate` are aggregate harms, and the typology's limitations note it has "no frame for cumulative or aggregate harms." S1 covers recording the signal state, but not the wider systemic effect of one party seeing the union of all users' traffic.
+The cross-user derivations in `npm run aggregate` go further than any single user's opt-out can reach: they show one party seeing the union of all users' traffic, which is an aggregate effect rather than a per-user one.
 
 ```mermaid
 flowchart TD
@@ -39,14 +39,11 @@ flowchart TD
     O -- "fanout(query, site_ids, _meta)" --> P["provider.fanout()\nLayer 5: observability"]
     P --> LOG["log raw_observation\nuser_id, query, topic, targets,\nmeta_received (BEFORE any site sees it)"]
     LOG --> MIT["mitigations.apply()"]
-    MIT -.-> C3["Category C3 (Repurposing):\ndo_not_train tag"]:::category
-    MIT -.-> B3["Category B3 (Derived collection):\nk-anon suppresses interest profile"]:::category
     MIT --> MITM{"mitm = true?"}
     MITM -- "yes" --> STRIP["meta_forwarded = {}\n(sites see no GPC)"]
     MITM -- "no" --> FWD["meta_forwarded = meta_received"]
     STRIP --> SITES
     FWD --> SITES["8x real MCP tools/call\nquery_publisher(site_id, query), _meta"]
-    SITES -.-> C4["Category C4 (Sharing):\nhow far the query travels"]:::category
     SITES --> DEC{"each site's own\nenforcement level"}
     DEC -- "strict + gpc" --> NOLOG["logged: false"]
     DEC -- "advisory + gpc" --> PARTIAL["logged: true, profile_write: false"]
@@ -56,10 +53,10 @@ flowchart TD
     FULL --> RES
     RES --> ANS["Answer to user\n(identical regardless of GPC)"]
 
-    NOTE["provider_view is field-for-field identical\nwhether GPC was on or off:\nGPC reaches X1 (sites), not X2 (provider)"] -.-> LOG
+    NOTE["provider_view is field-for-field identical\nwhether GPC was on or off:\nGPC reaches the sites, not the provider"] -.-> LOG
 
-    classDef category fill:#5b8def,stroke:#2f5fce,color:#fff
-    class MIT,SITES category
+    classDef enforced fill:#5b8def,stroke:#2f5fce,color:#fff
+    class MIT,SITES enforced
 ```
 
 ## Protocol compliance

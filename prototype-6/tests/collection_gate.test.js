@@ -1,12 +1,12 @@
 /**
- * Unit tests for collection_gate.js, the Category B enforcement seam.
+ * Unit tests for collection_gate.js, the collection enforcement seam.
  *
  * Covers:
- *  - resolveOptouts: bare GPC asserts all three subtypes; a scope list
+ *  - resolveOptouts: bare GPC asserts all three scopes; a scope list
  *    asserts exactly that subset; invalid names are dropped
- *  - B1: submissions are stored by default and discarded under the opt-out
- *  - B2: telemetry is recorded by default and suppressed under the opt-out
- *  - B3: inference is written by default and blocked by the firewall,
+ *  - Input: submissions are stored by default and discarded under the opt-out
+ *  - Behavior: telemetry is recorded by default and suppressed under the opt-out
+ *  - Derived: inference is written by default and blocked by the firewall,
  *    recording what would have been written and its sources
  *  - Subtype independence: asserting one leaves the other two collecting
  */
@@ -31,69 +31,69 @@ describe('resolveOptouts', () => {
     expect(gate.resolveOptouts({})).toEqual(new Set());
   });
 
-  test('bare GPC asserts the whole category', () => {
-    expect(gate.resolveOptouts({ gpc: true })).toEqual(new Set(['b1', 'b2', 'b3']));
+  test('bare GPC asserts all three scopes', () => {
+    expect(gate.resolveOptouts({ gpc: true })).toEqual(new Set(['input', 'behavior', 'derived']));
   });
 
   test('a scope list asserts exactly that subset', () => {
-    expect(gate.resolveOptouts({ scope: ['b2', 'b3'] })).toEqual(new Set(['b2', 'b3']));
+    expect(gate.resolveOptouts({ scope: ['behavior', 'derived'] })).toEqual(new Set(['behavior', 'derived']));
   });
 
   test('scope narrows GPC when both are present', () => {
-    expect(gate.resolveOptouts({ gpc: true, scope: ['b3'] })).toEqual(new Set(['b3']));
+    expect(gate.resolveOptouts({ gpc: true, scope: ['derived'] })).toEqual(new Set(['derived']));
   });
 
-  test('invalid subtype names are dropped', () => {
-    expect(gate.resolveOptouts({ scope: ['b3', 'b9', 'x'] })).toEqual(new Set(['b3']));
+  test('invalid scope names are dropped', () => {
+    expect(gate.resolveOptouts({ scope: ['derived', 'bogus', 'x'] })).toEqual(new Set(['derived']));
   });
 });
 
-describe('B1: input collection', () => {
-  test('submission is stored when B1 is not asserted', () => {
+describe('input collection', () => {
+  test('submission is stored when the input opt-out is not asserted', () => {
     const result = gate.collectInput(session, stores, new Set());
     expect(result.status).toBe('stored');
     expect(stores.inputLog.snapshot().entry_count).toBe(1);
     expect(stores.inputLog.snapshot().entries[0].draft_text).toBe(session.draft_text);
   });
 
-  test('submission is discarded when B1 is asserted', () => {
-    const result = gate.collectInput(session, stores, new Set(['b1']));
+  test('submission is discarded when the input opt-out is asserted', () => {
+    const result = gate.collectInput(session, stores, new Set(['input']));
     expect(result.status).toBe('discarded');
-    expect(result.reason).toBe('b1_input_optout');
+    expect(result.reason).toBe('input_optout');
     expect(stores.inputLog.isEmpty()).toBe(true);
     expect(stores.inputLog.snapshot().blocked_count).toBe(1);
   });
 
   test('the discarded record shows what would have been stored', () => {
-    const result = gate.collectInput(session, stores, new Set(['b1']));
+    const result = gate.collectInput(session, stores, new Set(['input']));
     expect(result.would_have_stored.draft_text).toBe(session.draft_text);
     expect(result.would_have_stored.instruction).toBe(session.instruction);
   });
 });
 
-describe('B2: behavioral collection', () => {
-  test('telemetry is recorded when B2 is not asserted', () => {
+describe('behavioral collection', () => {
+  test('telemetry is recorded when the behavior opt-out is not asserted', () => {
     const result = gate.collectBehavior(session.telemetry[0], stores, new Set());
     expect(result.status).toBe('recorded');
     expect(stores.behaviorLog.snapshot().entry_count).toBe(1);
   });
 
-  test('telemetry is suppressed when B2 is asserted', () => {
-    const result = gate.collectBehavior(session.telemetry[0], stores, new Set(['b2']));
+  test('telemetry is suppressed when the behavior opt-out is asserted', () => {
+    const result = gate.collectBehavior(session.telemetry[0], stores, new Set(['behavior']));
     expect(result.status).toBe('suppressed');
-    expect(result.reason).toBe('b2_behavioral_optout');
+    expect(result.reason).toBe('behavioral_optout');
     expect(stores.behaviorLog.isEmpty()).toBe(true);
     expect(stores.behaviorLog.snapshot().blocked_count).toBe(1);
   });
 
   test('the suppressed record shows what would have been recorded', () => {
-    const result = gate.collectBehavior(session.telemetry[0], stores, new Set(['b2']));
+    const result = gate.collectBehavior(session.telemetry[0], stores, new Set(['behavior']));
     expect(result.would_have_recorded.event).toBe('sentence_deleted');
   });
 });
 
-describe('B3: derived collection', () => {
-  test('attributes are written when B3 is not asserted', () => {
+describe('derived collection', () => {
+  test('attributes are written when the derived opt-out is not asserted', () => {
     const result = gate.deriveProfile(session.draft_id, classified, stores, new Set());
     expect(result.status).toBe('derived');
     const snap = stores.derivedProfile.snapshot();
@@ -101,25 +101,25 @@ describe('B3: derived collection', () => {
     expect(snap.attributes.health_flags).toContain('ongoing_medical_treatment');
   });
 
-  test('the firewall blocks the write when B3 is asserted', () => {
-    const result = gate.deriveProfile(session.draft_id, classified, stores, new Set(['b3']));
+  test('the firewall blocks the write when the derived opt-out is asserted', () => {
+    const result = gate.deriveProfile(session.draft_id, classified, stores, new Set(['derived']));
     expect(result.status).toBe('blocked');
-    expect(result.reason).toBe('b3_inference_firewall');
+    expect(result.reason).toBe('inference_firewall');
     expect(stores.derivedProfile.isEmpty()).toBe(true);
     expect(stores.derivedProfile.snapshot().blocked_count).toBe(1);
   });
 
   test('the blocked record shows what would have been written and its sources', () => {
-    const result = gate.deriveProfile(session.draft_id, classified, stores, new Set(['b3']));
+    const result = gate.deriveProfile(session.draft_id, classified, stores, new Set(['derived']));
     expect(result.would_have_written.undisclosed_health_severity).toBe(true);
     expect(result.attribute_sources.undisclosed_health_severity).toBe('behavior');
     expect(result.attribute_sources.health_flags).toBe('input');
   });
 });
 
-describe('subtype independence', () => {
-  test('asserting B1 alone leaves B2 and B3 collecting', () => {
-    const optouts = new Set(['b1']);
+describe('scope independence', () => {
+  test('asserting input alone leaves behavior and derived collecting', () => {
+    const optouts = new Set(['input']);
     gate.collectInput(session, stores, optouts);
     gate.collectBehavior(session.telemetry[0], stores, optouts);
     gate.deriveProfile(session.draft_id, classified, stores, optouts);
@@ -128,8 +128,8 @@ describe('subtype independence', () => {
     expect(stores.derivedProfile.isEmpty()).toBe(false);
   });
 
-  test('asserting B3 alone leaves B1 and B2 collecting', () => {
-    const optouts = new Set(['b3']);
+  test('asserting derived alone leaves input and behavior collecting', () => {
+    const optouts = new Set(['derived']);
     gate.collectInput(session, stores, optouts);
     gate.collectBehavior(session.telemetry[0], stores, optouts);
     gate.deriveProfile(session.draft_id, classified, stores, optouts);
@@ -138,8 +138,8 @@ describe('subtype independence', () => {
     expect(stores.derivedProfile.isEmpty()).toBe(true);
   });
 
-  test('asserting B1 and B2 does not block B3 derivation from transient task data', () => {
-    const optouts = new Set(['b1', 'b2']);
+  test('asserting input and behavior does not block inference from transient task data', () => {
+    const optouts = new Set(['input', 'behavior']);
     gate.collectInput(session, stores, optouts);
     gate.collectBehavior(session.telemetry[0], stores, optouts);
     const result = gate.deriveProfile(session.draft_id, classified, stores, optouts);

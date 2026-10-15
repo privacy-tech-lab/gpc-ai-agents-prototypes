@@ -3,15 +3,15 @@
 /**
  * agent.js
  *
- * The LLM-driven version of the Category B prototype. A real model plays
+ * The LLM-driven version of the collection prototype. A real model plays
  * ComposeMate: it reads the user's draft through a tool and writes the
  * polished email itself.
  *
  * Collection is NOT the model's business, and the gate is not in the prompt.
  * The platform collects around the session:
- *  - B1 when the submission crosses the tool boundary (read_draft),
- *  - B2 from composition telemetry the platform observed,
- *  - B3 by running the classifier after the session.
+ *  - the input checkpoint when the submission crosses the tool boundary (read_draft),
+ *  - the behavior checkpoint from composition telemetry the platform observed,
+ *  - the derived checkpoint by running the classifier after the session.
  * The model only ever sees the instruction and draft text. It never sees the
  * telemetry, the stores, or the inferred attributes, so it cannot route
  * around the gate.
@@ -44,7 +44,7 @@ accordingly. Reply with the polished email text only.`;
 
 /**
  * makeExecutor: the tool boundary. When the model reads the draft, the
- * submission has crossed into the platform, so the B1 checkpoint fires here.
+ * submission has crossed into the platform, so the input checkpoint fires here.
  * The model receives only the task material.
  */
 function makeExecutor(stores, optouts, collectionLog) {
@@ -73,19 +73,19 @@ async function runSession({ gpc = false, scope = [] } = {}) {
     executeToolFn: makeExecutor(stores, optouts, collectionLog),
   });
 
-  // B2: telemetry the platform observed while the user composed the draft.
+  // Behavior: telemetry the platform observed while the user composed the draft.
   for (const event of session.telemetry) {
     collectionLog.push(gate.collectBehavior(event, stores, optouts));
   }
 
-  // B3: post-session inference over whatever the platform gathered.
+  // Derived: post-session inference over whatever the platform gathered.
   const classified = await classifier.classify(session.draft_id);
   collectionLog.push(gate.deriveProfile(session.draft_id, classified, stores, optouts));
 
   return {
     agentResult,
     collectionLog,
-    optouts: [...optouts].sort(),
+    optouts: gate.VALID_SCOPES.filter(s => optouts.has(s)),
     stores_snapshot: {
       input_log: stores.inputLog.snapshot(),
       behavior_log: stores.behaviorLog.snapshot(),

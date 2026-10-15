@@ -1,6 +1,6 @@
 /**
  * Integration tests for orchestrator.js: the full session in baseline mode,
- * under the whole-category GPC signal, and under each single-subtype scope.
+ * under the full GPC signal, and under each single scope.
  */
 
 const orchestrator = require('../orchestrator');
@@ -18,9 +18,9 @@ describe('baseline: no opt-outs', () => {
     run = await orchestrator.run({});
   });
 
-  test('produces five stage records: one B1, three B2, one B3', async () => {
+  test('produces five stage records: one input, three behavior, one derived', async () => {
     const stages = run.stages.map(s => s.stage);
-    expect(stages).toEqual(['B1', 'B2', 'B2', 'B2', 'B3']);
+    expect(stages).toEqual(['input', 'behavior', 'behavior', 'behavior', 'derived']);
   });
 
   test('everything is collected', () => {
@@ -41,14 +41,14 @@ describe('baseline: no opt-outs', () => {
   });
 });
 
-describe('GPC: the whole category asserted', () => {
+describe('GPC: all three scopes asserted', () => {
   let run;
   beforeEach(async () => {
     run = await orchestrator.run({ gpc: true });
   });
 
-  test('all three subtypes are active', () => {
-    expect(run.optouts).toEqual(['b1', 'b2', 'b3']);
+  test('all three scopes are active', () => {
+    expect(run.optouts).toEqual(['input', 'behavior', 'derived']);
   });
 
   test('nothing is collected', () => {
@@ -74,17 +74,17 @@ describe('GPC: the whole category asserted', () => {
   });
 });
 
-describe('single-subtype scopes', () => {
-  test('b1 only: submission discarded, behavior and profile still collected', async () => {
-    const run = await orchestrator.run({ scope: ['b1'] });
+describe('single scopes', () => {
+  test('input only: submission discarded, behavior and profile still collected', async () => {
+    const run = await orchestrator.run({ scope: ['input'] });
     const s = run.stores_snapshot;
     expect(s.input_log.entry_count).toBe(0);
     expect(s.behavior_log.entry_count).toBe(3);
     expect(s.derived_profile.attribute_count).toBe(4);
   });
 
-  test('b2 only: telemetry suppressed, submission and profile still collected', async () => {
-    const run = await orchestrator.run({ scope: ['b2'] });
+  test('behavior only: telemetry suppressed, submission and profile still collected', async () => {
+    const run = await orchestrator.run({ scope: ['behavior'] });
     const s = run.stores_snapshot;
     expect(s.input_log.entry_count).toBe(1);
     expect(s.behavior_log.entry_count).toBe(0);
@@ -92,8 +92,8 @@ describe('single-subtype scopes', () => {
     expect(s.derived_profile.attribute_count).toBe(4);
   });
 
-  test('b3 only: profile empty, submission and telemetry still collected', async () => {
-    const run = await orchestrator.run({ scope: ['b3'] });
+  test('derived only: profile empty, submission and telemetry still collected', async () => {
+    const run = await orchestrator.run({ scope: ['derived'] });
     const s = run.stores_snapshot;
     expect(s.input_log.entry_count).toBe(1);
     expect(s.behavior_log.entry_count).toBe(3);
@@ -101,15 +101,15 @@ describe('single-subtype scopes', () => {
     expect(s.derived_profile.blocked_count).toBe(1);
   });
 
-  test('b3 blocked record names the behavior-sourced attributes it stopped', async () => {
-    const run = await orchestrator.run({ scope: ['b3'] });
-    const b3 = run.stages.find(s => s.stage === 'B3');
-    expect(b3.would_have_written.undisclosed_health_severity).toBe(true);
-    expect(b3.attribute_sources.undisclosed_health_severity).toBe('behavior');
+  test('derived blocked record names the behavior-sourced attributes it stopped', async () => {
+    const run = await orchestrator.run({ scope: ['derived'] });
+    const derived = run.stages.find(s => s.stage === 'derived');
+    expect(derived.would_have_written.undisclosed_health_severity).toBe(true);
+    expect(derived.attribute_sources.undisclosed_health_severity).toBe('behavior');
   });
 
-  test('b1 and b2 together still allow B3 derivation', async () => {
-    const run = await orchestrator.run({ scope: ['b1', 'b2'] });
+  test('input and behavior together still allow inference', async () => {
+    const run = await orchestrator.run({ scope: ['input', 'behavior'] });
     const s = run.stores_snapshot;
     expect(s.derived_profile.attribute_count).toBe(4);
     expect(s.input_log.entry_count).toBe(0);

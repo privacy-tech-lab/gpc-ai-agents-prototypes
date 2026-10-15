@@ -3,13 +3,13 @@
 /**
  * memory_store.js
  *
- * The three memory layers of Category D, created fresh per run via
+ * The three memory layers of the prototype, created fresh per run via
  * createMemory() so tests stay isolated.
  *
  *  sessionContext: transient, per-session working memory. Never gated;
  *      cleared when the session ends in every mode.
- *  archive: transcripts that survived a session end (the D1 boundary).
- *  profile: the behavioral model synthesized across sessions (the D3
+ *  archive: transcripts that survived a session end (the session boundary).
+ *  profile: the behavioral model synthesized across sessions (the profile
  *      boundary).
  *
  * Each persistent layer counts blocked writes so runs can show what the
