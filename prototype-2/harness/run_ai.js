@@ -6,7 +6,7 @@
  * with the configured model loaded (default qwen2.5:14b).
  *
  *   node run_ai.js                              # no GPC: all pipelines execute
- *   node run_ai.js --gpc                        # full opt-out: all pipelines blocked
+ *   node run_ai.js --gpc                        # full signal: all pipelines blocked
  *   node run_ai.js --gpc --scope=ad_targeting   # partial: only ad_targeting blocked
  */
 

@@ -26,7 +26,7 @@ beforeEach(() => {
 });
 
 describe('resolveScope: the hierarchy', () => {
-  test('no signal means no opt-outs', () => {
+  test('no signal means no preferences', () => {
     expect(gate.resolveScope({})).toEqual(new Set());
   });
 

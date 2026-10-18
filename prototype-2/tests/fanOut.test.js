@@ -76,9 +76,9 @@ describe('fanOutSecondaryPurposes — no GPC', () => {
   });
 });
 
-// ── Full GPC opt-out ──────────────────────────────────────────────────────────
+// ── Full GPC signal ───────────────────────────────────────────────────────────
 
-describe('fanOutSecondaryPurposes — full GPC opt-out', () => {
+describe('fanOutSecondaryPurposes — full GPC signal', () => {
   test('all three pipelines return blocked', async () => {
     const result = await fanOutSecondaryPurposes({ privacyContext: { gpc: 1 }, ...PARAMS });
     expect(result.analytics.status).toBe('blocked');
@@ -101,9 +101,9 @@ describe('fanOutSecondaryPurposes — full GPC opt-out', () => {
   });
 });
 
-// ── Partial opt-out ───────────────────────────────────────────────────────────
+// ── Partial signal ────────────────────────────────────────────────────────────
 
-describe('fanOutSecondaryPurposes — partial opt-out (ad_targeting only)', () => {
+describe('fanOutSecondaryPurposes — partial signal (ad_targeting only)', () => {
   const partialCtx = { gpc: 1, gpc_scope: ['ad_targeting'] };
 
   test('analytics and model_training proceed; ad_targeting blocked', async () => {

@@ -39,7 +39,7 @@ function main() {
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
   const COL    = 18;
-  const header = ['Pipeline'.padEnd(COL), 'No GPC'.padEnd(14), 'Full opt-out'.padEnd(14), 'Partial (ad)'].join(' │ ');
+  const header = ['Pipeline'.padEnd(COL), 'No GPC'.padEnd(14), 'Full signal'.padEnd(14), 'Partial (ad)'].join(' │ ');
   const sep    = '─'.repeat(header.length);
 
   console.log(header);

@@ -13,20 +13,20 @@ Prototype 6 puts a gate at each of the three boundaries. The task is never gated
 | **Session fixture** | `session_fixture.js` | One synthetic session: instruction, draft text, and three telemetry events. Static, so runs stay deterministic. |
 | **Inference classifier** | `inference_classifier.js`, served over MCP | Maps the draft to `polished_email`, `inferred_attributes`, and `attribute_sources`, which labels each attribute `input` or `behavior`. |
 | **Collection stores** | `stores.js` | Three in-memory stores: `inputLog` (input), `behaviorLog` (behavior), `derivedProfile` (derived). Each tracks `blocked_count`. Fresh per run, never persisted. |
-| **Collection gate** | `collection_gate.js` | `collectInput()`, `collectBehavior()`, `deriveProfile()`. Each checks the active opt-out set and either records or suppresses, noting what it would have kept. |
+| **Collection gate** | `collection_gate.js` | `collectInput()`, `collectBehavior()`, `deriveProfile()`. Each checks the active preference set and either records or suppresses, noting what it would have kept. |
 | **Scope resolution** | `collection_gate.js` → `resolveOptouts()` | A bare GPC signal asserts all three scopes (`input`, `behavior`, `derived`). A `--scope` list asserts exactly that subset, so each scope stays independently assertable. |
 
-**Result:** the polished email is byte-identical in every mode. Without opt-outs, one email leaves a stored draft, three telemetry events, and four profile attributes, two of them derived from a sentence the user chose not to send. With all three opt-outs asserted, all three stores are empty and every suppression is recorded.
+**Result:** the polished email is byte-identical in every mode. Without privacy preferences, one email leaves a stored draft, three telemetry events, and four profile attributes, two of them derived from a sentence the user chose not to send. With all three preferences asserted, all three stores are empty and every suppression is recorded.
 
 ---
 
-## Opt-out scopes
+## Preference scopes
 
-The prototype has three collection opt-outs: **input** (what the user submits), **behavior** (what the user passively generates), and **derived** (what the system infers). They are distinguished by the user's relationship to the data, and each is assertable on its own.
+The prototype has three collection preferences: **input** (what the user submits), **behavior** (what the user passively generates), and **derived** (what the system infers). They are distinguished by the user's relationship to the data, and each is assertable on its own.
 
-As in Prototype 5, the derived opt-out is enforced at the storage boundary. The classifier still runs and the inference is still computed, which is what `would_have_written` reports, but nothing is written to the profile.
+As in Prototype 5, the derived preference is enforced at the storage boundary. The classifier still runs and the inference is still computed, which is what `would_have_written` reports, but nothing is written to the profile.
 
-| | No opt-out | `--scope=input` | `--scope=behavior` | `--scope=derived` | `--gpc` |
+| | No preference | `--scope=input` | `--scope=behavior` | `--scope=derived` | `--gpc` |
 |---|---|---|---|---|---|
 | Email polished and returned | yes | yes | yes | yes | yes |
 | Draft retained | yes | no | yes | yes | no |
@@ -35,18 +35,18 @@ As in Prototype 5, the derived opt-out is enforced at the storage boundary. The 
 
 ```mermaid
 flowchart TD
-    S["User submits draft + instruction"] --> IN{"input opt-out?"}
+    S["User submits draft + instruction"] --> IN{"input preference?"}
     IN -- "no" --> L1["inputLog.store()\nraw draft retained"]
     IN -- "yes" --> DIN["discarded after the task\nwould_have_stored recorded"]
     L1 --> T["Composition telemetry:\ndeleted sentence, 42s pause, 3 rewrites"]
     DIN --> T
-    T --> BH{"behavior opt-out?"}
+    T --> BH{"behavior preference?"}
     BH -- "no" --> L2["behaviorLog.store()\n3 events recorded"]
     BH -- "yes" --> DBH["suppressed\nwould_have_recorded recorded"]
     L2 --> MC["mcp_client.js ⇄ stdio ⇄\nmcp-server/server.js\nclassify_draft(draft_id)"]
     DBH --> MC
     MC --> CL["{ polished_email, inferred_attributes,\nattribute_sources }"]
-    CL --> DV{"derived opt-out?"}
+    CL --> DV{"derived preference?"}
     DV -- "no" --> W["derivedProfile.write()\n4 attributes, 2 behavior-sourced"]
     DV -- "yes" --> FW["blocked: inference_firewall\nwould_have_written recorded"]
     W --> ANS["Polished email returned\n(identical in every mode)"]
@@ -74,13 +74,13 @@ flowchart TD
 | `undisclosed_health_severity` | `true` | behavior | the deleted sentence about treatment costs |
 | `negotiation_anxiety` | `true` | behavior | the 42-second pause and three rewrites |
 
-Half of what the platform learns comes from material the user never submitted. `attribute_sources` labels each one, which is what makes the three-way split visible rather than theoretical: asserting the input and behavior opt-outs stops the *retention* of the raw material, but the derivation can still run off transient task data in a single pass. That is why the derived opt-out exists on its own.
+Half of what the platform learns comes from material the user never submitted. `attribute_sources` labels each one, which is what makes the three-way split visible rather than theoretical: asserting the input and behavior preferences stops the *retention* of the raw material, but the derivation can still run off transient task data in a single pass. That is why the derived preference exists on its own.
 
 ---
 
 ## Pipeline
 
-### No opt-outs (the failure case)
+### No privacy preferences (the failure case)
 
 ```
 submission
@@ -91,7 +91,7 @@ submission
   → polished email returned
 ```
 
-### All opt-outs asserted (`--gpc`)
+### All preferences asserted (`--gpc`)
 
 ```
 submission
@@ -120,7 +120,7 @@ prototype-6/
 │
 │  Deterministic core (no model — what the tests run):
 ├── orchestrator.js          run({gpc, scope}): walks all three boundaries in order
-├── run_baseline.js          No opt-outs — all three stores fill
+├── run_baseline.js          No privacy preferences — all three stores fill
 ├── run_optout.js            --gpc or --scope=input,behavior,derived
 │
 │  LLM agent path (requires Ollama):
@@ -166,12 +166,12 @@ npm test
 | `inference_classifier.test.js` | `classify()` returns task output plus attributes; every attribute has a declared source; behavior-sourced attributes identified; deep copies isolate the static table |
 | `collection_gate.test.js` | `resolveOptouts()` for GPC and scope lists; input store versus discard; behavior record versus suppress; derived write versus firewall; scope independence, including that input and behavior together do not stop derived |
 | `orchestrator.test.js` | Full five-stage session for baseline, `--gpc`, and each single scope; blocked counts; task output identical to baseline |
-| `agent.test.js` | `read_draft` fires the input checkpoint; task material still flows to the model under the input opt-out; the model sees only instruction and draft, never telemetry or stores; unknown tools refused |
+| `agent.test.js` | `read_draft` fires the input checkpoint; task material still flows to the model under the input preference; the model sees only instruction and draft, never telemetry or stores; unknown tools refused |
 
 ### Demo runs (deterministic, no model)
 
 ```bash
-npm run baseline         # no opt-outs: 1 draft, 3 events, 4 attributes
+npm run baseline         # no preferences: 1 draft, 3 events, 4 attributes
 npm run optout:full      # --gpc: all three stores empty
 npm run optout:input     # draft discarded; telemetry and profile still collected
 npm run optout:behavior  # telemetry suppressed; draft and profile still collected
@@ -187,8 +187,8 @@ A live model writes the polished email itself. The platform collects around the 
 ollama serve                 # start Ollama if it isn't running
 ollama pull qwen2.5:14b      # once; override with OLLAMA_MODEL
 
-npm run agent          # no opt-outs
-npm run agent:gpc      # all three opt-outs asserted
+npm run agent          # no preferences
+npm run agent:gpc      # all three preferences asserted
 npm run agent:derived  # inference firewall only
 ```
 
@@ -200,14 +200,14 @@ Each run prints a JSON object followed by a short summary.
 
 | Field | What it records |
 |---|---|
-| `optouts` | The resolved active opt-out set |
+| `optouts` | The resolved active preference set |
 | `task_output` | The polished email, identical in every mode |
 | `stages` | Per checkpoint: `stage` (`input` / `behavior` / `derived`), `status`, and either what was kept or `would_have_stored` / `would_have_recorded` / `would_have_written` |
 | `stores_snapshot.input_log` | Retained submissions and `blocked_count` |
 | `stores_snapshot.behavior_log` | Recorded telemetry events and `blocked_count` |
 | `stores_snapshot.derived_profile` | Written attributes, `attribute_count`, and `blocked_count` |
 
-The `would_have_*` fields are the audit trail: under an opt-out they record exactly what the system intended to keep, so the suppression is visible rather than silent.
+The `would_have_*` fields are the audit trail: under a privacy preference they record exactly what the system intended to keep, so the suppression is visible rather than silent.
 
 ---
 
@@ -217,7 +217,7 @@ Prototype 5 covers derived collection alone, with a session of eight search quer
 
 | | Prototype 5 | Prototype 6 |
 |---|---|---|
-| Opt-outs covered | derived | input, behavior, derived |
+| Preferences covered | derived | input, behavior, derived |
 | Scenario | 8 search queries | 1 email polished |
 | Source of the inference | query text (input only) | submitted text *and* passive behavior, labeled per attribute |
 | Partial assertion | not modeled | `--scope=input,behavior,derived`, any subset |

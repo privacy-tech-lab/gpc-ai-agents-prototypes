@@ -3,7 +3,7 @@
 /**
  * persistence_gate.js: the persistence enforcement seam.
  *
- * Persistence opt-outs govern how far data travels through time. Three checkpoints,
+ * Persistence preferences govern how far data travels through time. Three checkpoints,
  * one per scope, sitting at the three moments retention happens:
  *
  *  endSession: when a session closes, its transcript and disclosed facts

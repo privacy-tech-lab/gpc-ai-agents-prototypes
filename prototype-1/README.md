@@ -1,10 +1,10 @@
-# Prototype 1: Opt-out Enforcement in a Multi-Agent Pipeline
+# Prototype 1: Privacy Preference Enforcement in a Multi-Agent Pipeline
 
-Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism of opt-out in this prototype.
+Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism for sending privacy signals in this prototype.
 
 ## What it demonstrates
 
-A user with opt-out enabled asks an AI assistant: *"Help me plan a 5-day trip to Japan: what should I see, eat, and know before I go?"*
+A user with a privacy signal enabled asks an AI assistant: *"Help me plan a 5-day trip to Japan: what should I see, eat, and know before I go?"*
 
 The assistant searches the web, synthesises an itinerary, and (in a non-GPC world) saves the results to the user's profile, and consults what it already knows about the user before answering. This request exercises two enforcement layers.
 
@@ -12,7 +12,7 @@ The assistant searches the web, synthesises an itinerary, and (in a non-GPC worl
 
 ## Persistence scopes
 
-The prototype enforces persistence limits in two places. `storage.js` handles writes: `save_to_profile`, `log_interaction`, and its own `user_profile_lookup` call are all blocked whenever `gpc=1` is present, regardless of `persistence_scope`, so nothing written survives past the interaction. `personalization.js` handles reads, consulted before synthesis runs: `get_interaction_history` needs `persistence_scope: 'profile'` (the user opted out of the long-term profile only) or it is blocked, and its own `user_profile_lookup` call needs no GPC signal at all (baseline). With GPC on and no scope given, the default is `'session'`: nothing persists and nothing is consulted. Asserting `persistence_scope` changes what personalization consults; it does not loosen what storage writes.
+The prototype enforces persistence limits in two places. `storage.js` handles writes: `save_to_profile`, `log_interaction`, and its own `user_profile_lookup` call are all blocked whenever `gpc=1` is present, regardless of `persistence_scope`, so nothing written survives past the interaction. `personalization.js` handles reads, consulted before synthesis runs: `get_interaction_history` needs `persistence_scope: 'profile'` (the user's preference covers only the long-term profile) or it is blocked, and its own `user_profile_lookup` call needs no GPC signal at all (baseline). With GPC on and no scope given, the default is `'session'`: nothing persists and nothing is consulted. Asserting `persistence_scope` changes what personalization consults; it does not loosen what storage writes.
 
 Only the `session` and `profile` scopes are modeled. A cross-session scope is left out on purpose: its defining feature is a within-session/cross-session split, retain during this session, but do not carry it into a future one, and this prototype has no within-session state for that split to apply to. Each call (see `harness/run_scope_check.js`) is a single, independent request/response against the same seeded user, with no server-side session in between. There is no finer-grained session boundary here for a cross-session scope to act on, so it is not part of this demo.
 

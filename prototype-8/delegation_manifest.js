@@ -18,7 +18,7 @@
  * effectiveTier() encodes the precedence:
  *  1. The user's explicit assignment always wins.
  *  2. Otherwise the vendor proposal applies, UNLESS the GPC signal is
- *     active: a global opt-out means consent to a tier may not be inferred
+ *     active: a global privacy signal means consent to a tier may not be inferred
  *     from a vendor default, so proposals are void.
  *  3. Anything left unassigned falls to the most restrictive treatment:
  *     surface the decision and wait, or decline if nobody is there.

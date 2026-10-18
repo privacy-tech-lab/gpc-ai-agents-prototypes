@@ -1,5 +1,5 @@
 /**
- * GPC run: full opt-out (gpc=1, no gpc_scope).
+ * GPC run: full signal (gpc=1, no gpc_scope).
  * All secondary pipelines blocked; no files written.
  */
 
@@ -23,7 +23,7 @@ async function main() {
   const srv     = await startAdPlatform(4002);
   const privacyContext = { gpc: 1 };
 
-  console.log('Running GPC run (full opt-out)...\n');
+  console.log('Running GPC run (full signal)...\n');
 
   const records  = await get_medical_records({ patient_id: 'patient-001' });
   const latestBp = records.readings.find((r) => r.type === 'blood_pressure');

@@ -13,7 +13,7 @@
  *      boundary).
  *
  * Each persistent layer counts blocked writes so runs can show what the
- * opt-out stopped.
+ * preference stopped.
  */
 
 function createLogStore() {

@@ -8,7 +8,7 @@ const SENSITIVE_TOOLS = new Set([
 ]);
 
 // get_interaction_history reads raw past interactions and needs
-// persistence_scope: 'profile' (the user opted out of the long-term profile
+// persistence_scope: 'profile' (the user's preference covers only the long-term profile
 // only); any other scope, or no scope, leaves it blocked, same as the
 // sensitive-tool registry. See prototype-1/README.md, "Persistence scopes".
 function hasGpcSignal(_meta = {}) {

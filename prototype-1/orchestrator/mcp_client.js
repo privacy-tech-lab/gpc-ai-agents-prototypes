@@ -38,7 +38,7 @@ async function closeClient() {
  *
  * @param {string}  toolName           — maps to params.name
  * @param {object}  args               — maps to params.arguments
- * @param {object}  [_meta]            — maps to params._meta; set _meta.gpc=1 to opt out
+ * @param {object}  [_meta]            — maps to params._meta; set _meta.gpc=1 to send the privacy signal
  * @param {Array}   [timing]
  */
 async function callTool(toolName, args, _meta = {}, timing = null) {

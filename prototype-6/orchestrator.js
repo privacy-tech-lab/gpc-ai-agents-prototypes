@@ -12,7 +12,7 @@
  *  4. Derived: the classifier derives attributes from the input and behavior material and
  *     the gate decides whether they reach the profile.
  *
- * run({ gpc, scope }) resolves the active opt-outs once and threads them
+ * run({ gpc, scope }) resolves the active preferences once and threads them
  * through every checkpoint.
  */
 

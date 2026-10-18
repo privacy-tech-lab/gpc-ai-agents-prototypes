@@ -5,7 +5,7 @@
 
 const orchestrator = require('../orchestrator');
 
-describe('baseline: no opt-outs', () => {
+describe('baseline: no preferences', () => {
   let run;
   beforeEach(async () => {
     run = await orchestrator.run({});

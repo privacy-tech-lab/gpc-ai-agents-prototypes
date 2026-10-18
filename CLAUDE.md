@@ -13,7 +13,7 @@ The goal is writing that reads plainly and does not look AI-generated.
 
 ## Working in this repo
 
-- This repository holds GPC (Global Privacy Control) reference prototypes for AI agent pipelines, numbered Prototype 1 through Prototype 8. Each one shows a specific opt-out enforcement mechanism.
+- This repository holds GPC (Global Privacy Control) reference prototypes for AI agent pipelines, numbered Prototype 1 through Prototype 8. Each one shows a specific mechanism for enforcing privacy preferences.
 - The pipelines run locally on Ollama (default model `qwen2.5:14b`). Keep it local-first. Do not swap in a hosted model.
 - Use a branch and a pull request for changes. Do not commit directly to `main`.
 

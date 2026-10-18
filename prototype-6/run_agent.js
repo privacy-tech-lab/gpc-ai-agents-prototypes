@@ -7,7 +7,7 @@
  * through the collection gate. Flags set the enforcement config; the model
  * never controls them.
  *
- *   node run_agent.js                 # no opt-outs, everything collected
+ *   node run_agent.js                 # no preferences, everything collected
  *   node run_agent.js --gpc           # all three scopes asserted
  *   node run_agent.js --scope=derived # single scope asserted
  *
@@ -28,7 +28,7 @@ async function main() {
   const scopeArg = process.argv.find(a => a.startsWith('--scope='));
   const scope = scopeArg ? scopeArg.split('=')[1].split(',').filter(Boolean) : [];
 
-  const label = scope.length > 0 ? `scope: ${scope.join(',')}` : gpc ? 'GPC: on' : 'no opt-outs';
+  const label = scope.length > 0 ? `scope: ${scope.join(',')}` : gpc ? 'GPC: on' : 'no preferences';
   console.log(`=== Collection: LLM agent | ${label} ===`);
   console.log('A real model polishes the email; the platform collects around it.\n');
 

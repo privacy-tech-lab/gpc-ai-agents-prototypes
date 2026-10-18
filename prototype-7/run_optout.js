@@ -34,7 +34,7 @@ async function main() {
 
   const m = output.memory_snapshot;
   console.log('\n=== Persistence summary ===');
-  console.log(`Opt-outs active:     ${output.optouts.join(', ')}`);
+  console.log(`Preferences active:  ${output.optouts.join(', ')}`);
   console.log(`Archived sessions:   ${m.archive.entry_count} (blocked: ${m.archive.blocked_count})`);
   console.log(`Profile entries:     ${m.profile.entry_count} (blocked: ${m.profile.blocked_count})`);
   console.log('\nSame-session answers were identical to baseline. Persistence was');
