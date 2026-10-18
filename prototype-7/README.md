@@ -1,7 +1,7 @@
 # Prototype 7: Persistence
-Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism of opt-out in this prototype.
+Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism for sending privacy signals in this prototype.
 
-Opting out of how long data survives.
+Setting a privacy preference for how long data survives.
 
 This prototype has three persistence scopes:
 

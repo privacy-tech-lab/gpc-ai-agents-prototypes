@@ -1,7 +1,7 @@
 {
   "name": "prototype-6",
   "version": "1.0.0",
-  "description": "Collection gate: opting out of what gets gathered about you, with separate gates for input, behavioral, and derived collection.",
+  "description": "Collection gate: privacy preferences for what gets gathered about you, with separate gates for input, behavioral, and derived collection.",
   "type": "commonjs",
   "license": "MIT",
   "scripts": {

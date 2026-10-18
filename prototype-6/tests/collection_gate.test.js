@@ -4,8 +4,8 @@
  * Covers:
  *  - resolveOptouts: bare GPC asserts all three scopes; a scope list
  *    asserts exactly that subset; invalid names are dropped
- *  - Input: submissions are stored by default and discarded under the opt-out
- *  - Behavior: telemetry is recorded by default and suppressed under the opt-out
+ *  - Input: submissions are stored by default and discarded under the preference
+ *  - Behavior: telemetry is recorded by default and suppressed under the preference
  *  - Derived: inference is written by default and blocked by the firewall,
  *    recording what would have been written and its sources
  *  - Subtype independence: asserting one leaves the other two collecting
@@ -27,7 +27,7 @@ beforeEach(() => {
 });
 
 describe('resolveOptouts', () => {
-  test('no signal means no opt-outs', () => {
+  test('no signal means no preferences', () => {
     expect(gate.resolveOptouts({})).toEqual(new Set());
   });
 
@@ -49,14 +49,14 @@ describe('resolveOptouts', () => {
 });
 
 describe('input collection', () => {
-  test('submission is stored when the input opt-out is not asserted', () => {
+  test('submission is stored when the input preference is not asserted', () => {
     const result = gate.collectInput(session, stores, new Set());
     expect(result.status).toBe('stored');
     expect(stores.inputLog.snapshot().entry_count).toBe(1);
     expect(stores.inputLog.snapshot().entries[0].draft_text).toBe(session.draft_text);
   });
 
-  test('submission is discarded when the input opt-out is asserted', () => {
+  test('submission is discarded when the input preference is asserted', () => {
     const result = gate.collectInput(session, stores, new Set(['input']));
     expect(result.status).toBe('discarded');
     expect(result.reason).toBe('input_optout');
@@ -72,13 +72,13 @@ describe('input collection', () => {
 });
 
 describe('behavioral collection', () => {
-  test('telemetry is recorded when the behavior opt-out is not asserted', () => {
+  test('telemetry is recorded when the behavior preference is not asserted', () => {
     const result = gate.collectBehavior(session.telemetry[0], stores, new Set());
     expect(result.status).toBe('recorded');
     expect(stores.behaviorLog.snapshot().entry_count).toBe(1);
   });
 
-  test('telemetry is suppressed when the behavior opt-out is asserted', () => {
+  test('telemetry is suppressed when the behavior preference is asserted', () => {
     const result = gate.collectBehavior(session.telemetry[0], stores, new Set(['behavior']));
     expect(result.status).toBe('suppressed');
     expect(result.reason).toBe('behavioral_optout');
@@ -93,7 +93,7 @@ describe('behavioral collection', () => {
 });
 
 describe('derived collection', () => {
-  test('attributes are written when the derived opt-out is not asserted', () => {
+  test('attributes are written when the derived preference is not asserted', () => {
     const result = gate.deriveProfile(session.draft_id, classified, stores, new Set());
     expect(result.status).toBe('derived');
     const snap = stores.derivedProfile.snapshot();
@@ -101,7 +101,7 @@ describe('derived collection', () => {
     expect(snap.attributes.health_flags).toContain('ongoing_medical_treatment');
   });
 
-  test('the firewall blocks the write when the derived opt-out is asserted', () => {
+  test('the firewall blocks the write when the derived preference is asserted', () => {
     const result = gate.deriveProfile(session.draft_id, classified, stores, new Set(['derived']));
     expect(result.status).toBe('blocked');
     expect(result.reason).toBe('inference_firewall');

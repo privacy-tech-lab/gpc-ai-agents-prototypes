@@ -1,16 +1,16 @@
-# Prototype 2: Purpose-Scoped Opt-out Enforcement Across a Multi-Stage AI Pipeline
+# Prototype 2: Purpose-Scoped Privacy Preference Enforcement Across a Multi-Stage AI Pipeline
 
-Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism of opt-out in this prototype.
+Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism for sending privacy signals in this prototype.
 
 ## What it demonstrates
 
 A patient asks an AI assistant: *"What does my blood pressure reading mean, and should I adjust my medication?"*
 
-The assistant retrieves their records and answers the question. This interaction also feeds an analytics log, a model-training dataset, and a pharma ad-targeting platform: downstream systems the patient never directly interacted with. With opt-outs enabled, each of those secondary data flows is independently gated by its declared purpose.
+The assistant retrieves their records and answers the question. This interaction also feeds an analytics log, a model-training dataset, and a pharma ad-targeting platform: downstream systems the patient never directly interacted with. With privacy preferences enabled, each of those secondary data flows is independently gated by its declared purpose.
 
 ## Purposes gated
 
-`get_medical_records` serves the primary purpose (answering the patient's question) and always runs, so the data is used for the task it was collected for. The three secondary pipelines each have a declared purpose: `analytics`, `ad_targeting`, and `model_training`. Each one can be opted out of independently via `gpc_scope`, and a full GPC signal blocks all three.
+`get_medical_records` serves the primary purpose (answering the patient's question) and always runs, so the data is used for the task it was collected for. The three secondary pipelines each have a declared purpose: `analytics`, `ad_targeting`, and `model_training`. Each one can be restricted independently via `gpc_scope`, and a full GPC signal blocks all three.
 
 ```mermaid
 flowchart TD
@@ -52,9 +52,9 @@ flowchart TD
 
 ### Supporting services (no LLM)
 
-**Analytics** (`services/analytics.js`): Logs the interaction to `analytics_log.json`. Wrapped with `withPurposeCheck(purpose: 'analytics')`; blocked when `analytics` is in the active opt-out scope.
+**Analytics** (`services/analytics.js`): Logs the interaction to `analytics_log.json`. Wrapped with `withPurposeCheck(purpose: 'analytics')`; blocked when `analytics` is in the active preference scope.
 
-**Training dataset** (`services/trainingDataset.js`): Appends the query/response pair to `training_dataset.jsonl` for offline fine-tuning. Wrapped with `withPurposeCheck(purpose: 'model_training')`; blocked when `model_training` is in the active opt-out scope.
+**Training dataset** (`services/trainingDataset.js`): Appends the query/response pair to `training_dataset.jsonl` for offline fine-tuning. Wrapped with `withPurposeCheck(purpose: 'model_training')`; blocked when `model_training` is in the active preference scope.
 
 **Ad platform** (`services/adPlatform.js`): Simulated external vendor Express server. Calls `evaluatePurpose()` at its HTTP boundary before any write, independent of upstream enforcement.
 
@@ -86,8 +86,8 @@ prototype-2/
 │
 ├── harness/
 │   ├── run_baseline.js          Demo run: no GPC; all pipelines execute, files written
-│   ├── run_gpc.js               Demo run: full opt-out; all pipelines blocked
-│   ├── run_partial.js           Demo run: partial opt-out; only ad_targeting blocked
+│   ├── run_gpc.js               Demo run: full signal; all pipelines blocked
+│   ├── run_partial.js           Demo run: partial signal; only ad_targeting blocked
 │   ├── run_ai.js                Ollama-driven run: model answers, then fan-out; --gpc, --scope
 │   └── compare_results.js       Diff all three runs; print report
 │
@@ -125,7 +125,7 @@ No Ollama needed; `medical_agent.js`'s LLM loop isn't exercised by this suite (s
 
 | Test file | What it covers |
 |---|---|
-| `withPurposeCheck.test.js` | `evaluatePurpose()`: all opt-out states, partial opt-out, missing purpose, primary purpose passthrough; `withPurposeCheck()` wrapper: ok/blocked envelopes, fn call gating |
+| `withPurposeCheck.test.js` | `evaluatePurpose()`: all preference states, partial signal, missing purpose, primary purpose passthrough; `withPurposeCheck()` wrapper: ok/blocked envelopes, fn call gating |
 | `fanOut.test.js` | `fanOutSecondaryPurposes()`: all three scenarios end-to-end with services and a live ad platform; file assertions confirming writes are blocked or allowed correctly |
 | `mcp_client.test.js` | `get_medical_records` over the MCP stdio client/server round trip: known patient, unknown patient |
 
@@ -141,8 +141,8 @@ Individual runs:
 
 ```bash
 npm run baseline  # No GPC: all pipelines execute, files written to output/
-npm run gpc       # Full opt-out: all pipelines blocked
-npm run partial   # Partial opt-out: only ad_targeting blocked
+npm run gpc       # Full signal: all pipelines blocked
+npm run partial   # Partial signal: only ad_targeting blocked
 npm run compare   # Print comparison report from existing output files
 ```
 
@@ -152,8 +152,8 @@ Same three scenarios, but a real model produces the answer and decides to call `
 
 ```bash
 npm run ai-baseline   # No GPC: model answers, all pipelines execute
-npm run ai-gpc        # Full opt-out: model answers, all pipelines blocked
-npm run ai-partial    # Partial opt-out: model answers, only ad_targeting blocked
+npm run ai-gpc        # Full signal: model answers, all pipelines blocked
+npm run ai-partial    # Partial signal: model answers, only ad_targeting blocked
 ```
 
 Results land in `output/ai_<mode>_result.json` with the model's tool calls and answer alongside the secondary effects.
@@ -161,7 +161,7 @@ Results land in `output/ai_<mode>_result.json` with the model's tool calls and a
 ### Expected comparison report
 
 ```
-Pipeline           │ No GPC         │ Full opt-out   │ Partial (ad)
+Pipeline           │ No GPC         │ Full signal    │ Partial (ad)
 ──────────────────────────────────────────────────────────────────
 analytics          │ ✓ ok           │ ✗ BLOCKED      │ ✓ ok
 model_training     │ ✓ ok           │ ✗ BLOCKED      │ ✓ ok
@@ -172,7 +172,7 @@ ad_targeting       │ ✓ ok           │ ✗ BLOCKED      │ ✗ BLOCKED
 
 Each harness script resets the pipeline files before running, so the table below shows each scenario's independent effect:
 
-| File | No GPC | Full opt-out | Partial (ad only) |
+| File | No GPC | Full signal | Partial (ad only) |
 |---|---|---|---|
 | `analytics_log.json` | entry written | unchanged (blocked) | entry written |
 | `training_dataset.jsonl` | entry appended | unchanged (blocked) | entry appended |

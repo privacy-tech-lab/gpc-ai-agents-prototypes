@@ -3,16 +3,16 @@
 /**
  * run_baseline.js
  *
- * No opt-outs. Both sessions are archived, session 2 is tailored from
+ * No privacy preferences. Both sessions are archived, session 2 is tailored from
  * session 1's disclosures, and the archive is synthesized into a durable
- * behavioral profile. This is the failure case the opt-outs exist to
+ * behavioral profile. This is the failure case the preferences exist to
  * prevent.
  */
 
 const orchestrator = require('./orchestrator');
 
 async function main() {
-  console.log('=== Persistence: Aria | no opt-outs ===');
+  console.log('=== Persistence: Aria | no preferences ===');
   console.log('Two sessions. Everything survives, everything connects.\n');
 
   const output = await orchestrator.run({});

@@ -1,5 +1,5 @@
 /**
- * Partial opt-out run: gpc=1, gpc_scope=["ad_targeting"].
+ * Partial signal run: gpc=1, gpc_scope=["ad_targeting"].
  * Analytics and training proceed; only ad_targeting is blocked.
  */
 
@@ -23,7 +23,7 @@ async function main() {
   const srv     = await startAdPlatform(4002);
   const privacyContext = { gpc: 1, gpc_scope: ['ad_targeting'] };
 
-  console.log('Running partial opt-out (ad_targeting only)...\n');
+  console.log('Running partial signal (ad_targeting only)...\n');
 
   const records  = await get_medical_records({ patient_id: 'patient-001' });
   const latestBp = records.readings.find((r) => r.type === 'blood_pressure');

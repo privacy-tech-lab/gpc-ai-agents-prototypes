@@ -43,7 +43,7 @@ async function withConsentCheck(toolName, args, mode, gpc = false) {
   }
 
   // GPC signal: auto-decline non-primary categories without prompting the user.
-  // The global opt-out signal makes the decision that would otherwise require
+  // The global privacy signal makes the decision that would otherwise require
   // a per-tool consent prompt.
   if (gpc && !PRIMARY_CATEGORIES.has(tool.capability_category) && manifest.requiresFreshConsent(tool, mf)) {
     manifest.decline(tool.capability_category);

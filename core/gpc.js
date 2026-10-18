@@ -7,10 +7,10 @@
  * orchestrator; this module owns the header and body parsing so both
  * get the same normalization rules.
  *
- * GPC is a unary signal: the only valid Sec-GPC value is "1" (opt-out).
+ * GPC is a unary signal: the only valid Sec-GPC value is "1" (privacy signal on).
  * Any other header value, including "0", is treated as absent because
  * the absence of a GPC signal cannot be interpreted as the user
- * intending to not opt out.
+ * intending to not send the signal.
  *
  * Precedence:
  *   1. Sec-GPC header: "1" activates GPC. Any other value is ignored.
@@ -21,7 +21,7 @@
  *   3. Otherwise the signal is absent (gpc is undefined).
  *
  * Also reads body.gpc_scope: an optional array of purpose labels for
- * partial opt-out (prototype-2 feature). When absent or not an array,
+ * partial signal (prototype-2 feature). When absent or not an array,
  * gpc_scope is omitted from the returned context.
  *
  * @param {object} req - Express request or any { headers, body } object

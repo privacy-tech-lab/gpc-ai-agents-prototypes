@@ -3,7 +3,7 @@
 /**
  * inference_firewall.js
  *
- * Implements the GPC opt-out from derived collection.
+ * Implements the GPC privacy preference against derived collection.
  *
  * When the GPC signal is active, the firewall intercepts every call that would
  * have written inferred attributes to the profile store.  Instead of writing

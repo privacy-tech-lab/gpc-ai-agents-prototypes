@@ -12,7 +12,7 @@ afterAll(async () => {
   await closeClient();
 });
 
-describe('baseline: no opt-outs', () => {
+describe('baseline: no preferences', () => {
   let run;
   beforeEach(async () => {
     run = await orchestrator.run({});

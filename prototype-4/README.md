@@ -1,12 +1,12 @@
 # Prototype 4: Fanout and Provider Aggregation Surface
 
-Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism of opt-out in this prototype.
+Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism for sending privacy signals in this prototype.
 
 ## What it demonstrates
 
-A user with opt-out enabled asks an AI assistant to *"research the iPhone 17 across tech publishers and summarise the key consensus points."* The agent fans out to eight publishers in parallel. Every site receives the request, every strict publisher honors the GPC signal correctly (no logging, no profile write), and the user receives a summarized answer either way.
+A user with a privacy signal enabled asks an AI assistant to *"research the iPhone 17 across tech publishers and summarise the key consensus points."* The agent fans out to eight publishers in parallel. Every site receives the request, every strict publisher honors the GPC signal correctly (no logging, no profile write), and the user receives a summarized answer either way.
 
-However, even when every site enforces opt-out perfectly per-call, the **LLM provider sits at a chokepoint that observes every outbound call from every user.** From a single session it can derive what the user is researching, which publishers they reached, and the GPC state of every call. Across sessions it can derive GPC adoption rates, topic-by-GPC matrices, and per-user interest profiles. None of these derivations are possible for any browser intermediary in the pre-agent world.
+However, even when every site enforces the privacy preference perfectly per-call, the **LLM provider sits at a chokepoint that observes every outbound call from every user.** From a single session it can derive what the user is researching, which publishers they reached, and the GPC state of every call. Across sessions it can derive GPC adoption rates, topic-by-GPC matrices, and per-user interest profiles. None of these derivations are possible for any browser intermediary in the pre-agent world.
 
 Prototype 4 introduces a **provider middleware** (`provider/provider.js`) that sits between the orchestrator and the publishers. Every fanout flows through it. The provider logs each observation before forwarding, optionally strips the `_meta` envelope (the threat-model demonstration; the `mitm: true` flag models a hostile man-in-the-middle), and optionally applies data-handling commitments before recording.
 
@@ -17,21 +17,21 @@ Prototype 4 introduces a **provider middleware** (`provider/provider.js`) that s
 Prototype 4's core finding is that the provider's view does not shrink, no matter how well sites enforce GPC. Two parties are involved:
 
 - **The publishers (destinations).** GPC as it exists today is addressed here, and each publisher sees only the call routed to it. Strict and advisory sites honor the signal, but the user cannot see their servers to confirm it.
-- **The provider (orchestrator).** It carries the signal rather than receiving it, and it sees every call, across every publisher, for every user. An opt-out honored at every publisher leaves the provider's view unchanged, so compliance has to be checked for each party separately. In this prototype the user's signal is only addressed to the publishers, so nothing constrains the provider.
+- **The provider (orchestrator).** It carries the signal rather than receiving it, and it sees every call, across every publisher, for every user. A privacy preference honored at every publisher leaves the provider's view unchanged, so compliance has to be checked for each party separately. In this prototype the user's signal is only addressed to the publishers, so nothing constrains the provider.
 
 What the provider does with that view:
 
 | Provider behavior | What it means |
 |---|---|
 | Logs which publishers it called, in what order, and the sub-queries it wrote | Collects a record of the actions it took on the user's behalf |
-| Records the GPC state of every call and computes adoption rates and topic-by-GPC matrices | Treats the opt-out signal itself as data to keep and analyze |
+| Records the GPC state of every call and computes adoption rates and topic-by-GPC matrices | Treats the privacy signal itself as data to keep and analyze |
 | Builds per-user interest profiles from the observation log | Derives new information about the user and keeps it across sessions |
-| Strips `_meta` before forwarding (signal-drop mode) | Each publisher never sees the opt-out, so none of them can honor it, however well the site behaves |
+| Strips `_meta` before forwarding (signal-drop mode) | Each publisher never sees the privacy signal, so none of them can honor it, however well the site behaves |
 | Fans the query out to eight publishers | Controls how far the query travels across connected systems |
 | `do_not_train` tag (mitigated mode) | Limits reuse of the logged data for model training |
 | k-anonymity on interest profiles (mitigated mode) | Suppresses interest profiles below a cohort threshold |
 
-The cross-user derivations in `npm run aggregate` go further than any single user's opt-out can reach: they show one party seeing the union of all users' traffic, which is an aggregate effect rather than a per-user one.
+The cross-user derivations in `npm run aggregate` go further than any single user's privacy preference can reach: they show one party seeing the union of all users' traffic, which is an aggregate effect rather than a per-user one.
 
 ```mermaid
 flowchart TD

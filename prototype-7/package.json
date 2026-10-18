@@ -1,7 +1,7 @@
 {
   "name": "prototype-7",
   "version": "1.0.0",
-  "description": "Persistence: opting out of how long data survives. Session, cross-session, and long-term profile scopes, hierarchical.",
+  "description": "Persistence: privacy preferences for how long data survives. Session, cross-session, and long-term profile scopes, hierarchical.",
   "type": "commonjs",
   "license": "MIT",
   "scripts": {

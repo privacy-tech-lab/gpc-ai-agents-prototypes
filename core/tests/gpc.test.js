@@ -79,7 +79,7 @@ describe('absent signal', () => {
   });
 });
 
-// ── gpc_scope (partial opt-out) ────────────────────────────────────────────────
+// ── gpc_scope (partial signal) ─────────────────────────────────────────────────
 
 describe('gpc_scope', () => {
   test('body.gpc_scope array is included in the context', () => {

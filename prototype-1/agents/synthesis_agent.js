@@ -3,7 +3,7 @@
  *
  * Receives raw search results from the search agent and synthesises them into
  * a structured itinerary. Calling no tools means there is nothing to block at
- * Layer 4 — demonstrating that GPC opt-out does not degrade answer quality,
+ * Layer 4 — demonstrating that the GPC signal does not degrade answer quality,
  * only storage behaviour.
  *
  * The _meta envelope is passed in for traceability but is not used here since

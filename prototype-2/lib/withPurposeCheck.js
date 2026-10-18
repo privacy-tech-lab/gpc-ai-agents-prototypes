@@ -5,11 +5,11 @@
  * training-data writes, ad-platform calls, etc.) and decides — BEFORE the
  * wrapped function runs — whether the call should proceed, based on:
  *
- *   - privacyContext.gpc        — global opt-out signal (boolean-ish)
- *   - privacyContext.gpc_scope  — optional array of purposes the opt-out
- *                                  applies to (partial opt-out). If absent,
+ *   - privacyContext.gpc        — global privacy signal (boolean-ish)
+ *   - privacyContext.gpc_scope  — optional array of purposes the signal
+ *                                  applies to (partial signal). If absent,
  *                                  GPC applies to ALL registry-restricted
- *                                  purposes (full opt-out).
+ *                                  purposes (full signal).
  *   - purpose                   — the declared purpose of THIS call
  *                                  (e.g. "analytics", "model_training",
  *                                  "ad_targeting")
@@ -61,9 +61,9 @@ function evaluatePurpose(privacyContext = {}, purpose, registry) {
   }
 
   // GPC is active. Determine the effective blocked-purpose set:
-  //  - gpc_scope present  -> partial opt-out: only purposes listed there
+  //  - gpc_scope present  -> partial signal: only purposes listed there
   //                          are blocked
-  //  - gpc_scope absent   -> full opt-out: every registry-restricted
+  //  - gpc_scope absent   -> full signal: every registry-restricted
   //                          purpose is blocked
   const blockedPurposes = Array.isArray(privacyContext.gpc_scope)
     ? new Set(privacyContext.gpc_scope)

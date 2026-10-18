@@ -68,7 +68,7 @@ async function main() {
   const providerView = provider.getProviderView();
   unfold(`provider log holds ${providerView.length} observations across ${USER_COUNT} users`);
   curtain.alarm(`provider computed GPC adoption rate = ${gpcAdoptionRate(providerView)} without any site or user knowing the number exists`);
-  curtain.note('opted-out users are still in this log: opt-out changed what sites kept, not what the provider saw');
+  curtain.note('users who sent the signal are still in this log: the signal changed what sites kept, not what the provider saw');
   const out = {
     mode:                            'aggregate',
     description:                     `${USER_COUNT}-user simulation; mixed GPC; deterministic seed=${SEED}.`,

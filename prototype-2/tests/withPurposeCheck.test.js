@@ -56,7 +56,7 @@ describe('evaluatePurpose — secondary purposes, GPC signal absent', () => {
   });
 });
 
-describe('evaluatePurpose — full opt-out (gpc=1, no gpc_scope)', () => {
+describe('evaluatePurpose — full signal (gpc=1, no gpc_scope)', () => {
   test('analytics blocked', () => {
     const r = evaluatePurpose({ gpc: 1 }, 'analytics', RESTRICTABLE_PURPOSES_SET);
     expect(r.allowed).toBe(false);
@@ -86,7 +86,7 @@ describe('evaluatePurpose — full opt-out (gpc=1, no gpc_scope)', () => {
   });
 });
 
-describe('evaluatePurpose — partial opt-out (gpc_scope)', () => {
+describe('evaluatePurpose — partial signal (gpc_scope)', () => {
   test('only ad_targeting in scope → analytics and model_training allowed', () => {
     const ctx = { gpc: 1, gpc_scope: ['ad_targeting'] };
     expect(evaluatePurpose(ctx, 'analytics',       RESTRICTABLE_PURPOSES_SET).allowed).toBe(true);
@@ -108,7 +108,7 @@ describe('evaluatePurpose — partial opt-out (gpc_scope)', () => {
     }
   });
 
-  test('reason is purpose_not_in_gpc_scope when allowed via partial opt-out', () => {
+  test('reason is purpose_not_in_gpc_scope when allowed via partial signal', () => {
     const ctx = { gpc: 1, gpc_scope: ['ad_targeting'] };
     const r = evaluatePurpose(ctx, 'analytics', RESTRICTABLE_PURPOSES_SET);
     expect(r.allowed).toBe(true);
@@ -162,7 +162,7 @@ describe('withPurposeCheck — wrapper behaviour', () => {
     expect(mockFn).toHaveBeenCalledTimes(1);
   });
 
-  test('partial opt-out: calls fn when purpose not in gpc_scope', async () => {
+  test('partial signal: calls fn when purpose not in gpc_scope', async () => {
     const guarded = withPurposeCheck(mockFn, {
       purpose:  'analytics',
       registry: RESTRICTABLE_PURPOSES_SET,
@@ -173,7 +173,7 @@ describe('withPurposeCheck — wrapper behaviour', () => {
     expect(mockFn).toHaveBeenCalledTimes(1);
   });
 
-  test('partial opt-out: does not call fn when purpose is in gpc_scope', async () => {
+  test('partial signal: does not call fn when purpose is in gpc_scope', async () => {
     const guarded = withPurposeCheck(mockFn, {
       purpose:  'ad_targeting',
       registry: RESTRICTABLE_PURPOSES_SET,

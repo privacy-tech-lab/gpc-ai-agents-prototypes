@@ -1,7 +1,7 @@
 {
   "name": "prototype-5",
   "version": "1.0.0",
-  "description": "Inference Firewall — GPC opt-out from derived collection",
+  "description": "Inference Firewall — GPC privacy preference against derived collection",
   "type": "commonjs",
   "license": "ISC",
   "scripts": {

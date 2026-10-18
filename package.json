@@ -1,7 +1,7 @@
 {
   "name": "gpc-ai-agents-prototypes",
   "version": "1.0.0",
-  "description": "GPC enforcement in AI agent pipelines. Eight prototypes, numbered 1 through 8, each showing one opt-out enforcement mechanism.",
+  "description": "GPC enforcement in AI agent pipelines. Eight prototypes, numbered 1 through 8, each showing one mechanism for enforcing privacy preferences.",
   "scripts": {
     "compare":        "node compare_architectures.js",
     "compare-run":    "node compare_architectures.js --run",

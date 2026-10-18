@@ -7,7 +7,7 @@
  *
  * The GPC signal is forwarded via the MCP __meta envelope on every tool call
  * (Layer 2). search_web is not sensitive so it always executes regardless of
- * the GPC flag — demonstrating that opt-out blocks storage, not retrieval.
+ * the GPC flag — demonstrating that the privacy signal blocks storage, not retrieval.
  */
 
 const { runAgentLoop } = require('../orchestrator/agent_loop.js');

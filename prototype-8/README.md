@@ -1,5 +1,5 @@
 # Prototype 8: Delegation Gate
-Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism of opt-out in this prototype.
+Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism for sending privacy signals in this prototype.
 
 ## What it demonstrates
 
@@ -11,9 +11,9 @@ Prototype 8 lets the user partition actions into tiers and grant the agent stand
 
 ## Selective delegation
 
-The opt-out here is selective delegation: the user opts out of the agent resolving certain choices on their behalf, calibrated to reversibility, sensitivity, and magnitude of consequence. Standing is granted per tier, never wholesale, and anything unassigned or unattended defaults to the most restrictive treatment.
+The privacy preference here is selective delegation: the user withholds the agent's standing to resolve certain choices on their behalf, calibrated to reversibility, sensitivity, and magnitude of consequence. Standing is granted per tier, never wholesale, and anything unassigned or unattended defaults to the most restrictive treatment.
 
-The GPC signal voids the vendor's *proposed* tiers, on the grounds that a global opt-out means consent to a delegation tier may not be inferred from a platform default. Explicit user assignments are untouched by it.
+The GPC signal voids the vendor's *proposed* tiers, on the grounds that a global privacy signal means consent to a delegation tier may not be inferred from a platform default. Explicit user assignments are untouched by it.
 
 | Action | Reversible | Sensitive | Baseline | Attended | Unattended | GPC + unattended |
 |---|---|---|---|---|---|---|

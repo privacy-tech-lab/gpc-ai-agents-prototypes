@@ -3,18 +3,18 @@
 /**
  * collection_gate.js: the collection enforcement seam.
  *
- * Collection opt-outs govern what gets gathered, not what the task does. The task
+ * Collection preferences govern what gets gathered, not what the task does. The task
  * (polishing the email) always completes; the gate decides what the platform
- * keeps from the interaction. Three checkpoints, one per opt-out scope:
+ * keeps from the interaction. Three checkpoints, one per preference scope:
  *
  *  collectInput: the user's submission may be used to complete the task,
- *  but with the input opt-out asserted it is discarded afterward instead of logged.
+ *  but with the input preference asserted it is discarded afterward instead of logged.
  *
  *  collectBehavior: telemetry the user passively generates (deletions,
- *  hesitation, rewrites) is not recorded with the behavior opt-out asserted.
+ *  hesitation, rewrites) is not recorded with the behavior preference asserted.
  *
  *  deriveProfile: inferences built from input or behavior material are not written
- *  to the profile with the derived opt-out asserted. Ported from prototype-5's inference
+ *  to the profile with the derived preference asserted. Ported from prototype-5's inference
  *  firewall: the run records what would have been written.
  *
  * Scopes are independently assertable: resolveOptouts() turns the GPC

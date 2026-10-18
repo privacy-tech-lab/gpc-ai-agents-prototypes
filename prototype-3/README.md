@@ -1,6 +1,6 @@
 # Prototype 3: Consent-Scoped Tool Registry
 
-Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism of opt-out in this prototype.
+Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism for sending privacy signals in this prototype.
 
 ## What it demonstrates
 

@@ -21,7 +21,7 @@ The firewall can be driven two ways. The **deterministic core** (`orchestrator.j
 
 ## What is gated
 
-Prototype 5 gates what a system concludes about a user, as distinct from what the user submits or what they passively generate. The firewall enforces at the storage boundary: the classifier still runs and the inference is still computed (`would_have_written` reports it), but nothing is written to the profile. This is the practical reading of the opt-out, not a strict block on computing the inference in the first place.
+Prototype 5 gates what a system concludes about a user, as distinct from what the user submits or what they passively generate. The firewall enforces at the storage boundary: the classifier still runs and the inference is still computed (`would_have_written` reports it), but nothing is written to the profile. This is the practical reading of the privacy preference, not a strict block on computing the inference in the first place.
 
 | | firewall off (baseline) | firewall on (enforced) |
 |---|---|---|

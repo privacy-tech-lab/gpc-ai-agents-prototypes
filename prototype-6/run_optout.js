@@ -3,7 +3,7 @@
 /**
  * run_optout.js
  *
- * Runs the session with collection opt-outs asserted.
+ * Runs the session with collection preferences asserted.
  *
  *   node run_optout.js --gpc                     # assert all three (input + behavior + derived)
  *   node run_optout.js --scope=derived           # assert one scope
@@ -34,7 +34,7 @@ async function main() {
 
   const s = output.stores_snapshot;
   console.log('\n=== Collection summary ===');
-  console.log(`Opt-outs active:        ${output.optouts.join(', ')}`);
+  console.log(`Preferences active:     ${output.optouts.join(', ')}`);
   console.log(`Input log entries:      ${s.input_log.entry_count} (blocked: ${s.input_log.blocked_count})`);
   console.log(`Behavior log entries:   ${s.behavior_log.entry_count} (blocked: ${s.behavior_log.blocked_count})`);
   console.log(`Profile attributes:     ${s.derived_profile.attribute_count} (blocked: ${s.derived_profile.blocked_count})`);

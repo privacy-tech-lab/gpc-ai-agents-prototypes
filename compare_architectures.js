@@ -3,7 +3,7 @@
  *
  * Runs both architectures' compare scripts as sub-processes and prints their
  * outputs, then prints a structured side-by-side summary of enforcement model,
- * opt-out granularity, and signal-drop failure modes.
+ * preference granularity, and signal-drop failure modes.
  *
  * Usage:
  *   node compare_architectures.js          # structural summary only
@@ -122,8 +122,8 @@ function main() {
   divider('Overview');
   row('Scenario',         'Travel assistant',                  'Medical assistant');
   row('Enforcement unit', 'Tool (withGpc)',                    'Tool × purpose (withPurposeCheck)');
-  row('Opt-out model',    'Binary: GPC on/off per tool',       'Graduated: per purpose string');
-  row('Partial opt-out',  'No',                                'Yes (gpc_scope= pipe-delimited list)');
+  row('Preference model', 'Binary: GPC on/off per tool',       'Graduated: per purpose string');
+  row('Partial signal',   'No',                                'Yes (gpc_scope= pipe-delimited list)');
   row('Trust boundary',   'RS256 JWT (Layer 3)',               'Ad platform HTTP check (service bdry)');
   row('Primary task',     'Always executes',                   'Always executes');
 
@@ -195,7 +195,7 @@ function main() {
   console.log();
   console.log('  Architecture B demonstrates that purpose-scoped enforcement produces');
   console.log('  finer-grained control: the same tool behaves differently depending on');
-  console.log('  the declared downstream use, and a user can opt out of cross-context');
+  console.log('  the declared downstream use, and a user can set a preference against cross-context');
   console.log('  sale or sensitive inference without disrupting operational analytics.');
   console.log('  This is structurally impossible with tool-level blocking.');
   console.log();
