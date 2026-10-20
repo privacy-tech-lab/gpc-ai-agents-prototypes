@@ -2,7 +2,7 @@
 
 ## What it demonstrates
 
-A user runs eight ordinary search queries. None of them disclose anything directly — they are questions anyone might type. But the text of each query can be fed through a classifier that infers personal attributes: a health condition, a financial situation, an employment status. Run across a session, those inferences accumulate into a detailed profile the user never agreed to hand over. This is *derived collection*, and it is hard to prevent because the answer the user wanted is still useful, and the inference happens server-side where the user never sees it.
+A user runs eight ordinary search queries. None of them disclose anything directly: they are questions anyone might type. But the text of each query can be fed through a classifier that infers personal attributes: a health condition, a financial situation, an employment status. Run across a session, those inferences accumulate into a detailed profile the user never agreed to hand over. This is what the *inference preference* covers, and it is hard to enforce because the answer the user wanted is still useful, and the inference happens server-side where the user never sees it.
 
 Prototype 5 puts a firewall between the classifier and the profile store. When the GPC signal is on, the inference is intercepted before it is written: the answer still reaches the user, but no attributes are kept. When the signal is off, the same pipeline builds a full shadow profile from the eight queries.
 
@@ -21,7 +21,7 @@ The firewall can be driven two ways. The **deterministic core** (`orchestrator.j
 
 ## What is gated
 
-Prototype 5 gates what a system concludes about a user, as distinct from what the user submits or what they passively generate. The firewall enforces at the storage boundary: the classifier still runs and the inference is still computed (`would_have_written` reports it), but nothing is written to the profile. This is the practical reading of the privacy preference, not a strict block on computing the inference in the first place.
+Prototype 5 gates inference: what a system concludes about a user, as distinct from what the user submits (input collection) or what they unknowingly produce (metadata collection). The firewall enforces at the storage boundary: the classifier still runs and the inference is still computed (`would_have_written` reports it), but nothing is written to the profile. This is the practical reading of the inference preference, not a strict block on computing the inference in the first place.
 
 | | firewall off (baseline) | firewall on (enforced) |
 |---|---|---|

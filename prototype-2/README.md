@@ -10,7 +10,7 @@ The assistant retrieves their records and answers the question. This interaction
 
 ## Purposes gated
 
-`get_medical_records` serves the primary purpose (answering the patient's question) and always runs, so the data is used for the task it was collected for. The three secondary pipelines each have a declared purpose: `analytics`, `ad_targeting`, and `model_training`. Each one can be restricted independently via `gpc_scope`, and a full GPC signal blocks all three.
+`get_medical_records` serves the primary purpose (answering the patient's question) and always runs, so the data is used for the task it was collected for. The three secondary pipelines each have a declared purpose: `analytics`, `ad_targeting`, and `model_training`. These map to the secondary use and data repurposing preferences: `ad_targeting` is targeting, `analytics` is commercial and analytical use, and `model_training` is data repurposing. Sending data to the external ad platform is also data sharing. Each one can be restricted independently via `gpc_scope`, and a full GPC signal blocks all three.
 
 ```mermaid
 flowchart TD

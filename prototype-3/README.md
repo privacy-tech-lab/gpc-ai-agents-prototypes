@@ -12,7 +12,7 @@ Prototype 3 puts a consent check in front of every tool call. Each call is match
 
 ## What the modes show
 
-`run_v2.js --mode=silent` vs `--mode=approve` shows the integration gap: a new tool becomes callable the instant it ships under silent mode, versus only `after_consent` when consent enforcement is on. `behavior_tracker` shows the background case: it is ambient analytics the platform fires on its own, and holding or GPC-declining it keeps unsolicited background AI from running.
+`run_v2.js --mode=silent` vs `--mode=approve` shows the integration preference: a new tool becomes callable the instant it ships under silent mode, versus only `after_consent` when consent enforcement is on. `behavior_tracker` shows the activation preference: it is ambient analytics the platform fires on its own in the background, and holding or GPC-declining it keeps background AI from running unless the user has chosen it. Because the platform starts it without being asked, it also shows the unprompted initiation preference. The update itself shows the scope expansion preference: the assistant gains new capabilities beyond what the user agreed to at signup, and the consent check stops that from happening without the user's direction.
 
 ```mermaid
 flowchart TD

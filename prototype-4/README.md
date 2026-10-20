@@ -23,12 +23,12 @@ What the provider does with that view:
 
 | Provider behavior | What it means |
 |---|---|
-| Logs which publishers it called, in what order, and the sub-queries it wrote | Collects a record of the actions it took on the user's behalf |
-| Records the GPC state of every call and computes adoption rates and topic-by-GPC matrices | Treats the privacy signal itself as data to keep and analyze |
-| Builds per-user interest profiles from the observation log | Derives new information about the user and keeps it across sessions |
+| Logs which publishers it called, in what order, and the sub-queries it wrote | Creates a record of the actions it took on the user's behalf (delegated action collection) |
+| Records the GPC state of every call and computes adoption rates and topic-by-GPC matrices | Treats the privacy signal itself as data to keep and analyze (commercial and analytical use) |
+| Builds per-user interest profiles from the observation log | Infers new information about the user and keeps it across sessions (commercial and analytical use) |
 | Strips `_meta` before forwarding (signal-drop mode) | Each publisher never sees the privacy signal, so none of them can honor it, however well the site behaves |
-| Fans the query out to eight publishers | Controls how far the query travels across connected systems |
-| `do_not_train` tag (mitigated mode) | Limits reuse of the logged data for model training |
+| Fans the query out to eight publishers | Controls how far the query travels across connected systems (data sharing) |
+| `do_not_train` tag (mitigated mode) | Limits reuse of the logged data for model training (data repurposing) |
 | k-anonymity on interest profiles (mitigated mode) | Suppresses interest profiles below a cohort threshold |
 
 The cross-user derivations in `npm run aggregate` go further than any single user's privacy preference can reach: they show one party seeing the union of all users' traffic, which is an aggregate effect rather than a per-user one.

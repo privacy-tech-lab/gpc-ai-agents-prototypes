@@ -25,14 +25,14 @@ This repo contains experimental prototypes exploring how the [Global Privacy Con
 
 | Prototype | Folder                     | What it shows                                                       |
 | --------- | -------------------------- | ------------------------------------------------------------------- |
-| 1         | [prototype-1](prototype-1) | Tool-level blocking via an MCP interceptor                          |
-| 2         | [prototype-2](prototype-2) | Purpose-based gating of secondary pipelines after the agent answers |
-| 3         | [prototype-3](prototype-3) | Per-call consent checks for tools added after signup                |
-| 4         | [prototype-4](prototype-4) | Signal propagation and the provider visibility gap                  |
-| 5         | [prototype-5](prototype-5) | Inference firewall for derived attributes                           |
-| 6         | [prototype-6](prototype-6) | Collection gates for input, behavior, and derived data              |
-| 7         | [prototype-7](prototype-7) | Retention limits at session end, recall, and profile synthesis      |
-| 8         | [prototype-8](prototype-8) | Delegation tiers with a decline-by-default fallback                 |
+| 1         | [prototype-1](prototype-1) | Input collection, inference, and sharing limits via an MCP interceptor |
+| 2         | [prototype-2](prototype-2) | Targeting, commercial and analytical, repurposing, and sharing gates |
+| 3         | [prototype-3](prototype-3) | Integration, activation, initiation, and scope expansion checks for new tools |
+| 4         | [prototype-4](prototype-4) | Delegated action records, sharing, and the provider visibility gap |
+| 5         | [prototype-5](prototype-5) | Inference firewall for inferred attributes                          |
+| 6         | [prototype-6](prototype-6) | Input collection, metadata collection, and inference gates          |
+| 7         | [prototype-7](prototype-7) | Retention and inference limits at session end, recall, and profile synthesis |
+| 8         | [prototype-8](prototype-8) | Autonomy tiers, activation, and unprompted initiation with a decline-by-default fallback |
 
 ## 2. Contributing
 

@@ -22,9 +22,9 @@ Prototype 6 puts a gate at each of the three boundaries. The task is never gated
 
 ## Preference scopes
 
-The prototype has three collection preferences: **input** (what the user submits), **behavior** (what the user passively generates), and **derived** (what the system infers). They are distinguished by the user's relationship to the data, and each is assertable on its own.
+The prototype covers three preferences: the **input collection preference** (`input`, what the user submits), the **metadata collection preference** (`behavior`, what the user unknowingly produces), and the **inference preference** (`derived`, what the system concludes). The two collection preferences are distinguished by the user's relationship to the data. Inference is a use of data already collected. Each preference is assertable on its own.
 
-As in Prototype 5, the derived preference is enforced at the storage boundary. The classifier still runs and the inference is still computed, which is what `would_have_written` reports, but nothing is written to the profile.
+As in Prototype 5, the inference preference is enforced at the storage boundary. The classifier still runs and the inference is still computed, which is what `would_have_written` reports, but nothing is written to the profile.
 
 | | No preference | `--scope=input` | `--scope=behavior` | `--scope=derived` | `--gpc` |
 |---|---|---|---|---|---|
@@ -35,18 +35,18 @@ As in Prototype 5, the derived preference is enforced at the storage boundary. T
 
 ```mermaid
 flowchart TD
-    S["User submits draft + instruction"] --> IN{"input preference?"}
+    S["User submits draft + instruction"] --> IN{"input collection preference?"}
     IN -- "no" --> L1["inputLog.store()\nraw draft retained"]
     IN -- "yes" --> DIN["discarded after the task\nwould_have_stored recorded"]
     L1 --> T["Composition telemetry:\ndeleted sentence, 42s pause, 3 rewrites"]
     DIN --> T
-    T --> BH{"behavior preference?"}
+    T --> BH{"metadata collection preference?"}
     BH -- "no" --> L2["behaviorLog.store()\n3 events recorded"]
     BH -- "yes" --> DBH["suppressed\nwould_have_recorded recorded"]
     L2 --> MC["mcp_client.js ⇄ stdio ⇄\nmcp-server/server.js\nclassify_draft(draft_id)"]
     DBH --> MC
     MC --> CL["{ polished_email, inferred_attributes,\nattribute_sources }"]
-    CL --> DV{"derived preference?"}
+    CL --> DV{"inference preference?"}
     DV -- "no" --> W["derivedProfile.write()\n4 attributes, 2 behavior-sourced"]
     DV -- "yes" --> FW["blocked: inference_firewall\nwould_have_written recorded"]
     W --> ANS["Polished email returned\n(identical in every mode)"]
@@ -213,11 +213,11 @@ The `would_have_*` fields are the audit trail: under a privacy preference they r
 
 ## How it differs from Prototype 5
 
-Prototype 5 covers derived collection alone, with a session of eight search queries. This prototype covers input, behavioral, and derived collection in one interaction.
+Prototype 5 covers the inference preference alone, with a session of eight search queries. This prototype covers input collection, metadata collection, and inference in one interaction.
 
 | | Prototype 5 | Prototype 6 |
 |---|---|---|
-| Preferences covered | derived | input, behavior, derived |
+| Preferences covered | inference | input collection, metadata collection, inference |
 | Scenario | 8 search queries | 1 email polished |
 | Source of the inference | query text (input only) | submitted text *and* passive behavior, labeled per attribute |
 | Partial assertion | not modeled | `--scope=input,behavior,derived`, any subset |

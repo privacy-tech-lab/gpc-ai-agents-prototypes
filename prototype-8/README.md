@@ -1,4 +1,4 @@
-# Prototype 8: Delegation Gate
+# Prototype 8: Autonomy Gate
 Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism for sending privacy signals in this prototype.
 
 ## What it demonstrates
@@ -9,11 +9,13 @@ Those six actions are not equivalent. A flight search is reversible and costs no
 
 Prototype 8 lets the user partition actions into tiers and grant the agent standing in some while withholding it in others. The vendor may propose defaults, but the user's assignment overrides them, and where nobody assigned a tier the action falls to the most restrictive treatment. When no user is available to answer, a decision that needs them is declined rather than assumed.
 
-## Selective delegation
+## Autonomy preference
 
-The privacy preference here is selective delegation: the user withholds the agent's standing to resolve certain choices on their behalf, calibrated to reversibility, sensitivity, and magnitude of consequence. Standing is granted per tier, never wholesale, and anything unassigned or unattended defaults to the most restrictive treatment.
+The privacy preference here is autonomy: the user decides which tasks the agent may resolve on its own and which it must refer back to them, calibrated to reversibility, sensitivity, and magnitude of consequence. Standing is granted per tier, never wholesale, and anything unassigned or unattended defaults to the most restrictive treatment.
 
-The GPC signal voids the vendor's *proposed* tiers, on the grounds that a global privacy signal means consent to a delegation tier may not be inferred from a platform default. Explicit user assignments are untouched by it.
+The GPC signal voids the vendor's *proposed* tiers, on the grounds that a global privacy signal means consent to an autonomy tier may not be inferred from a platform default. Explicit user assignments are untouched by it.
+
+`price_alerts_tracking` and `newsletter_signup` also show the activation and unprompted initiation preferences: they are background activity the platform starts without the user asking.
 
 | Action | Reversible | Sensitive | Baseline | Attended | Unattended | GPC + unattended |
 |---|---|---|---|---|---|---|

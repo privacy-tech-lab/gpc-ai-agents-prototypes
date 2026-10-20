@@ -1,9 +1,9 @@
-# Prototype 7: Persistence
+# Prototype 7: Retention
 Note: We use Global Privacy Control (GPC) to demonstrate a potential mechanism for sending privacy signals in this prototype.
 
-Setting a privacy preference for how long data survives.
+Setting a retention preference for how long data survives.
 
-This prototype has three persistence scopes:
+This prototype has three retention scopes:
 
 | Scope | Governs | In this prototype |
 |-------|---------|-------------------|
@@ -12,6 +12,8 @@ This prototype has three persistence scopes:
 | `profile` | Retention is permitted, but no behavioral model may be synthesized across time. | The profile synthesis step: sessions stay as inert transcripts. |
 
 The scopes form a hierarchy: asserting `session` implies `cross_session` and `profile`, and asserting `cross_session` implies `profile`. A bare GPC signal asserts the strictest scope (`session`).
+
+The `session` scope covers retention of what the user submitted (input collection). The `cross_session` and `profile` scopes cover inference: past sessions tailoring new answers, and retained history turned into a model of the user.
 
 ## Scenario
 

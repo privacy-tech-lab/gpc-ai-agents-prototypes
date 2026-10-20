@@ -10,9 +10,9 @@ The assistant searches the web, synthesises an itinerary, and (in a non-GPC worl
 
 ---
 
-## Persistence scopes
+## Preference scopes
 
-The prototype enforces persistence limits in two places. `storage.js` handles writes: `save_to_profile`, `log_interaction`, and its own `user_profile_lookup` call are all blocked whenever `gpc=1` is present, regardless of `persistence_scope`, so nothing written survives past the interaction. `personalization.js` handles reads, consulted before synthesis runs: `get_interaction_history` needs `persistence_scope: 'profile'` (the user's preference covers only the long-term profile) or it is blocked, and its own `user_profile_lookup` call needs no GPC signal at all (baseline). With GPC on and no scope given, the default is `'session'`: nothing persists and nothing is consulted. Asserting `persistence_scope` changes what personalization consults; it does not loosen what storage writes.
+The prototype enforces the input collection and inference preferences in two places. `storage.js` handles writes (input collection): `save_to_profile`, `log_interaction`, and its own `user_profile_lookup` call are all blocked whenever `gpc=1` is present, regardless of `persistence_scope`, so nothing written survives past the interaction. `personalization.js` handles reads (inference), consulted before synthesis runs: `get_interaction_history` needs `persistence_scope: 'profile'` (the user's preference covers only the long-term profile) or it is blocked, and its own `user_profile_lookup` call needs no GPC signal at all (baseline). With GPC on and no scope given, the default is `'session'`: nothing persists and nothing is consulted. Asserting `persistence_scope` changes what personalization consults; it does not loosen what storage writes.
 
 Only the `session` and `profile` scopes are modeled. A cross-session scope is left out on purpose: its defining feature is a within-session/cross-session split, retain during this session, but do not carry it into a future one, and this prototype has no within-session state for that split to apply to. Each call (see `harness/run_scope_check.js`) is a single, independent request/response against the same seeded user, with no server-side session in between. There is no finer-grained session boundary here for a cross-session scope to act on, so it is not part of this demo.
 
@@ -58,13 +58,13 @@ flowchart TD
 
 ### Agent roles
 
-**Search agent** (`agents/search_agent.js`, served over A2A by `agents/search_agent_server.js`): An LLM loop with one tool (`search_web`). The model decides how many searches to make and when it has enough raw material. The GPC signal is forwarded on the A2A message (as `Message.metadata.gpc`) and again on every MCP tool call (as `_meta.gpc`), but `search_web` is not sensitive so the `withGpc()` interceptor always passes it through. Retrieval is never blocked, only storage is.
+**Search agent** (`agents/search_agent.js`, served over A2A by `agents/search_agent_server.js`): An LLM loop with one tool (`search_web`). The model decides how many searches to make and when it has enough raw material. The GPC signal is forwarded on the A2A message (as `Message.metadata.gpc`) and again on every MCP tool call (as `_meta.gpc`), but `search_web` is not sensitive so the `withGpc()` interceptor always passes it through. Retrieval is never blocked, only storage is. Carrying the signal along every hop is how the prototype handles data sharing across the agent chain.
 
 **Synthesis agent** (`agents/synthesis_agent.js`, served over A2A by `agents/synthesis_agent_server.js`): Receives raw search results from the search agent (forwarded by the orchestrator as A2A message metadata) and synthesises them into a structured itinerary. It calls no tools, so there is nothing for GPC to block here.
 
 ### Supporting services
 
-**Personalization** (`services/personalization.js`): Deterministic, no LLM. Reads (not writes) past user data, gated at two different persistence boundaries as described above. Runs before the synthesis agent, in parallel with the search agent call.
+**Personalization** (`services/personalization.js`): Deterministic, no LLM. Reads (not writes) past user data, gated at two different boundaries as described above. Runs before the synthesis agent, in parallel with the search agent call.
 
 **Storage** (`services/storage.js`): Calls three storage operations in fixed order over the real MCP client. MCP-sensitive writes are double-guarded: explicit code check plus `withGpc()` interceptor at the MCP layer.
 
@@ -180,7 +180,7 @@ Use real web search (Tavily free tier, 1000 calls/month):
 TAVILY_API_KEY=tvly-... npm run demo
 ```
 
-### Persistence-scope comparison
+### Scope comparison
 
 `run_scope_check.js` and `compare_scope_check.js` are not wired into `package.json` scripts; run them directly with `node` after the seed step above. Each `run_scope_check.js` call is one independent request against the same seeded user (`user-42`); the `--scope` flag is what varies between runs:
 
