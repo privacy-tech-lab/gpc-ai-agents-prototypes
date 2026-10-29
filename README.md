@@ -33,7 +33,7 @@ The taxonomy has five areas:
 | D. Persistence | Whether an agent may stay after its task, start new activity on its own, or expand its scope |
 | E. Autonomy | Which decisions an agent may make alone and which it must bring back to the user |
 
-The prototypes show how parts of this taxonomy can be built into agentic protocols such as the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and [Agent2Agent (A2A)](https://a2a-protocol.org/). Each one mirrors a real-world agent use case and tests a specific question: does the user's privacy preference actually stop the data flow, or does it only pass the signal along and leave enforcement to whoever is downstream? Where a prototype needs a signal to carry the user's preference, we use GPC as one possible mechanism.
+The prototypes show how parts of this taxonomy can be built into agentic protocols such as the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and [Agent2Agent (A2A)](https://a2a-protocol.org/). Each one mirrors a real-world agent use case. Where a prototype needs a signal to carry the user's preference, we use GPC as one possible mechanism.
 
 All prototypes run locally on [Ollama](https://ollama.com/) (default model `qwen2.5:14b`).
 
