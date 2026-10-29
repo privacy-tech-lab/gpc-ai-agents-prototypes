@@ -6,7 +6,7 @@
  *    asserts exactly that subset; invalid names are dropped
  *  - Input: submissions are stored by default and discarded under the preference
  *  - Behavior: telemetry is recorded by default and suppressed under the preference
- *  - Derived: inference is written by default and blocked by the firewall,
+ *  - Derived: inference is written by default and blocked by the profile write gate,
  *    recording what would have been written and its sources
  *  - Subtype independence: asserting one leaves the other two collecting
  */
@@ -101,10 +101,10 @@ describe('derived collection', () => {
     expect(snap.attributes.health_flags).toContain('ongoing_medical_treatment');
   });
 
-  test('the firewall blocks the write when the derived preference is asserted', () => {
+  test('the profile write gate blocks the write when the derived preference is asserted', () => {
     const result = gate.deriveProfile(session.draft_id, classified, stores, new Set(['derived']));
     expect(result.status).toBe('blocked');
-    expect(result.reason).toBe('inference_firewall');
+    expect(result.reason).toBe('profile_write_gate');
     expect(stores.derivedProfile.isEmpty()).toBe(true);
     expect(stores.derivedProfile.snapshot().blocked_count).toBe(1);
   });

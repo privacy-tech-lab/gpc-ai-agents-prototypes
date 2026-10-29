@@ -1,15 +1,15 @@
 'use strict';
 
 /**
- * run_firewall.js
+ * run_gate.js
  *
  * Runs Prototype 5 with the GPC signal ON.
  *
- * The inference firewall intercepts every classification result before it can
+ * The profile write gate intercepts every classification result before it can
  * be written to the shadow profile.  Answers are still delivered to the user,
  * but no attributes accumulate.  The profile stays empty for the entire session.
  *
- * This is the success case: it shows that the firewall can suppress derived collection
+ * This is the success case: it shows that the gate can suppress derived collection
  * without degrading the quality of the answer.
  */
 
@@ -17,14 +17,14 @@ const orchestrator = require('./orchestrator');
 const { closeClient } = require('./mcp_client');
 
 async function main() {
-  console.log('=== Prototype 5 — Inference Firewall | Firewall: ON ===');
+  console.log('=== Prototype 5 — Profile Write Gate | Gate: ON ===');
   console.log('GPC signal active — inference is blocked before any attributes are written.\n');
 
   const { results, profileSnapshot } = await orchestrator.run(true);
 
   const output = {
-    firewall_active: true,
-    mode: 'firewall_enforced',
+    gate_active: true,
+    mode: 'gate_enforced',
     query_results: results,
     shadow_profile: profileSnapshot,
     profile_attribute_count: profileSnapshot.attributes
@@ -38,7 +38,7 @@ async function main() {
   console.log('\n=== Shadow Profile Summary ===');
   console.log(`Attributes accumulated: ${output.profile_attribute_count}`);
   console.log(`Inference attempts blocked: ${output.inference_blocked_count}`);
-  console.log('\n[✓] With firewall on, zero attributes were written to the profile.');
+  console.log('\n[✓] With the gate on, zero attributes were written to the profile.');
   console.log('    All 8 queries were answered. Inference was suppressed, not the answer.');
 
   await closeClient();

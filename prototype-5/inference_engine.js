@@ -9,7 +9,7 @@
  * In a real system this module would call an embedding model, a named-entity
  * recogniser, or a rules-based tagger.  Here it is a thin pass-through that
  * trusts the classifier's output — the point of Prototype 5 is what happens
- * *around* this step (the firewall), not the classifier itself.
+ * *around* this step (the gate), not the classifier itself.
  *
  * derive(query, classifiedAttrs, store)
  *

@@ -48,7 +48,7 @@ flowchart TD
     MC --> CL["{ polished_email, inferred_attributes,\nattribute_sources }"]
     CL --> DV{"inference preference?"}
     DV -- "no" --> W["derivedProfile.write()\n4 attributes, 2 behavior-sourced"]
-    DV -- "yes" --> FW["blocked: inference_firewall\nwould_have_written recorded"]
+    DV -- "yes" --> FW["blocked: profile_write_gate\nwould_have_written recorded"]
     W --> ANS["Polished email returned\n(identical in every mode)"]
     FW --> ANS
 
@@ -164,7 +164,7 @@ npm test
 |---|---|
 | `stores.test.js` | Log store append and blocked counting; profile store scalar overwrite and array merge-without-duplicates; snapshot isolation; store independence |
 | `inference_classifier.test.js` | `classify()` returns task output plus attributes; every attribute has a declared source; behavior-sourced attributes identified; deep copies isolate the static table |
-| `collection_gate.test.js` | `resolveOptouts()` for GPC and scope lists; input store versus discard; behavior record versus suppress; derived write versus firewall; scope independence, including that input and behavior together do not stop derived |
+| `collection_gate.test.js` | `resolveOptouts()` for GPC and scope lists; input store versus discard; behavior record versus suppress; derived write versus block; scope independence, including that input and behavior together do not stop derived |
 | `orchestrator.test.js` | Full five-stage session for baseline, `--gpc`, and each single scope; blocked counts; task output identical to baseline |
 | `agent.test.js` | `read_draft` fires the input checkpoint; task material still flows to the model under the input preference; the model sees only instruction and draft, never telemetry or stores; unknown tools refused |
 
@@ -189,7 +189,7 @@ ollama pull qwen2.5:14b      # once; override with OLLAMA_MODEL
 
 npm run agent          # no preferences
 npm run agent:gpc      # all three preferences asserted
-npm run agent:derived  # inference firewall only
+npm run agent:derived  # profile write gate only
 ```
 
 ---

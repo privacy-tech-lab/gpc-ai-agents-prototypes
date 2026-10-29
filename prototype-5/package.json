@@ -1,15 +1,15 @@
 {
   "name": "prototype-5",
   "version": "1.0.0",
-  "description": "Inference Firewall — GPC privacy preference against derived collection",
+  "description": "Profile Write Gate — GPC privacy preference against derived collection",
   "type": "commonjs",
   "license": "ISC",
   "scripts": {
     "baseline": "node run_baseline.js",
-    "firewall": "node run_firewall.js",
-    "demo": "node run_baseline.js && node run_firewall.js",
+    "gate": "node run_gate.js",
+    "demo": "node run_baseline.js && node run_gate.js",
     "agent": "node run_agent.js",
-    "agent:firewall": "node run_agent.js --firewall",
+    "agent:gate": "node run_agent.js --gate",
     "test": "jest tests/ --runInBand"
   },
   "dependencies": {

@@ -4,11 +4,11 @@
  * orchestrator.js
  *
  * Processes every query in the classifier's table and routes each one through
- * either the inference engine (firewall off) or the inference firewall (firewall on).
+ * either the inference engine (gate off) or the profile write gate (gate on).
  *
- * run(firewallOn = false)
+ * run(gateOn = false)
  *
- *   @param {boolean} firewallOn — when true, the GPC signal is active and inference
+ *   @param {boolean} gateOn — when true, the GPC signal is active and inference
  *                         is blocked for every query
  *
  *   @returns {Promise<{
@@ -16,20 +16,20 @@
  *     profileSnapshot: object,         // final profile state (attributes + blocked_count)
  *   }>}
  *
- * Per-query result shape (firewall off):
+ * Per-query result shape (gate off):
  *   { query, status: 'derived', attributes, answer }
  *
- * Per-query result shape (firewall on):
- *   { query, status: 'blocked', reason: 'inference_firewall', would_have_written, answer }
+ * Per-query result shape (gate on):
+ *   { query, status: 'blocked', reason: 'profile_write_gate', would_have_written, answer }
  */
 
 const classifier  = require('./query_classifier');
 const mcpClient   = require('./mcp_client');
 const engine      = require('./inference_engine');
-const firewall    = require('./inference_firewall');
+const gate        = require('./profile_write_gate');
 const { createProfileStore } = require('./profile_store');
 
-async function run(firewallOn = false) {
+async function run(gateOn = false) {
   const store   = createProfileStore();
   const queries = classifier.allQueries();
   const results = [];
@@ -38,8 +38,8 @@ async function run(firewallOn = false) {
     const classified = await mcpClient.classify(query);
 
     let engineResult;
-    if (firewallOn) {
-      engineResult = firewall.block(query, classified, store);
+    if (gateOn) {
+      engineResult = gate.block(query, classified, store);
     } else {
       engineResult = engine.derive(query, classified, store);
     }

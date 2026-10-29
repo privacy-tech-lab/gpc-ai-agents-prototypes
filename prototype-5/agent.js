@@ -7,12 +7,12 @@
  * fixed query list (orchestrator.js), a real model is given a `search` tool and
  * decides to call it for each question the user asks.
  *
- * The firewall is NOT in the prompt. It lives inside executeSearch — the tool the
- * model calls. The model proposes (calls `search`); the firewall disposes (blocks
- * the write when the firewall is on). The model only ever receives the answer, never the
- * inferred attributes, so it cannot route around the firewall.
+ * The gate is NOT in the prompt. It lives inside executeSearch — the tool the
+ * model calls. The model proposes (calls `search`); the gate disposes (blocks
+ * the write when the gate is on). The model only ever receives the answer, never the
+ * inferred attributes, so it cannot route around the gate.
  *
- * The deterministic orchestrator.js / run_baseline.js / run_firewall.js are retained as
+ * The deterministic orchestrator.js / run_baseline.js / run_gate.js are retained as
  * the testable core; this module is the live-agent demo path (requires Ollama).
  */
 
@@ -20,7 +20,7 @@ const { runAgentLoop } = require('./agent_loop');
 const classifier = require('./query_classifier');
 const mcpClient  = require('./mcp_client');
 const engine     = require('./inference_engine');
-const firewall   = require('./inference_firewall');
+const gate       = require('./profile_write_gate');
 const { createProfileStore } = require('./profile_store');
 
 const TOOL_DEFINITIONS = [
@@ -45,10 +45,10 @@ question, call the search tool with their question to look it up, then give them
 the answer. Pass the user's question to the search tool exactly as they asked it.`;
 
 /**
- * executeSearch — the tool the model calls, and the firewall boundary.
+ * executeSearch — the tool the model calls, and the gate boundary.
  *
  * Runs the classifier (which produces BOTH the answer and the inferred attributes),
- * routes the attributes through the firewall (firewall on) or the engine (firewall off), and
+ * routes the attributes through the gate (gate on) or the engine (gate off), and
  * returns ONLY the answer to the model. The inference happens as a side effect on
  * the store; the model never sees what was inferred.
  *
@@ -57,10 +57,10 @@ the answer. Pass the user's question to the search tool exactly as they asked it
  *
  * @param {{query: string}} input
  * @param {object} store   profile store for this session
- * @param {boolean} firewallOn   whether the firewall is active
+ * @param {boolean} gateOn   whether the gate is active
  * @returns {Promise<{ answer: string }>}
  */
-async function executeSearch({ query }, store, firewallOn) {
+async function executeSearch({ query }, store, gateOn) {
   let classified;
   try {
     classified = await mcpClient.classify(query);
@@ -68,8 +68,8 @@ async function executeSearch({ query }, store, firewallOn) {
     return { answer: "I couldn't find specific information on that question." };
   }
 
-  if (firewallOn) {
-    firewall.block(query, classified, store);   // record + suppress; no write
+  if (gateOn) {
+    gate.block(query, classified, store);   // record + suppress; no write
   } else {
     engine.derive(query, classified, store);    // write inferred attributes
   }
@@ -83,10 +83,10 @@ async function executeSearch({ query }, store, firewallOn) {
  * @param {object} opts
  * @param {string} opts.question
  * @param {object} opts.store
- * @param {boolean} [opts.firewallOn=false]
+ * @param {boolean} [opts.gateOn=false]
  * @returns {Promise<{ finalResponse: string, toolCalls: Array }>}
  */
-async function ask({ question, store, firewallOn = false }) {
+async function ask({ question, store, gateOn = false }) {
   return runAgentLoop({
     systemPrompt:    SYSTEM_PROMPT,
     userMessage:     question,
@@ -94,7 +94,7 @@ async function ask({ question, store, firewallOn = false }) {
     requiredTools:   ['search'],
     executeToolFn:   (name, input) =>
       name === 'search'
-        ? executeSearch(input, store, firewallOn)
+        ? executeSearch(input, store, gateOn)
         : { error: 'unknown_tool', name },
   });
 }
@@ -105,16 +105,16 @@ async function ask({ question, store, firewallOn = false }) {
  * deterministic orchestrator.
  *
  * @param {object} [opts]
- * @param {boolean} [opts.firewallOn=false]
+ * @param {boolean} [opts.gateOn=false]
  * @returns {Promise<{ results: Array, profileSnapshot: object }>}
  */
-async function runSession({ firewallOn = false } = {}) {
+async function runSession({ gateOn = false } = {}) {
   const store = createProfileStore();
   const questions = classifier.allQueries();
   const results = [];
 
   for (const question of questions) {
-    const { finalResponse, toolCalls } = await ask({ question, store, firewallOn });
+    const { finalResponse, toolCalls } = await ask({ question, store, gateOn });
     results.push({ question, finalResponse, toolCalls });
   }
 

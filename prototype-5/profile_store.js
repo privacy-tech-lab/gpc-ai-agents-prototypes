@@ -9,11 +9,11 @@
  *
  * The store tracks:
  *   attributes    — key/value map of everything the inference engine has derived
- *   blocked_count — how many inference attempts were intercepted by the firewall
+ *   blocked_count — how many inference attempts were intercepted by the gate
  *
  * Design note: the store is deliberately simple — no persistence between runs —
  * because Prototype 5's point is to show what accumulates *within* a session
- * when the firewall is off vs. what is suppressed when the firewall is on.
+ * when the gate is off vs. what is suppressed when the gate is on.
  */
 
 function createProfileStore() {
@@ -47,7 +47,7 @@ function createProfileStore() {
   /**
    * incrementBlocked()
    *
-   * Records that one inference attempt was stopped by the firewall.
+   * Records that one inference attempt was stopped by the gate.
    */
   function incrementBlocked() {
     blocked_count += 1;

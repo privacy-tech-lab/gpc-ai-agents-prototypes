@@ -4,11 +4,11 @@
  * run_agent.js — live LLM demo (requires Ollama).
  *
  * A real model drives the session: for each question it decides to call the
- * `search` tool, and the firewall runs inside that tool. The model only ever
- * sees the answer, so the firewall changes the shadow profile, never the response.
+ * `search` tool, and the gate runs inside that tool. The model only ever
+ * sees the answer, so the gate changes the shadow profile, never the response.
  *
- *   node run_agent.js            # firewall off — profile accumulates
- *   node run_agent.js --firewall # firewall on  — inference blocked, profile stays empty
+ *   node run_agent.js            # gate off — profile accumulates
+ *   node run_agent.js --gate     # gate on  — inference blocked, profile stays empty
  *
  * Needs Ollama running (`ollama serve`) with the model pulled
  * (`ollama pull qwen2.5:14b`). Override with OLLAMA_MODEL.
@@ -18,12 +18,12 @@ const agent = require('./agent');
 const { closeClient } = require('./mcp_client');
 
 async function main() {
-  const firewallOn = process.argv.includes('--firewall');
+  const gateOn = process.argv.includes('--gate');
 
-  console.log(`=== Prototype 5 — LLM agent | firewall: ${firewallOn ? 'ON' : 'OFF'} ===`);
-  console.log('A real model decides to call the search tool; the firewall runs inside it.\n');
+  console.log(`=== Prototype 5 — LLM agent | gate: ${gateOn ? 'ON' : 'OFF'} ===`);
+  console.log('A real model decides to call the search tool; the gate runs inside it.\n');
 
-  const { results, profileSnapshot } = await agent.runSession({ firewallOn });
+  const { results, profileSnapshot } = await agent.runSession({ gateOn });
 
   for (const r of results) {
     console.log(`Q: ${r.question}`);
@@ -37,7 +37,7 @@ async function main() {
   console.log(`\nAttributes accumulated: ${attributeCount}`);
   console.log(`Inference attempts blocked: ${profileSnapshot.blocked_count}`);
 
-  if (firewallOn) {
+  if (gateOn) {
     console.log('\n[✓] The model answered every question. Inference was suppressed, not the answer.');
   } else {
     console.log('\n[!] The model answered every question — and a profile was built from them.');

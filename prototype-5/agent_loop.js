@@ -2,7 +2,7 @@
  * Prototype 5 turn loop.
  *
  * Thin wrapper around the shared core/agent_loop.js. Enforcement (the
- * inference firewall) lives in the caller's executeToolFn, not here.
+ * profile write gate) lives in the caller's executeToolFn, not here.
  */
 
 const { runAgentLoop: baseRun } = require('../core/agent_loop');

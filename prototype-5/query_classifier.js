@@ -5,7 +5,7 @@
  *
  * Static lookup table mapping known queries to:
  *   - inferred_attributes: the profile fields an inference engine would derive
- *   - answer:              a canned response returned to the user regardless of firewall mode
+ *   - answer:              a canned response returned to the user regardless of gate mode
  *
  * This simulates what a real semantic classifier would produce after analysing
  * the text of a search query.  In a production system this would call an

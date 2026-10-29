@@ -11,7 +11,7 @@
  * Enforcement does NOT live here. Every tool the model calls is run
  * through the caller's executeToolFn, which is where each architecture
  * routes the call through its own enforcement layer (GPC interceptor
- * in prototype-1, consent check in prototype-3, inference firewall in prototype-5).
+ * in prototype-1, consent check in prototype-3, profile write gate in prototype-5).
  * The model only ever sees what executeToolFn returns.
  *
  * prototype-2 keeps its own loop because it threads a privacyContext through

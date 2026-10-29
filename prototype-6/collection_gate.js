@@ -14,8 +14,8 @@
  *  hesitation, rewrites) is not recorded with the behavior preference asserted.
  *
  *  deriveProfile: inferences built from input or behavior material are not written
- *  to the profile with the derived preference asserted. Ported from prototype-5's inference
- *  firewall: the run records what would have been written.
+ *  to the profile with the derived preference asserted. Ported from prototype-5's profile
+ *  write gate: the run records what would have been written.
  *
  * Scopes are independently assertable: resolveOptouts() turns the GPC
  * signal (all three) or an explicit scope list (any subset) into the active
@@ -81,7 +81,7 @@ function deriveProfile(draftId, classified, stores, optouts) {
     return {
       stage: 'derived',
       status: 'blocked',
-      reason: 'inference_firewall',
+      reason: 'profile_write_gate',
       draft_id: draftId,
       would_have_written: JSON.parse(JSON.stringify(inferred_attributes)),
       attribute_sources: JSON.parse(JSON.stringify(attribute_sources)),

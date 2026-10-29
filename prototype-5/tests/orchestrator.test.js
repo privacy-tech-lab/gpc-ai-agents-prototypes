@@ -2,17 +2,17 @@
  * Integration tests for orchestrator.js
  *
  * Covers:
- *  - Baseline (firewall off): all 8 queries return status=derived
+ *  - Baseline (gate off): all 8 queries return status=derived
  *  - Baseline: shadow profile accumulates attributes from every query
  *  - Baseline: profile is non-empty and blocked_count is 0
  *  - Baseline: specific attribute values match classifier output
- *  - firewall on: all 8 queries return status=blocked
- *  - firewall on: blocked reason is inference_firewall for every result
- *  - firewall on: shadow profile stays completely empty
- *  - firewall on: blocked_count equals 8
- *  - firewall on: would_have_written is present on every result
- *  - firewall on: answers are still returned (inference blocked, answers not)
- *  - Baseline: answers are still returned (identical to firewall on)
+ *  - gate on: all 8 queries return status=blocked
+ *  - gate on: blocked reason is profile_write_gate for every result
+ *  - gate on: shadow profile stays completely empty
+ *  - gate on: blocked_count equals 8
+ *  - gate on: would_have_written is present on every result
+ *  - gate on: answers are still returned (inference blocked, answers not)
+ *  - Baseline: answers are still returned (identical to gate on)
  *  - Structural: results array has 8 entries in both modes
  */
 
@@ -24,9 +24,9 @@ afterAll(async () => {
   await closeClient();
 });
 
-// ─── Baseline (firewall off) ───────────────────────────────────────────────────────
+// ─── Baseline (gate off) ───────────────────────────────────────────────────────
 
-describe('baseline — firewall off', () => {
+describe('baseline — gate off', () => {
   let run;
 
   beforeEach(async () => {
@@ -90,9 +90,9 @@ describe('baseline — firewall off', () => {
   });
 });
 
-// ─── Firewall enforced ─────────────────────────────────────────────────────────────
+// ─── Gate enforced ─────────────────────────────────────────────────────────────
 
-describe('firewall enforced — firewall=true', () => {
+describe('gate enforced — gate=true', () => {
   let run;
 
   beforeEach(async () => {
@@ -109,9 +109,9 @@ describe('firewall enforced — firewall=true', () => {
     }
   });
 
-  test('all results have reason=inference_firewall', () => {
+  test('all results have reason=profile_write_gate', () => {
     for (const r of run.results) {
-      expect(r.reason).toBe('inference_firewall');
+      expect(r.reason).toBe('profile_write_gate');
     }
   });
 
@@ -160,7 +160,7 @@ describe('firewall enforced — firewall=true', () => {
 
 // ─── Comparison between modes ────────────────────────────────────────────────
 
-describe('baseline vs firewall — answer parity', () => {
+describe('baseline vs gate — answer parity', () => {
   test('the answer for each query is identical in both modes', async () => {
     const baseline = await orchestrator.run(false);
     const enforced = await orchestrator.run(true);
@@ -170,7 +170,7 @@ describe('baseline vs firewall — answer parity', () => {
     }
   });
 
-  test('baseline profile has attributes; firewall profile does not', async () => {
+  test('baseline profile has attributes; gate profile does not', async () => {
     const baseline = await orchestrator.run(false);
     const enforced = await orchestrator.run(true);
 
@@ -178,7 +178,7 @@ describe('baseline vs firewall — answer parity', () => {
     expect(Object.keys(enforced.profileSnapshot.attributes).length).toBe(0);
   });
 
-  test('baseline blocked_count is 0; firewall blocked_count is 8', async () => {
+  test('baseline blocked_count is 0; gate blocked_count is 8', async () => {
     const baseline = await orchestrator.run(false);
     const enforced = await orchestrator.run(true);
 
