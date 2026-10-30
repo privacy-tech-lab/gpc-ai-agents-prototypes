@@ -1,0 +1,23 @@
+company,in_sample_as,products_audited,controls_in_table_2,note
+Apple,Top 10 tech,Apple Intelligence / Siri,32,
+Alphabet (Google),Top 10 tech; Comscore #2,"Gemini (app), Gemini in Workspace and Chrome, Gemini API / Vertex AI",64,
+Microsoft,Top 10 tech; Comscore #3,"Microsoft Copilot (app), Copilot in Microsoft 365 / Windows, Microsoft Foundry",88,
+Nvidia,Top 10 tech,"NVIDIA G-Assist, NVIDIA NIM / NeMo Agent Toolkit",37,"ChatRTX was deprecated on January 21, 2026; its two rows stay in the G-Assist product as context."
+Meta,Top 10 tech,Meta AI,31,
+TSMC,Top 10 tech,,,No AI assistant or agent product.
+Samsung Electronics,Top 10 tech,Samsung Galaxy AI / Bixby,39,
+SK Hynix,Top 10 tech,,,"Its agent framework, GaiA, is internal only."
+Tencent,Top 10 tech,"Tencent Yuanbao, Tencent Cloud ADP",39,
+Broadcom,Top 10 tech,Broadcom Tanzu AI,36,
+Anthropic,Top 10 AI; Comscore #4,"Claude (apps), Claude API, Claude Code",90,
+OpenAI,Top 10 AI; Comscore #1,"ChatGPT, dots (OpenAI), OpenAI API",85,
+Databricks,Top 10 AI,Databricks Agent Bricks,51,
+Safe Superintelligence,Top 10 AI,,,No product.
+Perplexity,Top 10 AI; Comscore #7,"Perplexity, Comet (Perplexity)",46,
+Sierra,Top 10 AI,Sierra agent platform,33,
+Applied Intuition,Top 10 AI,Applied Intuition Dana,15,Also recorded but not counted: Cabin Intelligence: in-car assistant licensed to automakers; Applied's current pages no longer name it and no driver-facing terms exist. Copilot: only a June 2024 announcement; no current product page.
+Skild AI,Top 10 AI,,,No agent product.
+Mistral AI,Top 10 AI,Le Chat (Mistral),25,
+Thinking Machines Lab,Top 10 AI,Thinking Machines Tinker,25,
+xAI,Comscore #5,"Grok, Grok Bot",43,
+DeepSeek,Comscore #6,DeepSeek,9,
