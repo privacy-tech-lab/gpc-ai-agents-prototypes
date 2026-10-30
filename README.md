@@ -38,9 +38,10 @@ The prototypes show how parts of this taxonomy can be built into agentic protoco
 All prototypes run locally on [Ollama](https://ollama.com/) (default model `qwen2.5:14b`).
 
 [1. Prototypes](#1-prototypes)  
-[2. Citation](#2-citation)  
-[3. Contributing](#3-contributing)  
-[4. Thank You!](#4-thank-you)
+[2. Audit Data](#2-audit-data)  
+[3. Citation](#3-citation)  
+[4. Contributing](#4-contributing)  
+[5. Thank You!](#5-thank-you)
 
 ## 1. Prototypes
 
@@ -57,7 +58,11 @@ All prototypes run locally on [Ollama](https://ollama.com/) (default model `qwen
 
 See each prototype's README for setup, run steps, and tests. The full definitions of the taxonomy codes are in the [paper](https://arxiv.org/abs/2610.29929).
 
-## 2. Citation
+## 2. Audit Data
+
+The [audit-data](audit-data) folder has the data from the paper's audit of 30 AI products: every control and related practice we found, the page it came from, and the date we read it. Its [README](audit-data/README.md) explains the columns and how the rows add up to the counts in the paper.
+
+## 3. Citation
 
 If you use these prototypes, please cite the paper:
 
@@ -72,11 +77,11 @@ If you use these prototypes, please cite the paper:
 }
 ```
 
-## 3. Contributing
+## 4. Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the issue template, PR conventions, and the writing rules we use across this repo.
 
-## 4. Thank You!
+## 5. Thank You!
 
 <p align="center"><strong>We would like to thank our supporters!</strong></p><br>
 
