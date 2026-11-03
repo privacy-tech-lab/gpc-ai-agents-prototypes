@@ -1,9 +1,10 @@
 version: 2
 updates:
-  # npm dependencies for every prototype. One entry covers all eight package
-  # directories; a prototype missing from this list gets ungrouped PRs that
-  # the auto-merge workflow ignores, and no scheduled version updates at all
-  # (prototype-7 and 8 were missing after the rename, issue #113).
+  # npm dependencies for core and every prototype. One entry covers all nine
+  # package directories; a directory missing from this list gets ungrouped PRs
+  # that the auto-merge workflow ignores, and no scheduled version updates at
+  # all (prototype-7 and 8 were missing after the rename, issue #113, and core
+  # was missing until it fell behind the prototypes on jest).
   #
   # Minor and patch version updates are grouped so they can be auto-merged;
   # major version updates are grouped separately and left for manual review.
@@ -14,6 +15,7 @@ updates:
   # groups and relies on the required Tests check instead.
   - package-ecosystem: npm
     directories:
+      - /core
       - /prototype-1
       - /prototype-2
       - /prototype-3
