@@ -1,0 +1,33 @@
+code,name,definition,taxonomy,in_taxonomy
+T01,Turn an AI feature or assistant on or off,"Master and per-feature AI switches, opt-in before first use, uninstalling AI, admin enablement of AI features.",A1,yes
+T02,Stop wake words and always-on listening,"Wake words, lock-screen or button invocation, push-to-talk, background voice.",A2,yes
+T03,Stop proactive suggestions and background AI,"AI that runs or surfaces content without being asked: daily briefs, nudges, suggestion cards, auto web search, background summaries.",A2,yes
+T04,Do not keep what I submit,"Temporary or incognito chats, zero data retention, store=false, no-save options for inputs and outputs.",B1,yes
+T05,Filter or mask sensitive data,"PII masking and redaction, sensitive-data filters, keeping sensitive topics out of stored data.",B1,yes
+T06,Limit device sensors and permissions,"Location, microphone, camera, screen sharing, contacts and health permissions.",B2,yes
+T07,Limit usage telemetry and diagnostics,"Usage metrics, error and crash reports, diagnostic data, customer experience programs.",B2,yes
+T08,Limit screen and activity capture,"Screen snapshots, computer or browsing activity capture, use of open tabs or played media as context.",B2,yes
+T09,Limit logs and traces of agent and model activity,"Audit logs, traces, action recordings, request/response logging and what those records contain.",B2a,yes
+T10,Set how long data is kept,"Auto-delete windows, retention periods, TTLs and expiry settings.",Retention note (B),yes
+T11,Opt out of ad personalization,"Personalized ads, ads based on chats or activity, cross-app tracking permission, ad-network opt-outs.",C1a,yes
+T12,Turn off or limit memory,"Saving or using memories, referencing past chats, project-scoped memory, correcting what is remembered.",C1b,yes
+T13,Turn off personalization from other data,"Personalization from instructions, other products, connected apps, device use or profiling services.",C1b,yes
+T14,"Opt out of sale or sharing for ads, incl. GPC","Legal 'do not sell or share' opt-outs, targeted-advertising opt-outs and GPC.",C1c,yes
+T15,Refuse non-essential cookies on vendor websites,"Cookie banners and preference centers for analytics, marketing and targeting cookies.",C1c,yes
+T16,"Opt out of analytics, feedback and product improvement",Use of data for analytics or product improvement other than model training; feedback prompts and sharing.,C1c,yes
+T17,Opt out of model training,"Training on chats, voice, connected-app data or feedback; training data-sharing programs and objections.",C2,yes
+T18,Control which connectors and third parties receive data,"Connecting, disconnecting or toggling apps, plugins and extensions; routing data to outside models or partners.",C3,yes
+T19,Control public sharing of chats and outputs,"Shared links, public posts and published models or templates that let a chat or output travel beyond the user.",C3,yes
+T20,Opt out of human review,"Abuse monitoring logging, staff access to content, review of recordings, records of human access.",C4,yes
+T21,Revoke an agent's access and clear its working state,"Remove an agent from a space, revoke its access to accounts, devices or sites, cancel a delegation, delete its stored sign-ins and sessions.",D1,yes
+T22,Pause or delete scheduled and background agent tasks,"Pause, cancel or delete scheduled tasks, routines and automations; stop an agent resuming or continuing work on its own.",D2,yes
+T23,"Limit which apps, sites, files and networks an agent can reach","Tool and MCP server allowlists, site blocklists, per-app or per-folder access, network egress limits, OAuth scopes.",D3,yes
+T24,Require approval before agent actions,"Approval modes, per-action approval prompts, confirmations before consequential actions, human-in-the-loop, take over, spending blocks.",E,yes
+T25,Choose where data is processed or stored,"Data residency, on-device or self-hosted processing, customer-owned storage.",Application of taxonomy,no
+T26,Delete data,"Deleting chats, memories, recordings, files or accounts.",Out of scope,no
+T27,Request privacy rights from the vendor,"Access, objection, restriction, consent withdrawal and similar requests under privacy law.",Legal mechanism,no
+T28,Opt out of marketing communications,"Marketing email, call and message opt-outs.",Out of scope,no
+T29,Export data,Data export and portability.,Out of scope,no
+T30,"Content safety, parental and age controls","Content filters and guardrails, parental controls, age verification.",Out of scope,no
+T31,"Admin access, security and release governance","Roles, access control, rate limits, encryption, release approvals and compliance settings.",Out of scope,no
+T32,Other,"Attribution, sync, plan changes, account termination and other controls.",Out of scope,no
