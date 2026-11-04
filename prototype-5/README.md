@@ -173,7 +173,7 @@ npm run demo      # both in sequence
 
 ### Run as a real agent (requires Ollama)
 
-A live model decides to call the `search` tool for each question; the gate runs inside the tool, so the model only ever sees the answer. The shadow-profile outcome (11 vs 0) is the same as the deterministic runs, because the classifier stays deterministic — only the driver changes.
+A live model decides to call the `search` tool for each question; the gate runs inside the tool, so the model only ever sees the answer. With the gate on, the profile stays empty. With the gate off, it holds up to 11 attributes. Live counts vary, because the model sometimes rewords a question or skips the search, and the classifier only recognizes exact wording.
 
 ```bash
 ollama serve                 # start Ollama if it isn't running
