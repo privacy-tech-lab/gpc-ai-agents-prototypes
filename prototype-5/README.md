@@ -4,7 +4,7 @@
 
 A user runs eight ordinary search queries. None of them disclose anything directly: they are questions anyone might type. But the text of each query can be fed through a classifier that infers personal attributes: a health condition, a financial situation, an employment status. Run across a session, those inferences accumulate into a detailed profile the user never agreed to hand over. This is what the *inference preference* covers, and it is hard to enforce because the answer the user wanted is still useful, and the inference happens server-side where the user never sees it.
 
-Prototype 5 puts a profile write gate between the classifier and the profile store. When the GPC signal is on, the inference is intercepted before it is written: the answer still reaches the user, but no attributes are kept. When the signal is off, the same pipeline builds a full shadow profile from the eight queries.
+Prototype 5 puts a profile write gate between the classifier and the profile store. When the GPC signal is on, `profile_write_gate.block()` runs instead of `inference_engine.derive()`: the answer still reaches the user, but no attributes are kept. When the signal is off, the same pipeline builds a full shadow profile from the eight queries.
 
 The gate can be driven two ways. The **deterministic core** (`orchestrator.js`) runs a fixed list of eight queries through the classifier with no model — the eight stand in for a session's worth of searches, and this is what the tests exercise. The optional **LLM agent** (`agent.js`, requires Ollama) gives a real model a `search` tool and lets it decide to call it for each question; the gate runs *inside* that tool, so the model only ever sees the answer and can't route around it. Either way, what is under test is the gate at the classify-to-store boundary, not how the queries are chosen.
 
@@ -21,7 +21,7 @@ The gate can be driven two ways. The **deterministic core** (`orchestrator.js`) 
 
 ## What is gated
 
-Prototype 5 gates inference: what a system concludes about a user, as distinct from what the user submits (input collection) or what they unknowingly produce (metadata collection). The gate enforces at the storage boundary: the classifier still runs and the inference is still computed (`would_have_written` reports it), but nothing is written to the profile. This is the practical reading of the inference preference, not a strict block on computing the inference in the first place.
+Prototype 5 gates inference: what a system concludes about a user, as distinct from what the user submits (input collection) or what they unknowingly produce (metadata collection). The gate enforces at the storage boundary. The classifier runs in both modes and produces the inferred attributes (`would_have_written` reports them). The code then calls either `inference_engine.derive()` (gate off), which writes them, or `profile_write_gate.block()` (gate on), which does not. This is the practical reading of the inference preference, not a strict block on computing the inference in the first place.
 
 | | gate off (baseline) | gate on (enforced) |
 |---|---|---|
